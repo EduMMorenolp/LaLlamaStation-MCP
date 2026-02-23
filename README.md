@@ -4,60 +4,60 @@ Este proyecto permite exponer tus modelos locales de **Ollama** a través de un 
 
 ## 🚀 Características
 
-- **Acceso Remoto Seguro**: Túnel automático con ngrok.
-- **Autenticación**: Protección mediante `X-API-KEY`.
-- **Arquitectura Modular**: Estructura de componentes (Services, Modules, Tools) en TypeScript.
-- **Gestión de Modelos**: Herramienta para descargar modelos (`pull_model`) remotamente.
-- **Ready-to-use**: Incluye el motor de Ollama, el servidor MCP y el túnel en un solo `docker-compose`.
+- **Acceso Remoto Seguro**: Túnel automático con ngrok que permite conectarte desde cualquier lugar del mundo.
+- **Autenticación Robusta**: Todas las herramientas requieren una `apiKey` personalizada para prevenir el uso no autorizado.
+- **Arquitectura Modular**: Código organizado en servicios y módulos de TypeScript para facilitar su mantenimiento.
+- **Gestión Total de Modelos**: No solo puedes chatear, sino también descargar nuevos modelos (`pull_model`) remotamente.
+- **Todo-en-Uno**: Orquestación con `docker-compose` que incluye Ollama, el puente MCP y el túnel ngrok.
 
 ---
 
-## 🛠️ Configuración
+## 🛠️ Configuración Paso a Paso
 
-### 1. Requisitos
+### 1. Requisitos Previos
 
-- Docker y Docker Compose instalados.
-- Un Authtoken de ngrok (puedes obtenerlo gratis en [dashboard.ngrok.com](https://dashboard.ngrok.com)).
+- Tener instalado **Docker** y **Docker Compose**.
+- Tener una cuenta en [ngrok](https://ngrok.com/) y obtener tu **Authtoken**.
 
-### 2. Variables de Entorno
+### 2. Preparar el Entorno
 
-Crea un archivo `.env` en la raíz del proyecto basándote en el ejemplo:
+Copia el archivo de ejemplo y rellena tus datos:
 
 ```bash
 cp .env.example .env
 ```
 
-Edita el archivo `.env` con tus valores:
+Edita el archivo `.env`:
 
-- `NGROK_AUTHTOKEN`: Tu token de ngrok.
-- `API_KEY`: Una clave secreta de tu elección para proteger el acceso.
+- `NGROK_AUTHTOKEN`: Pega aquí tu token de ngrok.
+- `API_KEY`: Define una clave secreta (ej: `MiClaveSegura2026`). **La necesitarás en cada petición**.
+- `APP_PORT`: Puerto donde correrá el servidor (por defecto `5555`).
 
----
-
-## 🐳 Despliegue
-
-Inicia el stack completo con Docker:
+### 3. Lanzar el Servidor
 
 ```bash
 docker-compose up -d --build
 ```
 
-### Verificar el estado
-
-- **Ollama**: Corriendo en `http://localhost:11434`
-- **MCP Server**: Corriendo en `http://localhost:3000`
-- **ngrok**: Puedes ver tu URL pública en el dashboard de ngrok o en los logs:
-  ```bash
-  docker logs mcp-ngrok-tunnel
-  ```
-
 ---
 
-## 🖥️ Uso
+## 🖥️ Cómo Conectarse desde el Exterior
 
-Para conectar un cliente MCP (como **Claude Desktop**) desde otra PC, usa el transporte **SSE** con la URL de tu túnel de ngrok:
+Una vez que el servidor esté corriendo, necesitas obtener la **URL pública** que ngrok ha generado para ti.
 
-**Configuración de Claude Desktop (remoto):**
+### Obtener tu URL de ngrok
+
+Ejecuta el siguiente comando en tu terminal para ver la URL:
+
+```bash
+docker logs mcp-ngrok-tunnel
+```
+
+Busca una línea que diga algo como: `https://abcd-123.ngrok-free.app`. Esa es tu puerta de enlace.
+
+### Configurar Claude Desktop (u otro cliente)
+
+Añade la configuración a tu cliente MCP usando el transporte **SSE**:
 
 ```json
 {
@@ -67,43 +67,87 @@ Para conectar un cliente MCP (como **Claude Desktop**) desde otra PC, usa el tra
       "args": [
         "-y",
         "@modelcontextprotocol/inspector",
-        "https://tu-subdominio.ngrok-free.app/sse"
+        "https://TU-URL-DE-NGROK.ngrok-free.app/sse"
       ]
     }
   }
 }
 ```
 
-### Herramientas Disponibles
+---
 
-En cada llamada a una herramienta, es obligatorio incluir el parámetro `apiKey`.
+## 🧰 Herramientas Disponibles y Ejemplos
 
-1. **`list_models`**: Lista los modelos instalados en tu PC local.
-2. **`pull_model`**: Descarga un modelo nuevo de la librería de Ollama (ej: `llama3`).
-3. **`generate`**: Generación simple de texto.
-4. **`chat`**: Interacción de chat manteniendo el contexto de mensajes.
+Cada herramienta es una "capacidad" que le das a la IA remota. **Recuerda que el parámetro `apiKey` es obligatorio en todas**.
 
-#### Ejemplo de uso (Herramienta `chat`):
+### 1. `list_models`
 
-```json
-{
-  "model": "llama3",
-  "messages": [{ "role": "user", "content": "¿Cómo estás?" }],
-  "apiKey": "tu_clave_segura_definida_en_env"
-}
+Lista qué modelos tienes descargados físicamente en tu PC.
+
+- **Argumentos**: `{ "apiKey": "tu_clave" }`
+
+### 2. `pull_model`
+
+Descarga un modelo nuevo de la librería de Ollama directamente a tu PC. Muy útil si quieres probar un modelo nuevo sin estar frente a tu computadora.
+
+- **Argumentos**: `{ "model": "ministral-3:8b", "apiKey": "tu_clave" }`
+
+### 3. `chat`
+
+Interacción fluida con el modelo. Soporta historial de mensajes.
+
+- **Ejemplo de argumentos**:
+  ```json
+  {
+    "model": "ministral-3:8b",
+    "messages": [{ "role": "user", "content": "Hola, ¿quién eres?" }],
+    "apiKey": "tu_clave"
+  }
+  ```
+
+````
+
+### 4. `generate`
+Generación simple de texto para tareas rápidas de un solo prompt.
+- **Argumentos**: `{ "model": "mistral", "prompt": "Escribe un poema", "apiKey": "tu_clave" }`
+
+---
+
+## 🧪 Verificación del Sistema
+
+Hemos incluido un pequeño script para verificar que el túnel esté funcionando correctamente desde tu conexión local:
+
+```bash
+node test/test_ngrok.js
+````
+
+Si ves el mensaje `✅ Conexión establecida con éxito!`, significa que el puente entre internet y tu servidor local está abierto y funcionando.
+
+---
+
+## 📂 Estructura del Proyecto
+
+```text
+├── ollama-mcp-server/    # Código fuente del Servidor MCP (TypeScript)
+│   ├── src/
+│   │   ├── auth/         # Lógica de validación de API Key
+│   │   ├── ollama/       # Servicios y Herramientas (Tools)
+│   │   └── main.ts       # Punto de entrada SSE/Express
+├── test/                 # Scripts de prueba de conectividad
+├── docker-compose.yml    # Orquestador de contenedores
+└── README.md             # Esta guía
 ```
 
 ---
 
-## 📂 Estructura del Código
+## 🛡️ Seguridad y Mantenimiento
 
-- `src/main.ts`: Entrada de la aplicación y servidor Express con SSE.
-- `src/app.module.ts`: Orquestación de módulos.
-- `src/ollama/`: Lógica de integración con la API de Ollama y herramientas MCP.
-- `src/auth/`: Validación de seguridad.
+- **Persistencia**: Los modelos se guardan en un volumen de Docker llamado `ollama_data`, por lo que no se borran al reiniciar los contenedores.
+- **Logs**: Para ver qué está pasando con las peticiones, usa `docker logs -f mcp-server-app`.
+- **API Key**: Nunca compartas tu `.env` ni subas el archivo al repositorio (ya está en el `.gitignore`).
 
 ---
 
 ## 📄 Licencia
 
-MIT
+Distribuido bajo la licencia MIT. Ver `LICENSE` para más información.
