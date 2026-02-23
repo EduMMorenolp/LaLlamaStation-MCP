@@ -4,8 +4,8 @@ import { AuthService } from "./auth/auth.service.js";
 import { OllamaTools } from "./ollama/ollama.tools.js";
 
 export class AppModule {
-  private readonly ollamaService: OllamaService;
-  private readonly authService: AuthService;
+  public readonly ollamaService: OllamaService;
+  public readonly authService: AuthService;
   private readonly ollamaTools: OllamaTools;
 
   constructor() {
