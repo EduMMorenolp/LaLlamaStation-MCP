@@ -1,6 +1,6 @@
-import express from "express";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import express, { Request, Response } from "express";
+import { Server } from "@modelcontextprotocol/sdk/server/index";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse";
 import { AppModule } from "./app.module";
 
 const app = express();
@@ -24,13 +24,13 @@ appModule.bootstrap(server);
 
 let transport: SSEServerTransport | null = null;
 
-app.get("/sse", async (req, res) => {
+app.get("/sse", async (req: Request, res: Response) => {
   console.log("New SSE connection");
   transport = new SSEServerTransport("/messages", res);
   await server.connect(transport);
 });
 
-app.post("/messages", async (req, res) => {
+app.post("/messages", async (req: Request, res: Response) => {
   console.log("Received message");
   if (transport) {
     await transport.handlePostMessage(req, res);

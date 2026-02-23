@@ -1,9 +1,8 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { Server } from "@modelcontextprotocol/sdk/server/index";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  Tool,
-} from "@modelcontextprotocol/sdk/types.js";
+} from "@modelcontextprotocol/sdk/types";
 import { OllamaService } from "./ollama.service";
 import { AuthService } from "../auth/auth.service";
 import { z } from "zod";
@@ -91,7 +90,7 @@ export class OllamaTools {
     });
 
     // 2. Call Tools
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
       const { name, arguments: args } = request.params;
 
       // Global Auth Check

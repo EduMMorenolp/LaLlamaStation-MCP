@@ -1,4 +1,4 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { Server } from "@modelcontextprotocol/sdk/server/index";
 import { OllamaService } from "./ollama/ollama.service";
 import { AuthService } from "./auth/auth.service";
 import { OllamaTools } from "./ollama/ollama.tools";
