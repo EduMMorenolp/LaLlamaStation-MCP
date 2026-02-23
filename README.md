@@ -1,13 +1,14 @@
-# Ollama Remote MCP Server (Docker + ngrok + Security)
+# Ollama Remote MCP & OpenAI Server (Docker + ngrok + Security)
 
-Este proyecto permite exponer tus modelos locales de **Ollama** a través de un túnel seguro de **ngrok** utilizando el protocolo **MCP (Model Context Protocol)**. Está diseñado con una arquitectura modular inspirada en NestJS y corre completamente en Docker.
+Este proyecto permite exponer tus modelos locales de **Ollama** a través de un túnel seguro de **ngrok** utilizando el protocolo **MCP (Model Context Protocol)** y una **API compatible con OpenAI**. Está diseñado con una arquitectura modular inspirada en NestJS y corre completamente en Docker.
 
 ## 🚀 Características
 
 - **Acceso Remoto Seguro**: Túnel automático con ngrok que permite conectarte desde cualquier lugar del mundo.
-- **Autenticación Robusta**: Todas las herramientas requieren una `apiKey` personalizada para prevenir el uso no autorizado.
-- **Arquitectura Modular**: Código organizado en servicios y módulos de TypeScript para facilitar su mantenimiento.
-- **Gestión Total de Modelos**: No solo puedes chatear, sino también descargar nuevos modelos (`pull_model`) remotamente.
+- **Servidor Híbrido**: Soporte nativo para **MCP (Claude Desktop)** y **API OpenAI** (Chatbox, TypingMind, etc.) en un solo lugar.
+- **Autenticación Robusta**: Todas las peticiones requieren una `API_KEY` personalizada (vía Headers o parámetros).
+- **Arquitectura Modular**: Código organizado en servicios y módulos de TypeScript.
+- **Gestión Total de Modelos**: Permite descargar nuevos modelos (`pull_model`) remotamente.
 - **Todo-en-Uno**: Orquestación con `docker-compose` que incluye Ollama, el puente MCP y el túnel ngrok.
 
 ---
@@ -29,9 +30,9 @@ cp .env.example .env
 
 Edita el archivo `.env`:
 
-- `NGROK_AUTHTOKEN`: Pega aquí tu token de ngrok.
-- `API_KEY`: Define una clave secreta (ej: `MiClaveSegura2026`). **La necesitarás en cada petición**.
-- `APP_PORT`: Puerto donde correrá el servidor (por defecto `5555`).
+- `NGROK_AUTHTOKEN`: Tu token de ngrok.
+- `API_KEY`: Define una clave secreta (ej: `MiClaveSegura2026`).
+- `APP_PORT`: Puerto (por defecto `5555`).
 
 ### 3. Lanzar el Servidor
 
@@ -41,23 +42,19 @@ docker-compose up -d --build
 
 ---
 
-## 🖥️ Cómo Conectarse desde el Exterior
+## 🔗 Cómo Conectarse desde el Exterior
 
-Una vez que el servidor esté corriendo, necesitas obtener la **URL pública** que ngrok ha generado para ti.
-
-### Obtener tu URL de ngrok
-
-Ejecuta el siguiente comando en tu terminal para ver la URL:
+Obtén tu URL pública ejecutando:
 
 ```bash
 docker logs mcp-ngrok-tunnel
 ```
 
-Busca una línea que diga algo como: `https://abcd-123.ngrok-free.app`. Esa es tu puerta de enlace.
+Busca la línea: `https://tu-subdominio.ngrok-free.app`.
 
-### Configurar Claude Desktop (u otro cliente)
+### Opcion A: Usar con Claude Desktop (MCP)
 
-Añade la configuración a tu cliente MCP usando el transporte **SSE**:
+Configura tu `claude_desktop_config.json` usando el transporte **SSE**:
 
 ```json
 {
@@ -74,80 +71,51 @@ Añade la configuración a tu cliente MCP usando el transporte **SSE**:
 }
 ```
 
+### Opcion B: Usar con Apps de Terceros (API OpenAI)
+
+Cualquier aplicación que soporte OpenAI (como Chatbox) puede conectarse:
+
+- **Base URL**: `https://TU-URL-DE-NGROK.ngrok-free.app/v1`
+- **API Key**: La clave que definiste en el `.env`.
+- **Endpoints soportados**: `/v1/models` y `/v1/chat/completions`.
+
 ---
 
-## 🧰 Herramientas Disponibles y Ejemplos
+## 🧰 Herramientas MCP Disponibles
 
-Cada herramienta es una "capacidad" que le das a la IA remota. **Recuerda que el parámetro `apiKey` es obligatorio en todas**.
+Si usas MCP, estas herramientas están a tu disposición (el parámetro `apiKey` es obligatorio):
 
-### 1. `list_models`
-
-Lista qué modelos tienes descargados físicamente en tu PC.
-
-- **Argumentos**: `{ "apiKey": "tu_clave" }`
-
-### 2. `pull_model`
-
-Descarga un modelo nuevo de la librería de Ollama directamente a tu PC. Muy útil si quieres probar un modelo nuevo sin estar frente a tu computadora.
-
-- **Argumentos**: `{ "model": "ministral-3:8b", "apiKey": "tu_clave" }`
-
-### 3. `chat`
-
-Interacción fluida con el modelo. Soporta historial de mensajes.
-
-- **Ejemplo de argumentos**:
-  ```json
-  {
-    "model": "ministral-3:8b",
-    "messages": [{ "role": "user", "content": "Hola, ¿quién eres?" }],
-    "apiKey": "tu_clave"
-  }
-  ```
-
-````
-
-### 4. `generate`
-Generación simple de texto para tareas rápidas de un solo prompt.
-- **Argumentos**: `{ "model": "mistral", "prompt": "Escribe un poema", "apiKey": "tu_clave" }`
+1.  **`list_models`**: Lista los modelos descargados.
+2.  **`pull_model`**: Descarga un modelo nuevo (ej: `llama3`).
+3.  **`chat`**: Interacción de chat fluida.
+4.  **`generate`**: Generación simple de texto.
 
 ---
 
 ## 🧪 Verificación del Sistema
 
-Hemos incluido un pequeño script para verificar que el túnel esté funcionando correctamente desde tu conexión local:
+Prueba la conectividad local (requiere `npm install` en la raíz):
 
 ```bash
 node test/test_ngrok.js
-````
+```
 
-Si ves el mensaje `✅ Conexión establecida con éxito!`, significa que el puente entre internet y tu servidor local está abierto y funcionando.
+Prueba la API OpenAI (remota):
 
----
-
-## 📂 Estructura del Proyecto
-
-```text
-├── ollama-mcp-server/    # Código fuente del Servidor MCP (TypeScript)
-│   ├── src/
-│   │   ├── auth/         # Lógica de validación de API Key
-│   │   ├── ollama/       # Servicios y Herramientas (Tools)
-│   │   └── main.ts       # Punto de entrada SSE/Express
-├── test/                 # Scripts de prueba de conectividad
-├── docker-compose.yml    # Orquestador de contenedores
-└── README.md             # Esta guía
+```bash
+curl -H "Authorization: Bearer TU_API_KEY" https://TU-URL-DE-NGROK.ngrok-free.app/v1/models
 ```
 
 ---
 
 ## 🛡️ Seguridad y Mantenimiento
 
-- **Persistencia**: Los modelos se guardan en un volumen de Docker llamado `ollama_data`, por lo que no se borran al reiniciar los contenedores.
-- **Logs**: Para ver qué está pasando con las peticiones, usa `docker logs -f mcp-server-app`.
-- **API Key**: Nunca compartas tu `.env` ni subas el archivo al repositorio (ya está en el `.gitignore`).
+- **Persistencia**: Los modelos se guardan en el volumen `ollama_data`.
+- **Logs de Actividad**: `docker logs -f mcp-server-app`.
+- **Importante**: No compartas tu URL de ngrok ni tu API Key públicamente.
 
 ---
 
 ## 📄 Licencia
 
-Distribuido bajo la licencia MIT. Ver `LICENSE` para más información.
+MIT
