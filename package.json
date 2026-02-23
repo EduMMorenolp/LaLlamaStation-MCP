@@ -1,0 +1,27 @@
+{
+  "name": "mcp-llm-local",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Este proyecto permite exponer tus modelos locales de **Ollama** a través de un túnel seguro de **ngrok** utilizando el protocolo **MCP (Model Context Protocol)**. Está diseñado con una arquitectura modular inspirada en NestJS y corre completamente en Docker.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EduMMorenolp/MPC-Ollama-Local.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/EduMMorenolp/MPC-Ollama-Local/issues"
+  },
+  "homepage": "https://github.com/EduMMorenolp/MPC-Ollama-Local#readme",
+  "dependencies": {
+    "axios": "^1.13.5"
+  }
+}
