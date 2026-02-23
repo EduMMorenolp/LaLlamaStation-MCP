@@ -1,10 +1,10 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types";
-import { OllamaService } from "./ollama.service";
-import { AuthService } from "../auth/auth.service";
+} from "@modelcontextprotocol/sdk/types.js";
+import { OllamaService } from "./ollama.service.js";
+import { AuthService } from "../auth/auth.service.js";
 import { z } from "zod";
 
 export class OllamaTools {

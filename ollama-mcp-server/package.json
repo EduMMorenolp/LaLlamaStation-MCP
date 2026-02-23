@@ -1,6 +1,7 @@
 {
   "name": "ollama-mcp-server",
   "version": "1.0.0",
+  "type": "module",
   "description": "Modular MCP Server for Ollama with API Key auth",
   "main": "dist/main.js",
   "scripts": {

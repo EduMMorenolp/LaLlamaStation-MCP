@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
-import { Server } from "@modelcontextprotocol/sdk/server/index";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse";
-import { AppModule } from "./app.module";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { AppModule } from "./app.module.js";
 
 const app = express();
 const port = process.env.APP_PORT || 3000;

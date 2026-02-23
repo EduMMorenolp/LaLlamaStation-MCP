@@ -1,7 +1,7 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index";
-import { OllamaService } from "./ollama/ollama.service";
-import { AuthService } from "./auth/auth.service";
-import { OllamaTools } from "./ollama/ollama.tools";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { OllamaService } from "./ollama/ollama.service.js";
+import { AuthService } from "./auth/auth.service.js";
+import { OllamaTools } from "./ollama/ollama.tools.js";
 
 export class AppModule {
   private readonly ollamaService: OllamaService;
