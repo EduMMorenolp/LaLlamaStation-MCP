@@ -19,12 +19,14 @@ services:
     container_name: mcp-server-app
     volumes:
       - ollama_data:/root/.ollama:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - ollama
     environment:
       - OLLAMA_URL=http://ollama:11434
       - APP_PORT=${APP_PORT:-3000}
       - API_KEY=${API_KEY:-super-secret-mcp-key}
+      - NGROK_CONTAINER_NAME=mcp-ngrok-tunnel
     ports:
       - "${APP_PORT:-3000}:${APP_PORT:-3000}"
     networks:
@@ -43,7 +45,7 @@ services:
       - mcp-server:${APP_PORT:-3000}
     networks:
       - mcp-network
-    restart: always
+    restart: "no"
 
   mcp-frontend:
     build:

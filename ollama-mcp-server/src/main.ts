@@ -7,6 +7,9 @@ import { rateLimit } from "express-rate-limit";
 import { createServer } from "http";
 import socketIo, { Server as SocketServer } from "socket.io";
 import cors from "cors";
+import Docker from "dockerode";
+import * as cheerio from "cheerio";
+import axios from "axios";
 
 const app = express();
 app.use(cors()); // Habilitar CORS para desarrollo local del frontend
@@ -192,6 +195,101 @@ app.delete("/api/models/:name", authMiddleware, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// --- Control de Ngrok via Docker API ---
+const docker = new Docker({ socketPath: "/var/run/docker.sock" });
+const NGROK_CONTAINER = process.env.NGROK_CONTAINER_NAME || "mcp-ngrok-tunnel";
+
+async function getNgrokContainer() {
+  try {
+    return docker.getContainer(NGROK_CONTAINER);
+  } catch {
+    return null;
+  }
+}
+
+app.get("/api/ngrok/status", authMiddleware, async (req, res) => {
+  try {
+    const container = await getNgrokContainer();
+    if (!container) return res.json({ running: false, url: null });
+    const info = await container.inspect();
+    const running = info.State?.Running === true;
+    // Si está corriendo, intentar obtener la URL del tunnel
+    let url: string | null = null;
+    if (running) {
+      try {
+        const ngrokRes = await axios.get("http://mcp-ngrok-tunnel:4040/api/tunnels", { timeout: 2000 });
+        url = ngrokRes.data?.tunnels?.[0]?.public_url || null;
+      } catch { /* tunnel aún iniciando */ }
+    }
+    res.json({ running, url });
+  } catch (e: any) {
+    res.json({ running: false, url: null, error: e.message });
+  }
+});
+
+app.post("/api/ngrok/start", authMiddleware, async (req, res) => {
+  try {
+    const container = await getNgrokContainer();
+    if (!container) return res.status(404).json({ error: "Contenedor ngrok no encontrado. Verifica docker-compose." });
+    const info = await container.inspect();
+    if (info.State?.Running) return res.json({ message: "Ngrok ya está corriendo", running: true });
+    await container.start();
+    console.log("[ngrok] Tunel iniciado manualmente desde el Dashboard");
+    res.json({ message: "Ngrok iniciado", running: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/ngrok/stop", authMiddleware, async (req, res) => {
+  try {
+    const container = await getNgrokContainer();
+    if (!container) return res.status(404).json({ error: "Contenedor ngrok no encontrado" });
+    const info = await container.inspect();
+    if (!info.State?.Running) return res.json({ message: "Ngrok ya está detenido", running: false });
+    await container.stop();
+    console.log("[ngrok] Tunel detenido manualmente desde el Dashboard");
+    res.json({ message: "Ngrok detenido", running: false });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- Scraper de Ollama Library ---
+app.get("/api/search-models", authMiddleware, async (req, res) => {
+  const q = (req.query.q as string) || "";
+  try {
+    const url = `https://ollama.com/library${ q ? `?q=${encodeURIComponent(q)}` : "" }`;
+    const response = await axios.get(url, {
+      timeout: 8000,
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; SYMBIOSIS-Dashboard/1.0)" }
+    });
+    const $ = cheerio.load(response.data);
+    const models: any[] = [];
+
+    // Parsear tarjetas de modelos de ollama.com/library
+    $('a[href^="/library/"]').each((_, el) => {
+      const href = $(el).attr("href") || "";
+      const name = href.replace("/library/", "").trim();
+      if (!name || name.includes("/")) return;
+
+      const title = $(el).find("h2, [class*='title'], strong").first().text().trim() || name;
+      const desc = $(el).find("p, [class*='desc']").first().text().trim();
+      const pulls = $(el).find("[class*='pull'],[class*='download']").first().text().trim();
+      const tags = $(el).find("[class*='tag'],[class*='size']").map((_, t) => $(t).text().trim()).get().filter(Boolean).slice(0, 4);
+
+      if (name && !models.find(m => m.name === name)) {
+        models.push({ name, title, desc, pulls, tags });
+      }
+    });
+
+    res.json({ models: models.slice(0, 24), query: q, source: url });
+  } catch (e: any) {
+    res.status(500).json({ error: `Error scraping ollama.com: ${e.message}`, models: [] });
+  }
+});
+
 
 // --- Endpoints MCP (SSE) ---
 
