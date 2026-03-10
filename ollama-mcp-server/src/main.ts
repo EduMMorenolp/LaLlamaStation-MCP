@@ -15,7 +15,7 @@ app.use(cors()); // Habilitar CORS para desarrollo local del frontend
 app.use(helmet());
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // Límite de 100 peticiones por IP
+  max: 1000, // Límite más alto para el Dashboard
   standardHeaders: true,
   legacyHeaders: false,
 });

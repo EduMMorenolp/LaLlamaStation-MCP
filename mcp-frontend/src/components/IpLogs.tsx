@@ -8,42 +8,49 @@ interface IpLogsProps {
 
 export const IpLogs: React.FC<IpLogsProps> = ({ logs, onBan }) => {
     return (
-        <div className="glass p-6 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Shield size={20} className="text-indigo-400" />
-                    Auditoría de Accesos
+        <div className="card-glass p-6 h-full flex flex-col">
+            <div className="flex-between mb-4">
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Shield size={20} style={{ color: 'var(--primary)' }} />
+                    Auditoría de Accesos Reales
                 </h2>
-                <span className="badge badge-success">{logs?.length || 0} Registros</span>
+                <span className="badge badge-success" style={{ padding: '0.4rem 1rem' }}>{logs?.length || 0} Sesiones</span>
             </div>
 
-            <div className="flex-1 overflow-auto">
-                <table className="w-full text-left">
+            <div style={{ flex: 1, overflowY: 'auto', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', background: 'rgba(0,0,0,0.1)' }}>
+                <table className="table-container">
                     <thead>
-                        <tr className="border-b border-slate-700 text-slate-400 text-sm">
-                            <th className="py-2">IP</th>
-                            <th className="py-2">Acción</th>
-                            <th className="py-2">Estado</th>
-                            <th className="py-2 text-right">Acción</th>
+                        <tr>
+                            <th>Dirección IP</th>
+                            <th>Operación</th>
+                            <th>Estado</th>
+                            <th style={{ textAlign: 'right' }}>Control</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {logs?.map((log, i) => (
-                            <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/50 transition-colors">
-                                <td className="py-3 font-mono text-xs">{log.ip}</td>
-                                <td className="py-3 text-xs italic">{log.action || 'pull_model'}</td>
-                                <td className="py-3">
-                                    <span className={`badge ${log.status === 'Success' ? 'badge-success' : 'badge-danger'}`}>
+                        {logs?.length === 0 ? (
+                            <tr>
+                                <td colSpan={4} style={{ textAlign: 'center', opacity: 0.3, padding: '3rem' }}>
+                                    Esperando nuevas conexiones...
+                                </td>
+                            </tr>
+                        ) : logs?.map((log, i) => (
+                            <tr key={i} className="animate-fade" style={{ animationDelay: `${i * 0.05}s` }}>
+                                <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>{log.ip}</td>
+                                <td style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{log.action || 'system_call'}</td>
+                                <td>
+                                    <span className={`badge ${log.status === 'Success' ? 'badge-success' : 'badge-error'}`}>
                                         {log.status}
                                     </span>
                                 </td>
-                                <td className="py-3 text-right">
+                                <td style={{ textAlign: 'right' }}>
                                     <button
                                         onClick={() => onBan(log.ip)}
-                                        className="p-1 text-slate-400 hover:text-red-400"
-                                        title="Banear IP"
+                                        className="btn btn-danger"
+                                        style={{ padding: '4px 8px', borderRadius: '8px' }}
+                                        title="Bloquear IP"
                                     >
-                                        <XCircle size={16} />
+                                        <XCircle size={14} />
                                     </button>
                                 </td>
                             </tr>

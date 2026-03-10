@@ -43,20 +43,33 @@ const App: React.FC = () => {
   useEffect(() => {
     if (apiKey) fetchData();
 
+    const cleanupAccess = (data: any) => {
+      // Generar ID único usando timestamp + random para evitar duplicados en React keys
+      const notificationId = `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      setNotifications(prev => [{ ...data, type: 'info', id: notificationId }, ...prev].slice(0, 5));
+
+      setStatus((prevStatus: any) => {
+        if (!prevStatus) return prevStatus;
+        // Evitar que logs duplicados entren por streaming rápido
+        const isDuplicate = prevStatus.recentLogs?.some((l: any) => l.timestamp === data.timestamp && l.ip === data.ip);
+        if (isDuplicate) return prevStatus;
+
+        const newLogs = [data, ...(prevStatus.recentLogs || [])].slice(0, 100);
+        return { ...prevStatus, recentLogs: newLogs };
+      });
+    };
+
     const cleanupPull = subscribeToPullProgress((data) => setPullProgress(data));
     const cleanupAlerts = subscribeToSecurityAlerts((data) => {
       setNotifications(prev => [{ ...data, id: Date.now() }, ...prev].slice(0, 5));
-      if (data.type === 'ban') fetchData(); // Refresh if someone was banned
+      if (data.type === 'ban') fetchData(); // Solo refrescar en caso de baneo
     });
-    const cleanupAccess = subscribeToNewAccess((data) => {
-      setNotifications(prev => [{ ...data, type: 'info', id: Date.now() }, ...prev].slice(0, 5));
-      fetchData(); // Refresh logs
-    });
+    const subAccess = subscribeToNewAccess(cleanupAccess);
 
     return () => {
       cleanupPull();
       cleanupAlerts();
-      cleanupAccess();
+      subAccess();
     };
   }, [apiKey, fetchData]);
 
@@ -126,28 +139,31 @@ const App: React.FC = () => {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="glass p-8 w-full max-w-md text-center">
-          <div className="bg-indigo-500/20 p-4 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-            <Shield size={40} className="text-indigo-400" />
+      <div className="flex-center" style={{ minHeight: '100vh' }}>
+        <div className="bg-cosmic" />
+        <div className="card-glass p-8 w-full animate-fade" style={{ maxWidth: '400px', textAlign: 'center' }}>
+          <div className="flex-center mb-6">
+            <img src="/logo.png" alt="Logo" style={{ width: '100px', filter: 'drop-shadow(0 0 20px var(--primary-glow))' }} />
           </div>
-          <h1 className="text-2xl font-bold mb-2 text-white">Ollama MCP Shield</h1>
-          <p className="text-slate-400 mb-8">Ingresa tu API Master Key para acceder al Dashboard</p>
+          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Ollama MCP Shield</h1>
+          <p style={{ marginBottom: '2rem' }}>Master Key Required</p>
 
-          <div className="relative mb-6">
-            <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+          <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+            <Key style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} size={18} />
             <input
               type="password"
               placeholder="API_KEY"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              className="w-full bg-slate-800 border-none rounded-xl py-3 pl-10 pr-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="input-field"
+              style={{ paddingLeft: '40px' }}
             />
           </div>
 
           <button
             onClick={fetchData}
-            className="btn-primary w-full py-3 flex items-center justify-center gap-2"
+            className="btn btn-primary"
+            style={{ width: '100%' }}
           >
             ENTRAR AL SISTEMA
           </button>
@@ -157,71 +173,74 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-            DASHBOARD MCP OLLAMA
-          </h1>
-          <p className="text-slate-500 flex items-center gap-2 mt-1">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            Servidor Protegido e Inteligente activo
-          </p>
-        </div>
+    <div className="app-container">
+      <div className="bg-cosmic" />
 
-        <div className="flex items-center gap-4">
-          <div className="relative group">
-            <Bell size={20} className="text-slate-400 cursor-pointer hover:text-white" />
-            {notifications.length > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />}
-
-            {/* Notification Dropdown (Tooltip-like) */}
-            <div className="absolute right-0 top-full mt-2 w-72 glass p-2 hidden group-hover:block z-50">
-              {notifications.length === 0 ? <p className="text-xs p-2 text-slate-500">Sin notificaciones</p> :
-                notifications.map(n => (
-                  <div key={n.id} className="text-[10px] p-2 border-b border-white/5 last:border-none">
-                    <span className="font-bold text-indigo-400">[{n.type}]</span> {n.message || n.action}
-                  </div>
-                ))
-              }
+      {/* Toasts */}
+      <div className="toast-container">
+        {notifications.map(n => (
+          <div key={n.id} className={`toast toast-${n.type === 'error' ? 'error' : 'info'}`}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: n.type === 'error' ? 'var(--error)' : 'var(--primary)' }} />
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'white' }}>{n.type?.toUpperCase()}</p>
+              <p style={{ fontSize: '0.7rem', opacity: 0.8 }}>{n.message || n.action}</p>
             </div>
           </div>
-          <button
-            onClick={fetchData}
-            className="p-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
-            title="Sincronizar"
-          >
-            <RefreshCw size={18} className={`text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+        ))}
+      </div>
+
+      {/* Header */}
+      <header className="flex-between animate-fade">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <img src="/logo.png" alt="Logo" style={{ width: '50px' }} />
+          <div>
+            <h1 style={{ fontSize: '1.8rem', background: 'linear-gradient(to right, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              DASHBOARD MCP OLLAMA
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '4px' }}>
+              <span style={{ width: '8px', height: '8px', background: 'var(--success)', borderRadius: '50%', boxShadow: '0 0 10px var(--success)' }} />
+              <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--success)' }}>ESCUDO ACTIVO</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ position: 'relative', cursor: 'pointer' }} className="group">
+            <Bell size={20} className="text-dim hover:text-white" />
+            {notifications.length > 0 && <span style={{ position: 'absolute', top: -2, right: -2, width: '8px', height: '8px', background: 'var(--error)', borderRadius: '50%' }} />}
+          </div>
+
+          <button onClick={fetchData} className="btn btn-secondary" title="Sincronizar">
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
-          <button
-            onClick={handleCleanWorkspace}
-            className="p-2 bg-slate-800 rounded-lg hover:bg-indigo-500/30 transition-colors text-xs font-bold text-slate-400 hover:text-indigo-400"
-            title="Limpiar temporales"
-          >
+
+          <button onClick={handleCleanWorkspace} className="btn btn-secondary" style={{ fontSize: '0.7rem' }}>
             CLEAN
           </button>
-          <div className="h-8 w-px bg-slate-800 mx-2" />
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-xs font-bold text-white">Administrador</p>
-              <p className="text-[10px] text-slate-500">Master Key</p>
+
+          <div style={{ width: '1px', height: '2rem', background: 'var(--border-light)' }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'white' }}>ADMIN</p>
+              <p style={{ fontSize: '0.6rem', opacity: 0.5 }}>MASTER SESSION</p>
             </div>
-            <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs">
-              AD
-            </div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justify- content: 'center', fontWeight: 'bold' }}>
+            AD
           </div>
         </div>
-      </header>
+    </div>
+      </header >
 
       <Telemetry status={status} />
 
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+      <div className="grid-layout">
+        <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <ChatPlayground models={models} onSendMessage={handleSendMessage} />
           <IpLogs logs={status?.recentLogs} onBan={handleBan} />
         </div>
 
-        <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+        <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <ModelList
             models={models}
             pullProgress={pullProgress}
@@ -236,10 +255,10 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <footer className="mt-12 text-center text-slate-600 text-xs">
-        &copy; 2026 OLLAMA MCP PROTECTED SERVER - DESARROLLO SEGURO FASE 5
+      <footer style={{ marginTop: 'auto', textAlign: 'center', opacity: 0.3, fontSize: '0.7rem', padding: '2rem' }}>
+        &copy; 2026 OLLAMA MCP PROTECTED SERVER • ARGENTEIA CORE V5
       </footer>
-    </div>
+    </div >
   );
 };
 

@@ -40,64 +40,75 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
     };
 
     return (
-        <div className="glass p-6 h-[600px] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Terminal size={20} className="text-indigo-400" />
-                    Playground Avanzado
+        <div className="card-glass p-6 animate-fade" style={{ height: '600px', display: 'flex', flexDirection: 'column' }}>
+            <div className="flex-between mb-4">
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Terminal size={20} style={{ color: 'var(--primary)' }} />
+                    Playground de Inferencia
                 </h2>
-                <div className="flex items-center gap-3">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <button
                         onClick={() => setShowRaw(!showRaw)}
-                        className={`text-xs px-2 py-1 rounded transition-colors ${showRaw ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400'}`}
+                        className={`btn ${showRaw ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '4px 12px', fontSize: '0.6rem' }}
                     >
-                        RAW JSON
+                        DEBUG JSON
                     </button>
-                    <Settings size={18} className="text-slate-400 cursor-pointer hover:text-white" />
+                    <Settings size={18} style={{ color: 'var(--text-muted)', cursor: 'pointer' }} />
                 </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 flex-1 overflow-hidden">
+            <div className="grid-layout flex-1 overflow-hidden" style={{ gap: '1.5rem' }}>
                 {/* Chat Area */}
-                <div className="col-span-12 md:col-span-8 flex flex-col bg-slate-900/50 rounded-xl border border-slate-800 overflow-hidden">
+                <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', overflow: 'hidden' }}>
                     <div className="flex-1 overflow-auto p-4 space-y-4">
+                        {history.length === 0 && (
+                            <div className="flex-center" style={{ height: '100%', flexDirection: 'column', opacity: 0.3 }}>
+                                <Terminal size={48} style={{ marginBottom: '1rem' }} />
+                                <p style={{ fontSize: '0.8rem' }}>Sistema listo para comandos...</p>
+                            </div>
+                        )}
                         {history.map((msg, i) => (
-                            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none'
-                                    } ${msg.isError ? 'border border-red-500/50 text-red-200' : ''}`}>
-                                    {showRaw ? <pre className="text-[10px] overflow-auto">{JSON.stringify(msg, null, 2)}</pre> : msg.content}
+                            <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                <div className={`chat-msg ${msg.role === 'user' ? 'chat-msg-user' : 'chat-msg-bot'} ${msg.isError ? 'badge-error' : ''}`}>
+                                    {showRaw ? (
+                                        <pre style={{ fontSize: '10px', fontFamily: 'var(--font-mono)' }}>{JSON.stringify(msg, null, 2)}</pre>
+                                    ) : (
+                                        msg.content
+                                    )}
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    <div className="p-4 border-t border-slate-800 flex gap-2">
+                    <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', display: 'flex', gap: '1rem' }}>
                         <input
                             type="text"
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            placeholder="Escribe un mensaje..."
-                            className="flex-1 bg-slate-800 border-none rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="Prompt al motor Ollama..."
+                            className="input-field"
                         />
                         <button
                             onClick={handleSend}
                             disabled={loading}
-                            className="bg-indigo-500 p-2 rounded-lg hover:bg-indigo-600 disabled:opacity-50"
+                            className="btn btn-primary"
                         >
-                            <Send size={18} />
+                            <Send size={18} className={loading ? 'animate-pulse' : ''} />
                         </button>
                     </div>
                 </div>
 
                 {/* Settings Area */}
-                <div className="hidden md:block md:col-span-4 space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase">Modelo</label>
+                <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label className="kpi-label">Modelo Seleccionado</label>
                         <select
                             value={selectedModel}
                             onChange={(e) => setSelectedModel(e.target.value)}
-                            className="w-full bg-slate-800 border-none rounded-lg p-2 text-sm outline-none"
+                            className="input-field"
+                            style={{ fontSize: '0.8rem' }}
                         >
                             {models.map(m => (
                                 <option key={m.name} value={m.name}>{m.name}</option>
@@ -105,39 +116,40 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
                         </select>
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between">
-                            <label className="text-xs font-bold text-slate-400 uppercase">Temperatura</label>
-                            <span className="text-xs font-mono text-indigo-400">{temperature}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div className="flex-between">
+                            <label className="kpi-label">Temperatura</label>
+                            <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{temperature}</span>
                         </div>
                         <input
                             type="range" min="0" max="2" step="0.1"
                             value={temperature}
                             onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                            className="w-full accent-indigo-500"
+                            style={{ accentColor: 'var(--primary)' }}
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between">
-                            <label className="text-xs font-bold text-slate-400 uppercase">Contexto</label>
-                            <span className="text-xs font-mono text-indigo-400">{numCtx}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div className="flex-between">
+                            <label className="kpi-label">Ventana de Contexto</label>
+                            <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{numCtx}</span>
                         </div>
                         <input
                             type="range" min="512" max="32768" step="512"
                             value={numCtx}
                             onChange={(e) => setNumCtx(parseInt(e.target.value))}
-                            className="w-full accent-indigo-500"
+                            style={{ accentColor: 'var(--primary)' }}
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase">ID de Sesión (Caché)</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: 'auto' }}>
+                        <label className="kpi-label">Master Session ID</label>
                         <input
                             type="text"
                             value={sessionId}
                             onChange={(e) => setSessionId(e.target.value)}
-                            className="w-full bg-slate-800 border-none rounded-lg p-2 text-xs font-mono outline-none"
+                            className="input-field"
+                            style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)' }}
                         />
                     </div>
                 </div>

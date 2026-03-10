@@ -9,36 +9,40 @@ interface SecurityPanelProps {
 
 export const SecurityPanel: React.FC<SecurityPanelProps> = ({ blacklistedIps, onUnban, onPanic }) => {
     return (
-        <div className="glass p-6">
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                    <ShieldX size={20} className="text-red-400" />
+        <div className="card-glass p-6 animate-fade">
+            <div className="flex-between mb-6">
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <ShieldX size={20} style={{ color: 'var(--error)' }} />
                     Seguridad y Blacklist
                 </h2>
                 <button
                     onClick={onPanic}
-                    className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg flex items-center gap-2 font-bold transition-transform active:scale-95"
+                    className="btn btn-danger"
+                    style={{ fontWeight: 800, padding: '0.5rem 1rem' }}
                 >
                     <Zap size={18} />
-                    BOTÓN DE PÁNICO
+                    PÁNICO
                 </button>
             </div>
 
-            <div className="space-y-4">
-                <p className="text-sm text-slate-400">IPs Bloqueadas actualmente:</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <p className="kpi-label" style={{ fontSize: '0.65rem' }}>Terminales Bloqueadas</p>
                 {blacklistedIps.length === 0 ? (
-                    <p className="text-xs italic text-slate-500">No hay IPs en la lista negra.</p>
+                    <div style={{ padding: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-light)' }}>
+                        <p style={{ fontSize: '0.7rem', opacity: 0.3 }}>Perímetro Limpio</p>
+                    </div>
                 ) : (
-                    <div className="space-y-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {blacklistedIps.map(ip => (
-                            <div key={ip} className="flex items-center justify-between bg-red-500/10 border border-red-500/30 p-3 rounded-lg">
-                                <span className="font-mono text-sm text-red-400">{ip}</span>
+                            <div key={ip} className="card-glass" style={{ padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--error)', fontWeight: 600 }}>{ip}</span>
                                 <button
                                     onClick={() => onUnban(ip)}
-                                    className="text-slate-400 hover:text-white transition-colors"
-                                    title="Desbloquear"
+                                    className="btn btn-secondary"
+                                    style={{ padding: '4px 8px', borderRadius: '6px' }}
+                                    title="Restablecer Acceso"
                                 >
-                                    <Trash2 size={16} />
+                                    <Trash2 size={14} />
                                 </button>
                             </div>
                         ))}
@@ -46,10 +50,13 @@ export const SecurityPanel: React.FC<SecurityPanelProps> = ({ blacklistedIps, on
                 )}
             </div>
 
-            <div className="mt-8 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                <p className="text-xs text-amber-500 font-semibold mb-1 uppercase tracking-wider">Estado del Escudo</p>
-                <p className="text-sm text-slate-300">
-                    El servidor está configurado para auto-banear cualquier IP con 5 intentos fallidos de API KEY.
+            <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <Zap size={14} style={{ color: 'var(--warning)' }} />
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--warning)', letterSpacing: '0.1em' }}>AUTO-PROTOCOLO</span>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', lineHeight: 1.4 }}>
+                    Bloqueo automático tras 5 intentos fallidos de autenticación.
                 </p>
             </div>
         </div>

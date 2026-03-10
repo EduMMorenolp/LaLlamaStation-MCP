@@ -10,57 +10,54 @@ interface ModelListProps {
 
 export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPull, onDelete }) => {
     return (
-        <div className="glass p-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Layers size={20} className="text-indigo-400" />
-                Gestión de Modelos
+        <div className="card-glass p-6">
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <Layers size={20} style={{ color: 'var(--primary)' }} />
+                Repositorio de Modelos
             </h2>
 
-            <div className="space-y-4">
-                {/* Progress bar for active pull */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {pullProgress && (
-                    <div className="bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-lg mb-4">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">
-                                Descargando: {pullProgress.model}
-                            </span>
-                            <span className="text-xs font-bold text-indigo-400">{pullProgress.percent}%</span>
+                    <div className="card-glass" style={{ padding: '1rem', background: 'var(--primary-glow)', borderColor: 'var(--primary)', marginBottom: '1rem' }}>
+                        <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>DESCARGANDO: {pullProgress.model}</span>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)' }}>{pullProgress.percent}%</span>
                         </div>
-                        <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                            <div
-                                className="bg-indigo-500 h-full transition-all duration-500"
-                                style={{ width: `${pullProgress.percent}%` }}
-                            />
+                        <div style={{ width: '100%', height: '4px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px', overflow: 'hidden' }}>
+                            <div style={{ width: `${pullProgress.percent}%`, height: '100%', background: 'var(--primary)', boxShadow: '0 0 10px var(--primary)' }} />
                         </div>
                     </div>
                 )}
 
-                <div className="space-y-2 max-h-[300px] overflow-auto pr-2">
-                    {models?.map(model => (
-                        <div key={model.name} className="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
-                            <div className="flex-1">
-                                <p className="text-sm font-semibold">{model.name}</p>
-                                <div className="flex gap-2">
-                                    <p className="text-[10px] text-slate-500">{model.details?.parameter_size || 'N/A'}</p>
-                                    <p className="text-[10px] text-indigo-400 font-bold">
-                                        {(model.size / Math.pow(1024, 3)).toFixed(2)} GB
-                                    </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                    {models?.length === 0 ? <p style={{ fontSize: '0.8rem', opacity: 0.3, textAlign: 'center', padding: '2rem' }}>No hay modelos instalados</p> :
+                        models?.map(model => (
+                            <div key={model.name} className="card-glass" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div>
+                                    <p style={{ fontSize: '0.9rem', fontWeight: 700 }}>{model.name}</p>
+                                    <div style={{ display: 'flex', gap: '1rem', marginTop: '4px' }}>
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{model.details?.parameter_size || 'N/A'}</span>
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 800 }}>
+                                            {(model.size / Math.pow(1024, 3)).toFixed(2)} GB
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    <Download
+                                        size={16}
+                                        style={{ cursor: 'pointer', opacity: 0.5 }}
+                                        className="hover-text-primary transition-opacity"
+                                        onClick={() => onPull(model.name)}
+                                    />
+                                    <Trash2
+                                        size={16}
+                                        style={{ cursor: 'pointer', opacity: 0.5 }}
+                                        className="hover-text-error transition-opacity"
+                                        onClick={() => onDelete(model.name)}
+                                    />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <Download
-                                    size={16}
-                                    className="text-slate-500 cursor-pointer hover:text-indigo-400 transition-colors"
-                                    onClick={() => onPull(model.name)}
-                                />
-                                <Trash2
-                                    size={16}
-                                    className="text-slate-500 cursor-pointer hover:text-red-400 transition-colors"
-                                    onClick={() => onDelete(model.name)}
-                                />
-                            </div>
-                        </div>
-                    ))}
+                        ))}
                 </div>
             </div>
         </div>
