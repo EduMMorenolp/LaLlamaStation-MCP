@@ -67,7 +67,7 @@ export const HardwareSentinel: React.FC<HardwareSentinelProps> = ({ status }) =>
     const loadedModels = status?.loadedModels || [];
 
     const vramUsedPct = vram?.available ? Math.round((vram.used / vram.total) * 100) : 0;
-    const vramFreePct = vram?.available ? Math.round((vram.free / vram.total) * 100) : 0;
+    // vramFreePct unused
 
     const saveSettings = useCallback(async () => {
         setSaving(true);

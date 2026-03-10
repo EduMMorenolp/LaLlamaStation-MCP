@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Zap, Thermometer, Wind, Clock, DollarSign, TrendingUp, Cpu, RefreshCw, Save, BarChart2, Award, AlertTriangle } from 'lucide-react';
+import { Zap, Thermometer, Clock, DollarSign, TrendingUp, Cpu, RefreshCw, Save, BarChart2, Award, AlertTriangle } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const HEADERS = () => ({ 'x-api-key': localStorage.getItem('llama_master_key') || '' });
