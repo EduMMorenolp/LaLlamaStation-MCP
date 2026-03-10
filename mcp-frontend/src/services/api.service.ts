@@ -21,7 +21,7 @@ export const getStatus = async (apiKey: string) => {
 // o usaremos el objeto appModule directamente si el frontend corre en el mismo proceso (no es el caso).
 
 // Implementaremos un helper para llamar a las tools via la API de compatibilidad o SSE.
-export const callTool = async (name: string, args: any) => {
+export const callTool = async (_name: string, args: any) => {
   // Para simplicidad en esta fase, el frontend usará fetch/axios a los endpoints de main.ts
   // que expondremos para telemetría.
   const response = await api.get(`/api/status?apiKey=${args.apiKey}`);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, ShieldAlert, XCircle } from 'lucide-react';
+import { Shield, XCircle } from 'lucide-react';
 
 interface IpLogsProps {
     logs: any[];
