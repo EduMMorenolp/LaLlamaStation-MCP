@@ -246,27 +246,61 @@ const App: React.FC = () => {
         return (
           <>
             <Telemetry status={status} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: '24px', alignItems: 'start' }}>
-              <div className="card-glass" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: '520px' }}>
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Terminal size={16} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '2px', color: 'var(--text-dim)' }}>PLAYGROUND</span>
-                </div>
-                <div style={{ flex: 1, padding: '16px' }}>
-                  <ChatPlayground models={models} onSendMessage={handleSendMessage} />
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) 300px', gap: '24px', alignItems: 'start', marginTop: '8px' }}>
+              {/* Accesos Recientes */}
+              <div className="card-glass" style={{ padding: '24px' }}>
+                <h3 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', color: 'var(--text-muted)', marginBottom: '20px', textTransform: 'uppercase' }}>Últimos Accesos al Perímetro</h3>
+                {(status?.recentLogs?.length || 0) === 0 ? (
+                  <p style={{ fontSize: '13px', opacity: 0.2, textAlign: 'center', padding: '24px' }}>Sin actividad registrada</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(status?.recentLogs || []).slice(0, 8).map((log: any, i: number) => (
+                      <div key={`log-${i}-${log.ip}-${log.timestamp}`} style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '10px 14px',
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: '8px'
+                      }}>
+                        <div style={{ width: '7px', height: '7px', borderRadius: '50%', flexShrink: 0, background: log.status === 'Success' ? 'var(--success)' : 'var(--error)' }} />
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--accent)', minWidth: '130px' }}>{log.ip}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-dim)', flex: 1 }}>{log.action || 'system_call'}</span>
+                        <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: log.status === 'Success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: log.status === 'Success' ? 'var(--success)' : 'var(--error)' }}>
+                          {log.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Panel lateral: Modelos + Estado Seguridad */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <SecurityPanel blacklistedIps={status?.blacklistedIps || []} onUnban={handleUnban} onPanic={handlePanic} />
                 <div className="card-glass" style={{ padding: '20px' }}>
                   <h3 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase' }}>Modelos Disponibles</h3>
-                  {models?.length === 0 ? (
+                  {(models?.length || 0) === 0 ? (
                     <p style={{ fontSize: '12px', opacity: 0.3, textAlign: 'center', padding: '16px' }}>No hay modelos instalados</p>
                   ) : (
-                    models.slice(0, 4).map((m: any) => (
-                      <div key={m.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
-                        <span style={{ fontSize: '12px' }}>{m.name}</span>
-                        <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 700 }}>{(m.size / Math.pow(1024, 3)).toFixed(1)}GB</span>
+                    (models || []).slice(0, 5).map((m: any, i: number) => (
+                      <div key={m?.name || `model-${i}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
+                        <span style={{ fontSize: '12px' }}>{m?.name || 'N/A'}</span>
+                        <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 700 }}>
+                          {m?.size ? (m.size / Math.pow(1024, 3)).toFixed(1) + 'GB' : '-'}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="card-glass" style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase' }}>IPs Bloqueadas</h3>
+                  {(status?.blacklistedIps?.length || 0) === 0 ? (
+                    <p style={{ fontSize: '12px', opacity: 0.3, textAlign: 'center', padding: '12px' }}>Perímetro Limpio ✓</p>
+                  ) : (
+                    (status?.blacklistedIps || []).map((ip: string) => (
+                      <div key={ip} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--error)' }}>{ip}</span>
+                        <button onClick={() => handleUnban(ip)} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '4px', color: 'var(--error)', cursor: 'pointer' }}>UNBAN</button>
                       </div>
                     ))
                   )}
@@ -278,15 +312,20 @@ const App: React.FC = () => {
       case 'models':
         return <ModelList models={models} pullProgress={pullProgress} onPull={handlePull} onDelete={handleDeleteModel} />;
       case 'security':
-        return <IpLogs logs={status?.recentLogs} onBan={handleBan} />;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <SecurityPanel blacklistedIps={status?.blacklistedIps || []} onUnban={handleUnban} onPanic={handlePanic} />
+            <IpLogs logs={status?.recentLogs} onBan={handleBan} />
+          </div>
+        );
       case 'playground':
         return (
-          <div className="card-glass" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 220px)' }}>
+          <div className="card-glass" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 160px)' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Terminal size={16} style={{ color: 'var(--accent)' }} />
-              <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '2px', color: 'var(--text-dim)' }}>TERMINAL MCP</span>
+              <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '2px', color: 'var(--text-dim)' }}>TERMINAL DE INFERENCIA MCP</span>
             </div>
-            <div style={{ flex: 1, padding: '16px' }}>
+            <div style={{ flex: 1, padding: '16px', overflow: 'hidden' }}>
               <ChatPlayground models={models} onSendMessage={handleSendMessage} />
             </div>
           </div>

@@ -20,7 +20,7 @@ const SUGGESTED_MODELS = [
 export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPull, onDelete }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
-    const installedNames = models?.map(m => m.name) || [];
+    const installedNames = models?.filter(m => !!m?.name).map(m => m.name) || [];
 
     const handleManualPull = () => {
         if (searchTerm.trim()) {
