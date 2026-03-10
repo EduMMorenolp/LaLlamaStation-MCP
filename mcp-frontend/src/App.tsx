@@ -18,12 +18,7 @@ import {
   Activity,
   Terminal,
   Layers,
-  Search,
-  Check,
-  Zap,
-  Bot,
-  Cpu,
-  Server
+  Cpu
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -235,17 +230,47 @@ const App: React.FC = () => {
     );
   }
 
+  const getSectionInfo = () => {
+    switch (activeTab) {
+      case 'dashboard': return { title: 'DASHBOARD', sub: 'Sistema Operando en Tiempo Real' };
+      case 'playground': return { title: 'PLAYGROUND', sub: 'Terminal de Inferencia Directa' };
+      case 'models': return { title: 'REPOSITORIO DE MODELOS', sub: 'Gestiona tu Arsenal de LLMs Locales' };
+      case 'security': return { title: 'CENTRO DE SEGURIDAD', sub: `${status?.recentLogs?.length || 0} Sesiones Registradas` };
+      default: return { title: activeTab.toUpperCase(), sub: '' };
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return (
           <>
             <Telemetry status={status} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 400px', gap: '32px' }}>
-              <ChatPlayground models={models} onSendMessage={handleSendMessage} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                <ModelList models={models} pullProgress={pullProgress} onPull={handlePull} onDelete={handleDeleteModel} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: '24px', alignItems: 'start' }}>
+              <div className="card-glass" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: '520px' }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Terminal size={16} style={{ color: 'var(--accent)' }} />
+                  <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '2px', color: 'var(--text-dim)' }}>PLAYGROUND</span>
+                </div>
+                <div style={{ flex: 1, padding: '16px' }}>
+                  <ChatPlayground models={models} onSendMessage={handleSendMessage} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <SecurityPanel blacklistedIps={status?.blacklistedIps || []} onUnban={handleUnban} onPanic={handlePanic} />
+                <div className="card-glass" style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase' }}>Modelos Disponibles</h3>
+                  {models?.length === 0 ? (
+                    <p style={{ fontSize: '12px', opacity: 0.3, textAlign: 'center', padding: '16px' }}>No hay modelos instalados</p>
+                  ) : (
+                    models.slice(0, 4).map((m: any) => (
+                      <div key={m.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
+                        <span style={{ fontSize: '12px' }}>{m.name}</span>
+                        <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 700 }}>{(m.size / Math.pow(1024, 3)).toFixed(1)}GB</span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </>
@@ -255,7 +280,17 @@ const App: React.FC = () => {
       case 'security':
         return <IpLogs logs={status?.recentLogs} onBan={handleBan} />;
       case 'playground':
-        return <ChatPlayground models={models} onSendMessage={handleSendMessage} />;
+        return (
+          <div className="card-glass" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 220px)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Terminal size={16} style={{ color: 'var(--accent)' }} />
+              <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '2px', color: 'var(--text-dim)' }}>TERMINAL MCP</span>
+            </div>
+            <div style={{ flex: 1, padding: '16px' }}>
+              <ChatPlayground models={models} onSendMessage={handleSendMessage} />
+            </div>
+          </div>
+        );
       default:
         return null;
     }
@@ -341,9 +376,18 @@ const App: React.FC = () => {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="status-badge">
-            <div className="status-led online" />
-            <span>Escudo Activo</span>
+          <div className="model-badge" style={{ marginBottom: '12px', background: 'rgba(79, 140, 255, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <Cpu size={12} style={{ color: 'var(--accent)' }} />
+              <span style={{ fontSize: '11px', fontWeight: 600 }}>MOTOR OLLAMA</span>
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+              {models?.length || 0} Modelos Disponibles
+            </div>
+          </div>
+          <div className="conn-status-wrap">
+            <div className={`status-led ${status?.ollamaRunning ? 'online' : 'offline'}`} />
+            <span className="status-label">{status?.ollamaRunning ? 'Conectado' : 'Sin conexión'}</span>
           </div>
         </div>
       </aside>
@@ -352,15 +396,15 @@ const App: React.FC = () => {
       <div className="view-area">
         <header className="view-header">
           <div className="header-info">
-            <h2>{activeTab.toUpperCase()}</h2>
-            <p>{status?.loadedModels?.length || 0} Modelos en Memoria VRAM</p>
+            <h2>{getSectionInfo().title}</h2>
+            <p>{getSectionInfo().sub}</p>
           </div>
 
           <div className="flex-between gap-md">
             <button onClick={fetchData} className="btn-icon" title="Refrescar Estado">
               <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             </button>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--accent), #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '13px', border: '1px solid rgba(255,255,255,0.1)' }}>
               AD
             </div>
           </div>
