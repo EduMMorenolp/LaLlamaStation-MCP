@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Database, Globe, HardDrive } from 'lucide-react';
+import { Activity, Globe, HardDrive, ShieldAlert } from 'lucide-react';
 
 interface TelemetryProps {
     status: any;

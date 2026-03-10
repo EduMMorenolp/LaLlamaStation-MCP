@@ -52,7 +52,6 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
                                     size={16}
                                     className="text-slate-500 cursor-pointer hover:text-indigo-400 transition-colors"
                                     onClick={() => onPull(model.name)}
-                                    title="Actualizar modelo"
                                 />
                                 <Trash2
                                     size={16}

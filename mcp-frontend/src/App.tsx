@@ -6,7 +6,6 @@ import { SecurityPanel } from './components/SecurityPanel';
 import { ModelList } from './components/ModelList';
 import { ChatPlayground } from './components/ChatPlayground';
 import {
-  socket,
   subscribeToPullProgress,
   subscribeToSecurityAlerts,
   subscribeToNewAccess
