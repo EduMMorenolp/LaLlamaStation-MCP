@@ -345,10 +345,21 @@ const App: React.FC = () => {
         return (
           <>
             <div className="view-header">
-              <div><h1>Hardware Sentinel</h1><p>Monitor de GPU, VRAM y configuración de rendimiento</p></div>
+              <div><h1>Hardware Sentinel</h1><p>Monitor de GPU, VRAM y configuracion de rendimiento</p></div>
             </div>
             <div className="view-body">
               <HardwareSentinel status={status} />
+            </div>
+          </>
+        );
+      case 'engine':
+        return (
+          <>
+            <div className="view-header">
+              <div><h1>AI Engine Tuner</h1><p>Consumo energetico, contador de tokens y ahorro vs cloud</p></div>
+            </div>
+            <div className="view-body">
+              <AiEngineTuner status={status} />
             </div>
           </>
         );
@@ -406,7 +417,7 @@ const App: React.FC = () => {
 
           <div className="nav-section">
             <div className="section-header">
-              <span className="section-title">Opciones Rápidas</span>
+              <span className="section-title">Opciones Rapidas</span>
             </div>
             <div className="commands-grid">
               <button className="cmd-pill" onClick={() => setActiveTab('models')}>
@@ -415,8 +426,11 @@ const App: React.FC = () => {
               <button className="cmd-pill" onClick={() => setActiveTab('security')}>
                 <Shield size={14} /> Seguridad
               </button>
-              <button className="cmd-pill" style={{ gridColumn: '1/-1' }} onClick={() => setActiveTab('hardware')}>
-                <Cpu size={14} /> Hardware Sentinel
+              <button className="cmd-pill" onClick={() => setActiveTab('hardware')}>
+                <Cpu size={14} /> HW Sentinel
+              </button>
+              <button className="cmd-pill" onClick={() => setActiveTab('engine')}>
+                <Zap size={14} /> Engine Tuner
               </button>
             </div>
           </div>
