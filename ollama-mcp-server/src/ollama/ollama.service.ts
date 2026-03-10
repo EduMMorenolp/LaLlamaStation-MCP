@@ -1,5 +1,6 @@
 import axios from "axios";
 import * as fs from "fs";
+import { Server as SocketServer } from "socket.io";
 
 export interface OllamaModel {
   name: string;
@@ -13,9 +14,15 @@ export class OllamaService {
   private readonly blacklist: Set<string> = new Set();
   private readonly failedAttempts: Map<string, number> = new Map();
   private readonly sessionCache: Map<string, any[]> = new Map();
+  private io?: SocketServer;
+  private readonly pullStates: Map<string, { percent: number; status: string; lastUpdate: number }> = new Map();
 
   constructor() {
     this.baseUrl = process.env.OLLAMA_URL || "http://ollama:11434";
+  }
+
+  setIo(io: SocketServer) {
+    this.io = io;
   }
 
   async listModels(): Promise<OllamaModel[]> {
@@ -83,12 +90,49 @@ export class OllamaService {
   }
 
   async pullModel(model: string): Promise<void> {
-    // Note: Pull can take a long time and is usually a stream.
-    // For simplicity in MCP, we'll wait for completion or trigger it.
-    await axios.post(`${this.baseUrl}/api/pull`, {
-      name: model,
-      stream: false,
-    });
+    const status = await this.getServerStatus();
+    // Validación de espacio simple (ej: requiere al menos 5GB libres para intentar descargar un modelo medio)
+    if (status.diskSpace.free < 2) {
+      const msg = `Espacio insuficiente para descargar ${model}. Libres: ${status.diskSpace.free.toFixed(2)}GB`;
+      if (this.io) this.io.emit("security-alert", { type: "error", message: msg });
+      throw new Error(msg);
+    }
+
+    try {
+      const response = await axios.post(`${this.baseUrl}/api/pull`, {
+        name: model,
+        stream: true,
+      }, { responseType: 'stream' });
+
+      response.data.on('data', (chunk: Buffer) => {
+        try {
+          const lines = chunk.toString().split('\n');
+          for (const line of lines) {
+            if (!line) continue;
+            const update = JSON.parse(line);
+            if (update.status === 'downloading' && update.total) {
+              const percent = Math.round((update.completed / update.total) * 100);
+              const prevState = this.pullStates.get(model);
+              const now = Date.now();
+
+              // Throttling: 1% o 2 segundos
+              if (!prevState || percent >= prevState.percent + 1 || now - prevState.lastUpdate > 2000) {
+                this.pullStates.set(model, { percent, status: update.status, lastUpdate: now });
+                if (this.io) this.io.emit("pull-progress", { model, percent, status: update.status });
+              }
+            } else if (update.status === 'success') {
+              this.pullStates.delete(model);
+              if (this.io) this.io.emit("pull-progress", { model, percent: 100, status: 'completed' });
+            }
+          }
+        } catch (e) {
+          // Ignorar errores de parsing parcial
+        }
+      });
+    } catch (e: any) {
+      if (this.io) this.io.emit("security-alert", { type: "error", message: `Fallo al descargar ${model}: ${e.message}` });
+      throw e;
+    }
   }
 
   async getServerStatus(): Promise<any> {
@@ -146,6 +190,11 @@ export class OllamaService {
       timestamp: new Date().toISOString(),
     });
     if (this.requestLogs.length > 100) this.requestLogs.shift();
+
+    // Notificar nueva IP o acceso (Fase 4)
+    if (this.io && status === "Success") {
+      this.io.emit("new-access", { ip, action, timestamp: new Date().toISOString() });
+    }
   }
 
   isBlacklisted(ip: string): boolean {
@@ -166,6 +215,21 @@ export class OllamaService {
     if (attempts >= 5) {
       this.banIp(ip);
       console.warn(`🚨 IP ${ip} auto-baneada tras 5 intentos fallidos.`);
+      if (this.io) {
+        this.io.emit("security-alert", { 
+          type: "ban", 
+          ip, 
+          message: `IP ${ip} ha sido bloqueada automáticamente tras 5 intentos fallidos.` 
+        });
+      }
+    } else {
+      if (this.io) {
+        this.io.emit("security-alert", { 
+          type: "auth_failed", 
+          ip, 
+          message: `Intento de acceso fallido desde ${ip} (${attempts}/5)` 
+        });
+      }
     }
   }
 }
