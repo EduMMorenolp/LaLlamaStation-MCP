@@ -85,6 +85,17 @@ export class OllamaTools {
               required: ["model", "messages", "apiKey"],
             },
           },
+          {
+            name: "get_server_status",
+            description: "Get Ollama server telemetry (VRAM, Disk, Ngrok)",
+            inputSchema: {
+              type: "object",
+              properties: {
+                apiKey: { type: "string" },
+              },
+              required: ["apiKey"],
+            },
+          },
         ],
       };
     });
@@ -135,6 +146,14 @@ export class OllamaTools {
             );
             return {
               content: [{ type: "text", text: chatResponse.content }],
+            };
+
+          case "get_server_status":
+            const status = await this.ollamaService.getServerStatus();
+            return {
+              content: [
+                { type: "text", text: JSON.stringify(status, null, 2) },
+              ],
             };
 
           default:

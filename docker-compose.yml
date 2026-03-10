@@ -17,6 +17,8 @@ services:
       context: ./ollama-mcp-server
       dockerfile: Dockerfile
     container_name: mcp-server-app
+    volumes:
+      - ollama_data:/root/.ollama:ro
     depends_on:
       - ollama
     environment:

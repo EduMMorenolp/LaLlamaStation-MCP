@@ -2,10 +2,31 @@ import express, { Request, Response } from "express";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { AppModule } from "./app.module.js";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
+import { createServer } from "http";
+import { Server as SocketServer } from "socket.io";
 
 const app = express();
-app.use(express.json()); // Necesario para procesar JSON en la API estándar
+
+// --- Middleware de Seguridad (Fase 1) ---
+app.use(helmet());
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // Límite de 100 peticiones por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+app.use(express.json());
 const port = process.env.APP_PORT || 3000;
+const httpServer = createServer(app);
+const io = new SocketServer(httpServer, {
+  cors: {
+    origin: "*", // En producción se debe restringir
+  },
+});
 
 const server = new Server(
   {
@@ -105,11 +126,14 @@ app.post("/messages", async (req: Request, res: Response) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`\n🚀 Servidor Híbrido Iniciado`);
+httpServer.listen(port, () => {
+  console.log(`\n🚀 Servidor Híbrido Blindado Iniciado`);
   console.log(`----------------------------------`);
   console.log(`MCP SSE: http://localhost:${port}/sse`);
   console.log(`OpenAI API: http://localhost:${port}/v1`);
+  console.log(`WebSockets: Activo`);
   console.log(`----------------------------------\n`);
   console.log(`Utiliza tu API_KEY definida en el .env para autenticarte.`);
 });
+
+export { io };
