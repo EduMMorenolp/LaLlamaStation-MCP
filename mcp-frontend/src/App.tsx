@@ -10,10 +10,31 @@ import {
   subscribeToSecurityAlerts,
   subscribeToNewAccess
 } from './services/socket.service';
-import { Shield, Key, RefreshCw, Bell } from 'lucide-react';
+import {
+  Shield,
+  Key,
+  RefreshCw,
+  Bell,
+  Eye,
+  EyeOff,
+  Activity,
+  Terminal,
+  Layers,
+  Search,
+  Check,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  History,
+  Trash2,
+  Download,
+  Database,
+  Globe
+} from 'lucide-react';
 
 const App: React.FC = () => {
-  const [apiKey, setApiKey] = useState(localStorage.getItem('mcp_api_key') || '');
+  const [apiKey, setApiKey] = useState('');
+  const [apiKeyInput, setApiKeyInput] = useState(''); // Estado separado para el input
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [status, setStatus] = useState<any>(null);
   const [models, setModels] = useState<any[]>([]);
@@ -41,7 +62,8 @@ const App: React.FC = () => {
   }, [apiKey, API_BASE]);
 
   useEffect(() => {
-    if (apiKey) fetchData();
+    // Si ya tenemos una API Key vÁlida (cargada por localStorage o auth), suscribimos sockets
+    if (!isAuthorized || !apiKey) return;
 
     const cleanupAccess = (data: any) => {
       // Generar ID único usando timestamp + random para evitar duplicados en React keys
@@ -137,128 +159,201 @@ const App: React.FC = () => {
     }
   };
 
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  const [showKey, setShowKey] = useState(false);
+  const [rememberKey, setRememberKey] = useState(true);
+
+  // Cargar key recordada al inicio
+  useEffect(() => {
+    const saved = localStorage.getItem('mcp_master_key');
+    if (saved) {
+      setApiKeyInput(saved);
+      setApiKey(saved);
+      // Aquí podrías disparar fetchData automáticamente o dejar que el usuario pulse entrar
+    }
+  }, []);
+
+  // Disparar fetchData cuando la apiKey real cambie (solo por load inicial o handleAuth exitoso)
+  useEffect(() => {
+    if (apiKey) fetchData();
+  }, [apiKey, fetchData]);
+
+  const handleAuth = async () => {
+    // Solo cuando se pulsa el botón, actualizamos la apiKey REAL
+    const keyToUse = apiKeyInput.trim();
+    if (!keyToUse) return;
+
+    if (rememberKey) {
+      localStorage.setItem('mcp_master_key', keyToUse);
+    } else {
+      localStorage.removeItem('mcp_master_key');
+    }
+
+    setApiKey(keyToUse); // Esto disparará el useEffect de arriba una sola vez
+  };
+
   if (!isAuthorized) {
     return (
-      <div className="flex-center" style={{ minHeight: '100vh' }}>
-        <div className="bg-cosmic" />
-        <div className="card-glass p-8 w-full animate-fade" style={{ maxWidth: '400px', textAlign: 'center' }}>
-          <div className="flex-center mb-6">
-            <img src="/logo.png" alt="Logo" style={{ width: '100px', filter: 'drop-shadow(0 0 20px var(--primary-glow))' }} />
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-avatar">
+            <img src="/logo.png" alt="User" />
           </div>
-          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Ollama MCP Shield</h1>
-          <p style={{ marginBottom: '2rem' }}>Master Key Required</p>
+          <div className="login-title">
+            <h2>Acceso Restringido</h2>
+            <p>Master Session Key • SYMBIOSIS MCP</p>
+          </div>
 
-          <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-            <Key style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} size={18} />
+          <div className="pin-group" style={{ position: 'relative' }}>
             <input
-              type="password"
-              placeholder="API_KEY"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="input-field"
-              style={{ paddingLeft: '40px' }}
+              type={showKey ? "text" : "password"}
+              placeholder="••••••••"
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+              className="pin-input"
             />
+            <button
+              onClick={() => setShowKey(!showKey)}
+              style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            >
+              {showKey ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </div>
 
-          <button
-            onClick={fetchData}
-            className="btn btn-primary"
-            style={{ width: '100%' }}
-          >
-            ENTRAR AL SISTEMA
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', justifyContent: 'center' }}>
+            <input
+              type="checkbox"
+              id="remember"
+              checked={rememberKey}
+              onChange={(e) => setRememberKey(e.target.checked)}
+              style={{ accentColor: 'var(--accent)' }}
+            />
+            <label htmlFor="remember" style={{ fontSize: '12px', color: 'var(--text-dim)', cursor: 'pointer' }}>
+              Recordar Master Key en esta estación
+            </label>
+          </div>
+
+          <button onClick={handleAuth} className="auth-btn">
+            Sincronizar Escudo
           </button>
+
+          <div style={{ marginTop: '24px', opacity: 0.3, fontSize: '10px' }}>
+            ARGENTEIA CORE V5 • AMBIENTE PROTEGIDO
+          </div>
         </div>
       </div>
     );
   }
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return (
+          <>
+            <Telemetry status={status} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 400px', gap: '32px' }}>
+              <ChatPlayground models={models} onSendMessage={handleSendMessage} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                <ModelList models={models} pullProgress={pullProgress} onPull={handlePull} onDelete={handleDeleteModel} />
+                <SecurityPanel blacklistedIps={status?.blacklistedIps || []} onUnban={handleUnban} onPanic={handlePanic} />
+              </div>
+            </div>
+          </>
+        );
+      case 'models':
+        return <ModelList models={models} pullProgress={pullProgress} onPull={handlePull} onDelete={handleDeleteModel} />;
+      case 'security':
+        return <IpLogs logs={status?.recentLogs} onBan={handleBan} />;
+      case 'playground':
+        return <ChatPlayground models={models} onSendMessage={handleSendMessage} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="app-container">
-      <div className="bg-cosmic" />
+    <div className="app-layout">
+      {/* Sidebar - ARGenteIA Style */}
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <div className="logo-wrap">
+            <div className="logo-icon">
+              <img src="/logo.png" alt="Logo" />
+            </div>
+            <span className="logo-text">SYMBIOSIS</span>
+          </div>
+        </div>
 
-      {/* Toasts */}
-      <div className="toast-container">
-        {notifications.map(n => (
-          <div key={n.id} className={`toast toast-${n.type === 'error' ? 'error' : 'info'}`}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: n.type === 'error' ? 'var(--error)' : 'var(--primary)' }} />
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'white' }}>{n.type?.toUpperCase()}</p>
-              <p style={{ fontSize: '0.7rem', opacity: 0.8 }}>{n.message || n.action}</p>
+        <nav className="sidebar-nav">
+          <div className="nav-section">
+            <span className="section-label">Sistema</span>
+            <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+              <Activity size={18} />
+              Inferencia & CPU
+            </div>
+            <div className={`nav-item ${activeTab === 'playground' ? 'active' : ''}`} onClick={() => setActiveTab('playground')}>
+              <Terminal size={18} />
+              Playground
             </div>
           </div>
-        ))}
+
+          <div className="nav-section">
+            <span className="section-label">Recursos</span>
+            <div className={`nav-item ${activeTab === 'models' ? 'active' : ''}`} onClick={() => setActiveTab('models')}>
+              <Layers size={18} />
+              Model Repository
+            </div>
+          </div>
+
+          <div className="nav-section">
+            <span className="section-label">Seguridad</span>
+            <div className={`nav-item ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
+              <Shield size={18} />
+              Acceso & Tráfico
+            </div>
+          </div>
+
+          <div className="nav-section" style={{ marginTop: 'auto' }}>
+            <div className="nav-item" onClick={handleCleanWorkspace} style={{ color: 'var(--text-muted)' }}>
+              <RefreshCw size={18} />
+              Clean Temporal
+            </div>
+          </div>
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="status-badge">
+            <div className="status-led online" />
+            <span>Escudo Activo</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="view-area">
+        <header className="view-header">
+          <div className="header-info">
+            <h2>{activeTab.toUpperCase()}</h2>
+            <p>{status?.loadedModels?.length || 0} Modelos en Memoria VRAM</p>
+          </div>
+
+          <div className="flex-between gap-md">
+            <button onClick={fetchData} className="btn-icon" title="Refrescar Estado">
+              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.1)' }}>
+              AD
+            </div>
+          </div>
+        </header>
+
+        <div className="view-body">
+          {renderContent()}
+        </div>
       </div>
-
-      {/* Header */}
-      <header className="flex-between animate-fade">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <img src="/logo.png" alt="Logo" style={{ width: '50px' }} />
-          <div>
-            <h1 style={{ fontSize: '1.8rem', background: 'linear-gradient(to right, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              DASHBOARD MCP OLLAMA
-            </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '4px' }}>
-              <span style={{ width: '8px', height: '8px', background: 'var(--success)', borderRadius: '50%', boxShadow: '0 0 10px var(--success)' }} />
-              <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--success)' }}>ESCUDO ACTIVO</p>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ position: 'relative', cursor: 'pointer' }} className="group">
-            <Bell size={20} className="text-dim hover:text-white" />
-            {notifications.length > 0 && <span style={{ position: 'absolute', top: -2, right: -2, width: '8px', height: '8px', background: 'var(--error)', borderRadius: '50%' }} />}
-          </div>
-
-          <button onClick={fetchData} className="btn btn-secondary" title="Sincronizar">
-            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-          </button>
-
-          <button onClick={handleCleanWorkspace} className="btn btn-secondary" style={{ fontSize: '0.7rem' }}>
-            CLEAN
-          </button>
-
-          <div style={{ width: '1px', height: '2rem', background: 'var(--border-light)' }} />
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '0.75rem', fontWeight: 800, color: 'white' }}>ADMIN</p>
-              <p style={{ fontSize: '0.6rem', opacity: 0.5 }}>MASTER SESSION</p>
-            </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justify- content: 'center', fontWeight: 'bold' }}>
-            AD
-          </div>
-        </div>
     </div>
-      </header >
-
-      <Telemetry status={status} />
-
-      <div className="grid-layout">
-        <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <ChatPlayground models={models} onSendMessage={handleSendMessage} />
-          <IpLogs logs={status?.recentLogs} onBan={handleBan} />
-        </div>
-
-        <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <ModelList
-            models={models}
-            pullProgress={pullProgress}
-            onPull={handlePull}
-            onDelete={handleDeleteModel}
-          />
-          <SecurityPanel
-            blacklistedIps={status?.blacklistedIps || []}
-            onUnban={handleUnban}
-            onPanic={handlePanic}
-          />
-        </div>
-      </div>
-
-      <footer style={{ marginTop: 'auto', textAlign: 'center', opacity: 0.3, fontSize: '0.7rem', padding: '2rem' }}>
-        &copy; 2026 OLLAMA MCP PROTECTED SERVER • ARGENTEIA CORE V5
-      </footer>
-    </div >
   );
 };
 

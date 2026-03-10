@@ -23,52 +23,20 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status }) => {
                     </div>
                 </div>
             )}
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-                <div className="card-glass kpi-card">
-                    <div className="flex-between">
-                        <div className="kpi-label">Almacenamiento Local</div>
-                        <HardDrive size={18} className="text-dim" style={{ color: isLowSpace ? 'var(--error)' : 'var(--primary)' }} />
-                    </div>
-                    <div className="kpi-value">
-                        {diskSpace?.free?.toFixed(1)}<span style={{ fontSize: '0.8rem', opacity: 0.5 }}> / {diskSpace?.total?.toFixed(0)} GB</span>
-                    </div>
-                    <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '10px', overflow: 'hidden' }}>
-                        <div style={{
-                            width: `${usedPercent}%`,
-                            height: '100%',
-                            background: isLowSpace ? 'var(--error)' : 'var(--primary)',
-                            boxShadow: `0 0 10px ${isLowSpace ? 'var(--error)' : 'var(--primary-glow)'}`
-                        }} />
-                    </div>
-                </div>
-
-                <div className="card-glass kpi-card">
-                    <div className="flex-between">
-                        <div className="kpi-label">Carga de VRAM</div>
-                        <Activity size={18} style={{ color: 'var(--success)' }} />
-                    </div>
-                    <div className="kpi-value">
-                        {loadedModels?.length || 0} <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Modelos Activos</span>
-                    </div>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>GPU trabajando en estado óptimo</p>
-                </div>
-
-                <div className="card-glass kpi-card" style={{ gridColumn: 'span 2' }}>
-                    <div className="flex-between">
-                        <div className="kpi-label">Puerta de Enlace (NGROK)</div>
-                        <Globe size={18} style={{ color: 'var(--warning)' }} />
-                    </div>
-                    <div className="kpi-value" style={{ fontSize: '1.2rem', fontFamily: 'var(--font-mono)', color: 'var(--warning)' }}>
-                        {ngrokInfo?.url ? (
-                            <a href={ngrokInfo.url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
-                                {ngrokInfo.url.replace('https://', '')}
-                            </a>
-                        ) : 'OFFLINE'}
-                    </div>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Acceso remoto seguro habilitado vía túnel TLS</p>
-                </div>
+            <div className="flex-between">
+                <div className="kpi-label">Puerta de Enlace (NGROK)</div>
+                <Globe size={18} style={{ color: 'var(--warning)' }} />
             </div>
+            <div className="kpi-value" style={{ fontSize: '1.2rem', fontFamily: 'var(--font-mono)', color: 'var(--warning)' }}>
+                {ngrokInfo?.url ? (
+                    <a href={ngrokInfo.url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                        {ngrokInfo.url.replace('https://', '')}
+                    </a>
+                ) : 'OFFLINE'}
+            </div>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Acceso remoto seguro habilitado vía túnel TLS</p>
         </div>
+            </div >
+        </div >
     );
 };

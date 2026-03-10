@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Settings, Terminal } from 'lucide-react';
+import { Send, Settings2, Terminal, RefreshCw, X } from 'lucide-react';
 
 interface ChatPlaygroundProps {
     models: any[];
@@ -12,9 +12,8 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
     const [history, setHistory] = useState<any[]>([]);
     const [temperature, setTemperature] = useState(0.7);
     const [numCtx, setNumCtx] = useState(4096);
-    const [sessionId, setSessionId] = useState(`session-${Date.now()}`);
-    const [showRaw, setShowRaw] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
 
     const handleSend = async () => {
         if (!message.trim() || loading) return;
@@ -27,8 +26,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
         try {
             const response = await onSendMessage(selectedModel, message, {
                 temperature,
-                num_ctx: numCtx,
-                session_id: sessionId
+                num_ctx: numCtx
             });
 
             setHistory(prev => [...prev, response]);
@@ -40,118 +38,86 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
     };
 
     return (
-        <div className="card-glass p-6 animate-fade" style={{ height: '600px', display: 'flex', flexDirection: 'column' }}>
-            <div className="flex-between mb-4">
-                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <Terminal size={20} style={{ color: 'var(--primary)' }} />
-                    Playground de Inferencia
-                </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <button
-                        onClick={() => setShowRaw(!showRaw)}
-                        className={`btn ${showRaw ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ padding: '4px 12px', fontSize: '0.6rem' }}
-                    >
-                        DEBUG JSON
-                    </button>
-                    <Settings size={18} style={{ color: 'var(--text-muted)', cursor: 'pointer' }} />
-                </div>
-            </div>
-
-            <div className="grid-layout flex-1 overflow-hidden" style={{ gap: '1.5rem' }}>
-                {/* Chat Area */}
-                <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', overflow: 'hidden' }}>
-                    <div className="flex-1 overflow-auto p-4 space-y-4">
-                        {history.length === 0 && (
-                            <div className="flex-center" style={{ height: '100%', flexDirection: 'column', opacity: 0.3 }}>
-                                <Terminal size={48} style={{ marginBottom: '1rem' }} />
-                                <p style={{ fontSize: '0.8rem' }}>Sistema listo para comandos...</p>
-                            </div>
-                        )}
-                        {history.map((msg, i) => (
-                            <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                                <div className={`chat-msg ${msg.role === 'user' ? 'chat-msg-user' : 'chat-msg-bot'} ${msg.isError ? 'badge-error' : ''}`}>
-                                    {showRaw ? (
-                                        <pre style={{ fontSize: '10px', fontFamily: 'var(--font-mono)' }}>{JSON.stringify(msg, null, 2)}</pre>
-                                    ) : (
-                                        msg.content
-                                    )}
+        <div className="flex flex-col h-full" style={{ height: '600px' }}>
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto chat-messages" style={{ paddingRight: '8px' }}>
+                {history.length === 0 ? (
+                    <div style={{ textAlign: 'center', opacity: 0.1, marginTop: '100px' }}>
+                        <Terminal size={64} style={{ margin: '0 auto 24px' }} />
+                        <p style={{ letterSpacing: '2px', fontWeight: 600 }}>SISTEMA DE INFERENCIA MCP</p>
+                    </div>
+                ) : (
+                    history.map((msg, i) => (
+                        <div key={i} className={`msg-row ${msg.role === 'user' ? 'user' : 'bot'}`}>
+                            <div className="msg-bubble">
+                                <p style={{ fontSize: '10px', fontWeight: 800, marginBottom: '8px', opacity: 0.5 }}>
+                                    {msg.role?.toUpperCase()}
+                                </p>
+                                <div className="msg-content">
+                                    {msg.content}
                                 </div>
                             </div>
-                        ))}
+                        </div>
+                    ))
+                )}
+                {loading && (
+                    <div className="msg-row bot">
+                        <div className="msg-bubble" style={{ opacity: 0.5 }}>
+                            <RefreshCw size={16} className="animate-spin" />
+                        </div>
                     </div>
+                )}
+            </div>
 
-                    <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', display: 'flex', gap: '1rem' }}>
-                        <input
-                            type="text"
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            placeholder="Prompt al motor Ollama..."
-                            className="input-field"
-                        />
-                        <button
-                            onClick={handleSend}
-                            disabled={loading}
-                            className="btn btn-primary"
-                        >
-                            <Send size={18} className={loading ? 'animate-pulse' : ''} />
-                        </button>
+            {/* Settings Overlay */}
+            {showSettings && (
+                <div className="card-glass p-6 mb-4 animate-fade" style={{ background: 'var(--bg-sidebar)', border: '1px solid var(--border)' }}>
+                    <div className="flex-between mb-6">
+                        <span className="kpi-label">Configuración del Motor</span>
+                        <X size={18} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setShowSettings(false)} />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                        <div>
+                            <label className="kpi-label" style={{ display: 'block', marginBottom: '8px' }}>Modelo Activo</label>
+                            <select
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value)}
+                                className="pin-input"
+                                style={{ padding: '12px', fontSize: '14px', textAlign: 'left', letterSpacing: '0' }}
+                            >
+                                {models.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="kpi-label" style={{ display: 'block', marginBottom: '8px' }}>Temperatura ({temperature})</label>
+                            <input
+                                type="range" min="0" max="2" step="0.1"
+                                value={temperature}
+                                onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                                style={{ width: '100%', accentColor: 'var(--accent)' }}
+                            />
+                        </div>
                     </div>
                 </div>
+            )}
 
-                {/* Settings Area */}
-                <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label className="kpi-label">Modelo Seleccionado</label>
-                        <select
-                            value={selectedModel}
-                            onChange={(e) => setSelectedModel(e.target.value)}
-                            className="input-field"
-                            style={{ fontSize: '0.8rem' }}
-                        >
-                            {models.map(m => (
-                                <option key={m.name} value={m.name}>{m.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <div className="flex-between">
-                            <label className="kpi-label">Temperatura</label>
-                            <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{temperature}</span>
-                        </div>
-                        <input
-                            type="range" min="0" max="2" step="0.1"
-                            value={temperature}
-                            onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                            style={{ accentColor: 'var(--primary)' }}
-                        />
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <div className="flex-between">
-                            <label className="kpi-label">Ventana de Contexto</label>
-                            <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{numCtx}</span>
-                        </div>
-                        <input
-                            type="range" min="512" max="32768" step="512"
-                            value={numCtx}
-                            onChange={(e) => setNumCtx(parseInt(e.target.value))}
-                            style={{ accentColor: 'var(--primary)' }}
-                        />
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: 'auto' }}>
-                        <label className="kpi-label">Master Session ID</label>
-                        <input
-                            type="text"
-                            value={sessionId}
-                            onChange={(e) => setSessionId(e.target.value)}
-                            className="input-field"
-                            style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)' }}
-                        />
-                    </div>
+            {/* Input Area */}
+            <div className="chat-input-wrap">
+                <div className="input-container">
+                    <input
+                        type="text"
+                        placeholder="Enviar protocolo a Ollama..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                        className="input-field"
+                    />
+                    <button onClick={handleSend} disabled={loading || !message.trim()} className="btn-send">
+                        {loading ? <RefreshCw size={18} className="animate-spin" /> : <Send size={18} />}
+                    </button>
+                    <button className="btn-icon" onClick={() => setShowSettings(!showSettings)}>
+                        <Settings2 size={20} />
+                    </button>
                 </div>
             </div>
         </div>

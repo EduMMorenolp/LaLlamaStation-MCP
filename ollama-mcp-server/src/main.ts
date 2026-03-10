@@ -15,7 +15,7 @@ app.use(cors()); // Habilitar CORS para desarrollo local del frontend
 app.use(helmet());
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 1000, // Límite más alto para el Dashboard
+  max: 5000, // Límite mucho más alto para el Dashboard local
   standardHeaders: true,
   legacyHeaders: false,
 });
