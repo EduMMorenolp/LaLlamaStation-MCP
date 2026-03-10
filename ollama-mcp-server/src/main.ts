@@ -5,9 +5,11 @@ import { AppModule } from "./app.module.js";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { createServer } from "http";
-import { Server as SocketServer } from "socket.io";
+import socketIo, { Server as SocketServer } from "socket.io";
+import cors from "cors";
 
 const app = express();
+app.use(cors()); // Habilitar CORS para desarrollo local del frontend
 
 // --- Middleware de Seguridad (Fase 1) ---
 app.use(helmet());
