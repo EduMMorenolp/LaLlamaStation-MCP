@@ -29,6 +29,16 @@ services:
       - NGROK_CONTAINER_NAME=mcp-ngrok-tunnel
     ports:
       - "${APP_PORT:-3000}:${APP_PORT:-3000}"
+    # habilita acceso a GPU si el host y Docker lo soportan
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    # alternativa simplificada en Compose 3.8+:
+    gpus: all
     networks:
       - mcp-network
     restart: always
@@ -55,8 +65,9 @@ services:
     ports:
       - "8080:80"
     environment:
-      - VITE_API_URL=http://localhost:3000
-      - VITE_SOCKET_URL=http://localhost:3000
+      # inside docker the backend is reachable by service name
+      - VITE_API_URL=http://mcp-server:${APP_PORT:-3000}
+      - VITE_SOCKET_URL=http://mcp-server:${APP_PORT:-3000}
     networks:
       - mcp-network
     depends_on:
