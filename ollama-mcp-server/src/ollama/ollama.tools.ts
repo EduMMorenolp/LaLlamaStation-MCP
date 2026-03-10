@@ -121,6 +121,18 @@ export class OllamaTools {
               required: ["apiKey"],
             },
           },
+          {
+            name: "delete_model",
+            description: "Delete a model from disk to free space",
+            inputSchema: {
+              type: "object",
+              properties: {
+                model: { type: "string" },
+                apiKey: { type: "string" },
+              },
+              required: ["model", "apiKey"],
+            },
+          },
         ],
       };
     });
@@ -204,6 +216,14 @@ export class OllamaTools {
             return {
               content: [
                 { type: "text", text: JSON.stringify(status, null, 2) },
+              ],
+            };
+
+          case "delete_model":
+            await this.ollamaService.deleteModel(args?.model as string);
+            return {
+              content: [
+                { type: "text", text: `Model ${args?.model} deleted successfully.` },
               ],
             };
 

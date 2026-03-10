@@ -135,6 +135,45 @@ export class OllamaService {
     }
   }
 
+  async deleteModel(model: string): Promise<void> {
+    await axios({
+      method: "DELETE",
+      url: `${this.baseUrl}/api/delete`,
+      data: { name: model },
+    });
+    if (this.io) {
+      this.io.emit("security-alert", { 
+        type: "info", 
+        message: `Modelo ${model} eliminado para liberar espacio.` 
+      });
+    }
+  }
+
+  async cleanWorkspace(): Promise<{ freed: number }> {
+    let freed = 0;
+    try {
+      // Intentamos limpiar la caché de Ollama si existe el directorio de blobs
+      const blobsPath = "/root/.ollama/models/blobs";
+      if (fs.existsSync(blobsPath)) {
+        const files = fs.readdirSync(blobsPath);
+        for (const file of files) {
+          const filePath = `${blobsPath}/${file}`;
+          const stats = fs.statSync(filePath);
+          // Borrar archivos grandes que no han sido accedidos en 24h (posibles huérfanos)
+          const now = Date.now();
+          const lastAccess = stats.atimeMs;
+          if (now - lastAccess > 24 * 60 * 60 * 1000) {
+            freed += stats.size;
+            fs.unlinkSync(filePath);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error cleaning workspace:", e);
+    }
+    return { freed: freed / Math.pow(1024, 3) };
+  }
+
   async getServerStatus(): Promise<any> {
     let diskSpace = { free: 0, total: 0 };
     try {

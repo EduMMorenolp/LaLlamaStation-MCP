@@ -86,6 +86,35 @@ const App: React.FC = () => {
     fetchData();
   };
 
+  const handleCleanWorkspace = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.post(`${API_BASE}/api/clean`, {}, { headers: { 'x-api-key': apiKey } });
+      alert(`¡Limpieza completada! Se han liberado ${res.data.freed.toFixed(2)} GB de archivos temporales.`);
+      fetchData();
+    } catch (err: any) {
+      alert("Error al limpiar workspace: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteModel = async (name: string) => {
+    if (!window.confirm(`¿Estás seguro de que quieres eliminar el modelo ${name}? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await axios.delete(`${API_BASE}/api/models/${name}`, { headers: { 'x-api-key': apiKey } });
+      fetchData();
+    } catch (err: any) {
+      alert("Error al eliminar el modelo: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePull = async (model: string) => {
     // La herramienta MCP pull_model se puede llamar via un endpoint similar
     // Por simplicidad, asumimos que el servidor maneja el pull y emite via socket
@@ -161,8 +190,16 @@ const App: React.FC = () => {
           <button
             onClick={fetchData}
             className="p-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
+            title="Sincronizar"
           >
-            <RefreshCw size={18} className="text-slate-400" />
+            <RefreshCw size={18} className={`text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={handleCleanWorkspace}
+            className="p-2 bg-slate-800 rounded-lg hover:bg-indigo-500/30 transition-colors text-xs font-bold text-slate-400 hover:text-indigo-400"
+            title="Limpiar temporales"
+          >
+            CLEAN
           </button>
           <div className="h-8 w-px bg-slate-800 mx-2" />
           <div className="flex items-center gap-3">
@@ -186,7 +223,12 @@ const App: React.FC = () => {
         </div>
 
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-          <ModelList models={models} pullProgress={pullProgress} onPull={handlePull} />
+          <ModelList
+            models={models}
+            pullProgress={pullProgress}
+            onPull={handlePull}
+            onDelete={handleDeleteModel}
+          />
           <SecurityPanel
             blacklistedIps={status?.blacklistedIps || []}
             onUnban={handleUnban}

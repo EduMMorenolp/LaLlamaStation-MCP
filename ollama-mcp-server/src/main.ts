@@ -173,6 +173,24 @@ app.post("/api/pull", authMiddleware, async (req, res) => {
   }
 });
 
+app.post("/api/clean", authMiddleware, async (req, res) => {
+  try {
+    const result = await appModule.ollamaService.cleanWorkspace();
+    res.json({ message: "Workspace cleaned", freed: result.freed });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/models/:name", authMiddleware, async (req, res) => {
+  try {
+    await appModule.ollamaService.deleteModel(req.params.name);
+    res.json({ message: `Model ${req.params.name} deleted` });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- Endpoints MCP (SSE) ---
 
 let transport: SSEServerTransport | null = null;
