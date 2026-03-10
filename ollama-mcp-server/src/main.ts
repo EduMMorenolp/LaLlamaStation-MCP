@@ -99,6 +99,16 @@ app.get("/v1/models", authMiddleware, async (req, res) => {
   }
 });
 
+// 1b. Listar modelos con datos completos (para el Dashboard)
+app.get("/api/models", authMiddleware, async (req, res) => {
+  try {
+    const models = await appModule.ollamaService.listModels();
+    res.json({ models });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 2. Chat Completions (OpenAI Format)
 app.post("/v1/chat/completions", authMiddleware, async (req, res) => {
   const { model, messages, stream } = req.body;
@@ -194,6 +204,60 @@ app.delete("/api/models/:name", authMiddleware, async (req, res) => {
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// --- Hardware Sentinel ---
+
+app.get("/api/hardware", authMiddleware, (req, res) => {
+  res.json({
+    vram: appModule.ollamaService.getVramInfo(),
+    autoUnloadMinutes: appModule.ollamaService.getAutoUnload(),
+    globalNumCtx: appModule.ollamaService.getGlobalNumCtx(),
+  });
+});
+
+app.post("/api/hardware/auto-unload", authMiddleware, (req, res) => {
+  const { minutes } = req.body;
+  if (typeof minutes !== 'number' || minutes < 0) {
+    return res.status(400).json({ error: "minutes debe ser un numero >= 0 (0 = desactivado)" });
+  }
+  appModule.ollamaService.setAutoUnload(minutes);
+  res.json({ message: `Auto-unload: ${minutes === 0 ? 'desactivado' : minutes + ' min'}`, autoUnloadMinutes: minutes });
+});
+
+app.post("/api/hardware/num-ctx", authMiddleware, (req, res) => {
+  const { numCtx } = req.body;
+  if (typeof numCtx !== 'number' || numCtx < 512) {
+    return res.status(400).json({ error: "numCtx debe ser >= 512" });
+  }
+  appModule.ollamaService.setGlobalNumCtx(numCtx);
+  res.json({ message: `Contexto global: ${numCtx} tokens`, globalNumCtx: numCtx });
+});
+
+// --- AI Engine Tuner ---
+
+app.get("/api/engine-stats", authMiddleware, (req, res) => {
+  const stats = appModule.ollamaService.getStats();
+  const gpu = appModule.ollamaService.getGpuMetrics();
+  res.json({ stats, gpu });
+});
+
+app.post("/api/engine-stats/electricity-rate", authMiddleware, (req, res) => {
+  const { rateARS } = req.body;
+  if (typeof rateARS !== 'number' || rateARS < 0) {
+    return res.status(400).json({ error: "rateARS debe ser un numero >= 0" });
+  }
+  appModule.ollamaService.updateElectricityRate(rateARS);
+  res.json({ message: `Tarifa actualizada: ${rateARS} ARS/kWh` });
+});
+
+app.post("/api/engine-stats/cloud-price", authMiddleware, (req, res) => {
+  const { pricePerMToken } = req.body;
+  if (typeof pricePerMToken !== 'number' || pricePerMToken < 0) {
+    return res.status(400).json({ error: "pricePerMToken debe ser >= 0" });
+  }
+  appModule.ollamaService.updateCloudPrice(pricePerMToken);
+  res.json({ message: `Precio cloud actualizado: $${pricePerMToken} USD/1M tokens` });
 });
 
 // --- Control de Ngrok via Docker API ---

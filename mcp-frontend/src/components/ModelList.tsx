@@ -70,7 +70,110 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
+            {/* ── Modelos Instalados ── PRIMERO ───────────────────── */}
+            <div className="card-glass p-8 animate-fade">
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '20px' }}>
+                    <Layers size={22} style={{ color: 'var(--accent)' }} />
+                    Modelos Instalados
+                    <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: 400, color: 'var(--text-muted)' }}>
+                        {models?.filter(m => m?.name).length || 0} total
+                    </span>
+                </h2>
+
+                {pullProgress && (
+                    <div className="card-glass" style={{ padding: '16px', background: 'rgba(79,140,255,0.05)', border: '1px solid var(--accent)', marginBottom: '20px' }}>
+                        <div className="flex-between" style={{ marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <RefreshCw size={14} className="animate-spin" style={{ color: 'var(--accent)' }} />
+                                <span style={{ fontSize: '12px', fontWeight: 700 }}>DESCARGANDO: {pullProgress.model}</span>
+                            </div>
+                            <span style={{ fontSize: '14px', fontWeight: 800, color: pullProgress.status === 'completed' ? 'var(--success)' : 'var(--accent)' }}>
+                                {pullProgress.percent}%
+                            </span>
+                        </div>
+                        <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px', overflow: 'hidden' }}>
+                            <div style={{
+                                width: `${pullProgress.percent}%`, height: '100%',
+                                background: pullProgress.status === 'completed' ? 'var(--success)' : 'var(--accent)',
+                                boxShadow: '0 0 15px var(--accent-glow)', transition: 'width 0.5s ease'
+                            }} />
+                        </div>
+                        {pullProgress.status === 'completed' && (
+                            <p style={{ fontSize: '11px', color: 'var(--success)', marginTop: '8px', fontWeight: 700 }}>
+                                ✓ Descarga completa — actualizando lista...
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                    {(models?.filter(m => !!m?.name) || []).length === 0 ? (
+                        <div style={{ gridColumn: '1/-1', textAlign: 'center', opacity: 0.2, padding: '3rem' }}>
+                            <Info size={40} style={{ margin: '0 auto 12px', display: 'block' }} />
+                            <p style={{ fontSize: '13px' }}>Sin modelos instalados. Descarga uno desde "Descubrir Modelos" abajo.</p>
+                        </div>
+                    ) : (
+                        models.filter(m => !!m?.name).map((model: any) => {
+                            const sizeGb = model?.size > 0 ? (model.size / Math.pow(1024, 3)).toFixed(2) : null;
+                            return (
+                                <div key={model.name} className="card-glass" style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {model.name}
+                                        </p>
+                                        <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                                            {model.details?.parameter_size && (
+                                                <span style={{ fontSize: '10px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px' }}>
+                                                    {model.details.parameter_size}
+                                                </span>
+                                            )}
+                                            {sizeGb && (
+                                                <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 700 }}>{sizeGb} GB</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                        <button className="btn-icon" onClick={() => onPull(model.name)} title="Actualizar">
+                                            <RefreshCw size={16} />
+                                        </button>
+                                        <button className="btn-icon" onClick={() => { if (confirm(`¿Eliminar ${model.name}?`)) onDelete(model.name); }} style={{ color: 'var(--error)' }} title="Eliminar">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </div>
+
             {/* ── Guía de Uso ─────────────────────────────────────── */}
+            <div className="card-glass" style={{ padding: '20px', borderLeft: '3px solid var(--accent)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                    <BookOpen size={16} style={{ color: 'var(--accent)' }} />
+                    <h3 style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '1px' }}>¿CÓMO AGREGAR MODELOS?</h3>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ padding: '14px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                        <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--accent)', marginBottom: '6px', letterSpacing: '1px' }}>NOMBRE DIRECTO</p>
+                        <p style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: '1.5' }}>
+                            Escribe <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>llama3.2:3b</code> en el buscador y presiona <strong>＋</strong>.
+                        </p>
+                    </div>
+                    <div style={{ padding: '14px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                        <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--accent)', marginBottom: '6px', letterSpacing: '1px' }}>BÚSQUEDA EN LIBRERÍA</p>
+                        <p style={{ fontSize: '11px', color: 'var(--text-dim)', lineHeight: '1.5' }}>
+                            Escribe <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>vision</code> y presiona <strong>Enter</strong> para buscar en ollama.com.
+                        </p>
+                    </div>
+                </div>
+                <a href="https://ollama.com/library" target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '12px', fontSize: '11px', color: 'var(--text-muted)', textDecoration: 'none' }}>
+                    <ExternalLink size={11} /> Explorar Ollama Library completa →
+                </a>
+            </div>
+
+            {/* ── Buscador / Descubrir ─────────────────────────────── */}
             <div className="card-glass" style={{ padding: '24px', borderLeft: '3px solid var(--accent)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
                     <BookOpen size={18} style={{ color: 'var(--accent)' }} />
@@ -183,74 +286,6 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
                             </div>
                         );
                     })}
-                </div>
-            </div>
-
-            {/* ── Modelos Instalados ───────────────────────────────── */}
-            <div className="card-glass p-8 animate-fade">
-                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '20px' }}>
-                    <Layers size={22} style={{ color: 'var(--accent)' }} />
-                    Modelos Instalados
-                    <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: 400, color: 'var(--text-muted)' }}>
-                        {models?.filter(m => m?.name).length || 0} total
-                    </span>
-                </h2>
-
-                {pullProgress && (
-                    <div className="card-glass" style={{ padding: '16px', background: 'rgba(79,140,255,0.05)', border: '1px solid var(--accent)', marginBottom: '20px' }}>
-                        <div className="flex-between" style={{ marginBottom: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <RefreshCw size={14} className="animate-spin" style={{ color: 'var(--accent)' }} />
-                                <span style={{ fontSize: '12px', fontWeight: 700 }}>DESCARGANDO: {pullProgress.model}</span>
-                            </div>
-                            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--accent)' }}>{pullProgress.percent}%</span>
-                        </div>
-                        <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px', overflow: 'hidden' }}>
-                            <div style={{ width: `${pullProgress.percent}%`, height: '100%', background: 'var(--accent)', boxShadow: '0 0 15px var(--accent-glow)', transition: 'width 0.3s ease' }} />
-                        </div>
-                    </div>
-                )}
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-                    {(models?.filter(m => !!m?.name) || []).length === 0 ? (
-                        <div style={{ gridColumn: '1/-1', textAlign: 'center', opacity: 0.2, padding: '4rem' }}>
-                            <Info size={48} style={{ margin: '0 auto 16px', display: 'block' }} />
-                            <p>Sin modelos instalados. Descarga uno desde la sección de arriba.</p>
-                        </div>
-                    ) : (
-                        models.filter(m => !!m?.name).map((model: any) => {
-                            const sizeGb = model?.size > 0 ? (model.size / Math.pow(1024, 3)).toFixed(2) : null;
-                            return (
-                                <div key={model.name} className="card-glass" style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {model.name}
-                                        </p>
-                                        <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
-                                            {model.details?.parameter_size && (
-                                                <span style={{ fontSize: '10px', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: '4px' }}>
-                                                    {model.details.parameter_size}
-                                                </span>
-                                            )}
-                                            {sizeGb && (
-                                                <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 700 }}>
-                                                    {sizeGb} GB
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                                        <button className="btn-icon" onClick={() => onPull(model.name)} title="Actualizar">
-                                            <RefreshCw size={16} />
-                                        </button>
-                                        <button className="btn-icon" onClick={() => { if (confirm(`¿Eliminar ${model.name}?`)) onDelete(model.name); }} style={{ color: 'var(--error)' }} title="Eliminar">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
                 </div>
             </div>
         </div>

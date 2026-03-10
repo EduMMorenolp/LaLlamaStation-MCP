@@ -5,6 +5,8 @@ import { IpLogs } from './components/IpLogs';
 import { SecurityPanel } from './components/SecurityPanel';
 import { ModelList } from './components/ModelList';
 import { ChatPlayground } from './components/ChatPlayground';
+import { HardwareSentinel } from './components/HardwareSentinel';
+import { AiEngineTuner } from './components/AiEngineTuner';
 import {
   subscribeToPullProgress,
   subscribeToSecurityAlerts,
@@ -18,7 +20,8 @@ import {
   Activity,
   Terminal,
   Layers,
-  Cpu
+  Cpu,
+  Zap
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -37,10 +40,10 @@ const App: React.FC = () => {
     try {
       const [statusRes, modelsRes] = await Promise.all([
         axios.get(`${API_BASE}/api/status`, { headers: { 'x-api-key': apiKey } }),
-        axios.get(`${API_BASE}/v1/models`, { headers: { 'x-api-key': apiKey } })
+        axios.get(`${API_BASE}/api/models`, { headers: { 'x-api-key': apiKey } })
       ]);
       setStatus(statusRes.data);
-      setModels(modelsRes.data.data);
+      setModels(modelsRes.data.models || []);
       setIsAuthorized(true);
       localStorage.setItem('llama_master_key', apiKey);
     } catch (err) {
@@ -65,7 +68,15 @@ const App: React.FC = () => {
       });
     };
 
-    const cleanupPull = subscribeToPullProgress((data) => setPullProgress(data));
+    const cleanupPull = subscribeToPullProgress((data) => {
+      if (data.status === 'done') {
+        // Descarga completada — limpiar progreso y refrescar lista de modelos
+        setPullProgress(null);
+        fetchData();
+      } else {
+        setPullProgress(data);
+      }
+    });
     const cleanupAlerts = subscribeToSecurityAlerts((data) => {
       if (data.type === 'ban') fetchData(); // Solo refrescar en caso de baneo
     });
@@ -330,6 +341,17 @@ const App: React.FC = () => {
             </div>
           </div>
         );
+      case 'hardware':
+        return (
+          <>
+            <div className="view-header">
+              <div><h1>Hardware Sentinel</h1><p>Monitor de GPU, VRAM y configuración de rendimiento</p></div>
+            </div>
+            <div className="view-body">
+              <HardwareSentinel status={status} />
+            </div>
+          </>
+        );
       default:
         return null;
     }
@@ -392,6 +414,9 @@ const App: React.FC = () => {
               </button>
               <button className="cmd-pill" onClick={() => setActiveTab('security')}>
                 <Shield size={14} /> Seguridad
+              </button>
+              <button className="cmd-pill" style={{ gridColumn: '1/-1' }} onClick={() => setActiveTab('hardware')}>
+                <Cpu size={14} /> Hardware Sentinel
               </button>
             </div>
           </div>
