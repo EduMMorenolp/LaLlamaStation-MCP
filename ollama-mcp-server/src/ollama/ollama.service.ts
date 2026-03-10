@@ -9,6 +9,9 @@ export interface OllamaModel {
 
 export class OllamaService {
   private readonly baseUrl: string;
+  private readonly requestLogs: any[] = [];
+  private readonly blacklist: Set<string> = new Set();
+  private readonly failedAttempts: Map<string, number> = new Map();
 
   constructor() {
     this.baseUrl = process.env.OLLAMA_URL || "http://ollama:11434";
@@ -88,6 +91,39 @@ export class OllamaService {
       loadedModels,
       ngrokInfo,
       timestamp: new Date().toISOString(),
+      recentLogs: this.requestLogs.slice(-20).reverse(),
+      blacklistedIps: Array.from(this.blacklist),
     };
+  }
+
+  logRequest(ip: string, action: string, status: string) {
+    this.requestLogs.push({
+      ip,
+      action,
+      status,
+      timestamp: new Date().toISOString(),
+    });
+    if (this.requestLogs.length > 100) this.requestLogs.shift();
+  }
+
+  isBlacklisted(ip: string): boolean {
+    return this.blacklist.has(ip);
+  }
+
+  banIp(ip: string) {
+    this.blacklist.add(ip);
+  }
+
+  unbanIp(ip: string) {
+    this.blacklist.delete(ip);
+  }
+
+  reportFailedAuth(ip: string) {
+    const attempts = (this.failedAttempts.get(ip) || 0) + 1;
+    this.failedAttempts.set(ip, attempts);
+    if (attempts >= 5) {
+      this.banIp(ip);
+      console.warn(`🚨 IP ${ip} auto-baneada tras 5 intentos fallidos.`);
+    }
   }
 }

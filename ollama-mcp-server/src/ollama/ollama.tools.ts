@@ -103,11 +103,16 @@ export class OllamaTools {
     // 2. Call Tools
     server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
       const { name, arguments: args } = request.params;
+      const ip = "MCP-Client";
 
       // Global Auth Check
       if (!this.authService.validate(args?.apiKey as string)) {
+        this.ollamaService.logRequest(ip, `Tool: ${name}`, "Unauthorized");
+        this.ollamaService.reportFailedAuth(ip);
         throw new Error("Invalid API Key");
       }
+
+      this.ollamaService.logRequest(ip, `Tool: ${name}`, "Success");
 
       try {
         switch (name) {

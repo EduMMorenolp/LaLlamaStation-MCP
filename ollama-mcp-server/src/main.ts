@@ -44,15 +44,32 @@ const server = new Server(
 const appModule = new AppModule();
 appModule.bootstrap(server);
 
-// --- Middleware de Autenticación para API Estándar ---
+// --- Middleware de Seguridad Avanzada (Fase 2) ---
+const securityMiddleware = (req: Request, res: Response, next: Function) => {
+  const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
+  
+  if (appModule.ollamaService.isBlacklisted(ip)) {
+    return res.status(403).json({ error: "Forbidden: Your IP is blacklisted" });
+  }
+  next();
+};
+
+app.use(securityMiddleware);
+
 const authMiddleware = (req: Request, res: Response, next: Function) => {
+  const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
   const apiKey =
     req.headers["x-api-key"] ||
     req.headers["authorization"]?.toString().replace("Bearer ", "");
 
+  const action = `${req.method} ${req.path}`;
+
   if (appModule.authService.validate(apiKey as string)) {
+    appModule.ollamaService.logRequest(ip, action, "Success");
     next();
   } else {
+    appModule.ollamaService.logRequest(ip, action, "Unauthorized");
+    appModule.ollamaService.reportFailedAuth(ip);
     res.status(401).json({ error: "Unauthorized: Invalid API Key" });
   }
 };
