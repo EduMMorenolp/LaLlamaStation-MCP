@@ -1,121 +1,107 @@
-# Ollama Remote MCP & OpenAI Server (Docker + ngrok + Security)
+# 🦙 LaLlamaStation MCP
 
-Este proyecto permite exponer tus modelos locales de **Ollama** a través de un túnel seguro de **ngrok** utilizando el protocolo **MCP (Model Context Protocol)** y una **API compatible con OpenAI**. Está diseñado con una arquitectura modular inspirada en NestJS y corre completamente en Docker.
+> **Panel de control local para modelos LLM de Ollama con seguridad avanzada, telemetría en tiempo real y API compatible con OpenAI.**
 
-## 🚀 Características
-
-- **Acceso Remoto Seguro**: Túnel automático con ngrok que permite conectarte desde cualquier lugar del mundo.
-- **Servidor Híbrido**: Soporte nativo para **MCP (Claude Desktop)** y **API OpenAI** (Chatbox, TypingMind, etc.) en un solo lugar.
-- **Autenticación Robusta**: Todas las peticiones requieren una `API_KEY` personalizada (vía Headers o parámetros).
-- **Arquitectura Modular**: Código organizado en servicios y módulos de TypeScript.
-- **Gestión Total de Modelos**: Permite descargar nuevos modelos (`pull_model`) remotamente.
-- **Todo-en-Uno**: Orquestación con `docker-compose` que incluye Ollama, el puente MCP y el túnel ngrok.
+[![Version](https://img.shields.io/badge/version-0.3.0-blue?style=flat-square)](./CHANGELOG.md)
+[![Docker](https://img.shields.io/badge/docker-compose-2496ED?style=flat-square&logo=docker)](./docker-compose.yml)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](./LICENSE)
 
 ---
 
-## 🛠️ Configuración Paso a Paso
+## ¿Qué es LaLlamaStation MCP?
 
-### 1. Requisitos Previos
+LaLlamaStation MCP es un servidor de control (**Model Control Panel**) que envuelve a [Ollama](https://ollama.com) con:
 
-- Tener instalado **Docker** y **Docker Compose**.
-- Tener una cuenta en [ngrok](https://ngrok.com/) y obtener tu **Authtoken**.
+- 🔐 **Seguridad**: autenticación por API Key, blacklist de IPs, auto-ban, rate limiting
+- 📊 **Telemetría**: monitor de disco, VRAM, tráfico y sesiones activas
+- 🌐 **API OpenAI-compatible**: conecta cualquier cliente que soporte la API de OpenAI (Claude Desktop, LibreChat, etc.)
+- 🖥️ **Dashboard Web**: interfaz de administración premium con glassmorphism
+- 🔌 **Túnel Ngrok**: expone el servidor al exterior con un click desde la web
+- 🔍 **Gestor de Modelos**: busca, descarga y elimina modelos directamente desde el dashboard
 
-### 2. Preparar el Entorno
+---
 
-Copia el archivo de ejemplo y rellena tus datos:
+## Inicio Rápido
 
 ```bash
+# 1. Clonar el repositorio
+git clone https://github.com/tu-usuario/lallama-station-mcp.git
+cd lallama-station-mcp
+
+# 2. Configurar variables de entorno
 cp .env.example .env
+# Editar .env con tu API_KEY y NGROK_AUTHTOKEN (opcional)
+
+# 3. Levantar el stack completo
+docker compose up -d
+
+# 4. Acceder al Dashboard
+open http://localhost:8080
 ```
 
-Edita el archivo `.env`:
+> Para instalación detallada, ver [`docs/INSTALLATION.md`](./docs/INSTALLATION.md)
 
-- `NGROK_AUTHTOKEN`: Tu token de ngrok.
-- `API_KEY`: Define una clave secreta (ej: `MiClaveSegura2026`).
-- `APP_PORT`: Puerto (por defecto `5555`).
+---
 
-### 3. Lanzar el Servidor
+## Estructura del Proyecto
 
-```bash
-docker-compose up -d --build
+```
+MPC-Ollama-Local/
+├── docker-compose.yml          # Stack completo
+├── .env.example                # Variables de entorno plantilla
+├── CHANGELOG.md                # Historial de versiones
+├── docs/                       # Documentación completa
+│   ├── ARCHITECTURE.md         # Arquitectura del sistema
+│   ├── USER_MANUAL.md          # Manual de usuario
+│   ├── INSTALLATION.md         # Guía de instalación
+│   └── API.md                  # Referencia de la API REST
+├── ollama-mcp-server/          # Backend Node.js + MCP
+│   └── src/
+│       ├── main.ts             # Entry point Express + endpoints
+│       ├── app.module.ts       # Módulo principal
+│       ├── auth/               # Autenticación
+│       └── ollama/             # Servicio de Ollama
+└── mcp-frontend/               # Frontend Vite + React
+    └── src/
+        ├── App.tsx             # Componente raíz + routing
+        ├── components/
+        │   ├── Telemetry.tsx   # KPIs + control ngrok
+        │   ├── ModelList.tsx   # Gestión de modelos
+        │   ├── ChatPlayground.tsx  # Terminal de inferencia
+        │   ├── SecurityPanel.tsx   # Blacklist + pánico
+        │   └── IpLogs.tsx      # Auditoría de accesos
+        └── services/
+            └── socket.service.ts   # WebSockets
 ```
 
 ---
 
-## 🔗 Cómo Conectarse desde el Exterior
+## Documentación
 
-Obtén tu URL pública ejecutando:
-
-```bash
-docker logs mcp-ngrok-tunnel
-```
-
-Busca la línea: `https://tu-subdominio.ngrok-free.app`.
-
-### Opcion A: Usar con Claude Desktop (MCP)
-
-Configura tu `claude_desktop_config.json` usando el transporte **SSE**:
-
-```json
-{
-  "mcpServers": {
-    "ollama-remoto": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/inspector",
-        "https://TU-URL-DE-NGROK.ngrok-free.app/sse"
-      ]
-    }
-  }
-}
-```
-
-### Opcion B: Usar con Apps de Terceros (API OpenAI)
-
-Cualquier aplicación que soporte OpenAI (como Chatbox) puede conectarse:
-
-- **Base URL**: `https://TU-URL-DE-NGROK.ngrok-free.app/v1`
-- **API Key**: La clave que definiste en el `.env`.
-- **Endpoints soportados**: `/v1/models` y `/v1/chat/completions`.
+| Documento | Descripción |
+|---|---|
+| [Instalación](./docs/INSTALLATION.md) | Guía paso a paso para Docker y ejecución local |
+| [Manual de Usuario](./docs/USER_MANUAL.md) | Cómo usar el dashboard |
+| [Arquitectura](./docs/ARCHITECTURE.md) | Diagrama y diseño del sistema |
+| [API Reference](./docs/API.md) | Todos los endpoints REST disponibles |
+| [Changelog](./CHANGELOG.md) | Historial de versiones |
 
 ---
 
-## 🧰 Herramientas MCP Disponibles
+## Tecnologías
 
-Si usas MCP, estas herramientas están a tu disposición (el parámetro `apiKey` es obligatorio):
-
-1.  **`list_models`**: Lista los modelos descargados.
-2.  **`pull_model`**: Descarga un modelo nuevo (ej: `llama3`).
-3.  **`chat`**: Interacción de chat fluida.
-4.  **`generate`**: Generación simple de texto.
-
----
-
-## 🧪 Verificación del Sistema
-
-Prueba la conectividad local (requiere `npm install` en la raíz):
-
-```bash
-node test/test_ngrok.js
-```
-
-Prueba la API OpenAI (remota):
-
-```bash
-curl -H "Authorization: Bearer TU_API_KEY" https://TU-URL-DE-NGROK.ngrok-free.app/v1/models
-```
+| Capa | Stack |
+|---|---|
+| **Runtime LLM** | [Ollama](https://ollama.com) |
+| **Backend** | Node.js, Express, TypeScript, Socket.io |
+| **Protocolo MCP** | `@modelcontextprotocol/sdk` |
+| **Frontend** | React 19, Vite, TypeScript |
+| **Infraestructura** | Docker Compose, Ngrok |
+| **Scraping** | Cheerio |
+| **Control Docker** | Dockerode |
 
 ---
 
-## 🛡️ Seguridad y Mantenimiento
+## Licencia
 
-- **Persistencia**: Los modelos se guardan en el volumen `ollama_data`.
-- **Logs de Actividad**: `docker logs -f mcp-server-app`.
-- **Importante**: No compartas tu URL de ngrok ni tu API Key públicamente.
-
----
-
-## 📄 Licencia
-
-MIT
+MIT © 2026 ARGenteIA
