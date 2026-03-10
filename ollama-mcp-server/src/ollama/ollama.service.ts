@@ -197,18 +197,23 @@ export class OllamaService {
       console.error("Error fetching loaded models:", e);
     }
 
-    let ngrokInfo = { url: "N/A", latency: 0 };
+    let ngrokInfo = { url: null as string | null, latency: 0, active: false };
     try {
-      const ngrokResponse = await axios.get("http://mcp-ngrok-tunnel:4040/api/tunnels");
+      const ngrokResponse = await axios.get("http://mcp-ngrok-tunnel:4040/api/tunnels", { timeout: 2000 });
       const tunnel = ngrokResponse.data.tunnels[0];
       if (tunnel) {
         ngrokInfo = {
           url: tunnel.public_url,
-          latency: 0, // La métrica exacta de latencia puede requerir más parsing
+          latency: 0,
+          active: true,
         };
       }
-    } catch (e) {
-      console.error("Error fetching ngrok info:", e);
+    } catch (e: any) {
+      // Ngrok apagado — solo loguear código de error, no el stack completo
+      if (e?.code !== 'ENOTFOUND' && e?.code !== 'ECONNREFUSED' && e?.code !== 'ETIMEDOUT') {
+        console.warn("[ngrok] Error inesperado:", e?.message || e?.code);
+      }
+      // Si es ENOTFOUND/ECONNREFUSED, ngrok está simplemente apagado — silencio total
     }
 
     return {
