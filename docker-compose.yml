@@ -45,6 +45,22 @@ services:
       - mcp-network
     restart: always
 
+  mcp-frontend:
+    build:
+      context: ./mcp-frontend
+      dockerfile: Dockerfile
+    container_name: mcp-frontend-app
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+      - VITE_SOCKET_URL=http://localhost:3000
+    networks:
+      - mcp-network
+    depends_on:
+      - mcp-server
+    restart: always
+
 networks:
   mcp-network:
     driver: bridge

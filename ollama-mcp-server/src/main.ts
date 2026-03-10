@@ -125,6 +125,54 @@ app.post("/v1/chat/completions", authMiddleware, async (req, res) => {
   }
 });
 
+// --- Endpoints de Telemetría y Gestión (Fase 5) ---
+
+app.get("/api/status", authMiddleware, async (req, res) => {
+  try {
+    const status = await appModule.ollamaService.getServerStatus();
+    res.json(status);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/unload", authMiddleware, async (req, res) => {
+  try {
+    await appModule.ollamaService.unloadModels();
+    res.json({ message: "VRAM freed successfully" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/ban", authMiddleware, async (req, res) => {
+  const { ip } = req.body;
+  if (!ip) return res.status(400).json({ error: "IP is required" });
+  appModule.ollamaService.banIp(ip);
+  res.json({ message: `IP ${ip} banned` });
+});
+
+app.post("/api/unban", authMiddleware, async (req, res) => {
+  const { ip } = req.body;
+  if (!ip) return res.status(400).json({ error: "IP is required" });
+  appModule.ollamaService.unbanIp(ip);
+  res.json({ message: `IP ${ip} unbanned` });
+});
+
+app.post("/api/pull", authMiddleware, async (req, res) => {
+  const { model } = req.body;
+  if (!model) return res.status(400).json({ error: "Model is required" });
+  try {
+    // No esperamos a que termine, pullModel emite via socket el progreso
+    appModule.ollamaService.pullModel(model).catch(err => {
+      console.error(`Error pulling model ${model}:`, err);
+    });
+    res.json({ message: `Pulling model ${model} started` });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- Endpoints MCP (SSE) ---
 
 let transport: SSEServerTransport | null = null;
