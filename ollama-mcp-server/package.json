@@ -1,5 +1,5 @@
 {
-  "name": "ollama-mcp-server",
+  "name": "lallama-station-mcp-server",
   "version": "1.0.0",
   "type": "module",
   "description": "Modular MCP Server for Ollama with API Key auth",

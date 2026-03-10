@@ -1,7 +1,7 @@
 {
-  "name": "mcp-frontend",
+  "name": "lallama-station-mcp",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

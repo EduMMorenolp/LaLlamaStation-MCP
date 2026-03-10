@@ -42,7 +42,7 @@ const App: React.FC = () => {
       setStatus(statusRes.data);
       setModels(modelsRes.data.data);
       setIsAuthorized(true);
-      localStorage.setItem('mcp_api_key', apiKey);
+      localStorage.setItem('llama_master_key', apiKey);
     } catch (err) {
       setIsAuthorized(false);
       console.error("Auth failed", err);
@@ -149,7 +149,7 @@ const App: React.FC = () => {
 
   // Cargar key recordada al inicio
   useEffect(() => {
-    const saved = localStorage.getItem('mcp_master_key');
+    const saved = localStorage.getItem('llama_master_key');
     if (saved) {
       setApiKeyInput(saved);
       setApiKey(saved);
@@ -168,9 +168,9 @@ const App: React.FC = () => {
     if (!keyToUse) return;
 
     if (rememberKey) {
-      localStorage.setItem('mcp_master_key', keyToUse);
+      localStorage.setItem('llama_master_key', keyToUse);
     } else {
-      localStorage.removeItem('mcp_master_key');
+      localStorage.removeItem('llama_master_key');
     }
 
     setApiKey(keyToUse); // Esto disparará el useEffect de arriba una sola vez
@@ -185,7 +185,7 @@ const App: React.FC = () => {
           </div>
           <div className="login-title">
             <h2>Acceso Restringido</h2>
-            <p>Master Session Key • SYMBIOSIS MCP</p>
+            <p>Master Session Key • LaLlamaStation MCP</p>
           </div>
 
           <div className="pin-group" style={{ position: 'relative' }}>
@@ -344,7 +344,7 @@ const App: React.FC = () => {
             <div className="logo-icon">
               <img src="/logo.png" alt="Logo" />
             </div>
-            <span className="logo-text">SYMBIOSIS</span>
+            <span className="logo-text">LaLlamaStation</span>
           </div>
         </div>
 

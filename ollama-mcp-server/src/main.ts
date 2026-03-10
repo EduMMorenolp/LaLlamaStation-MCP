@@ -35,7 +35,7 @@ const io = new SocketServer(httpServer, {
 
 const server = new Server(
   {
-    name: "ollama-mcp-server",
+    name: "lallama-station-mcp",
     version: "1.0.0",
   },
   {
@@ -263,7 +263,7 @@ app.get("/api/search-models", authMiddleware, async (req, res) => {
     const url = `https://ollama.com/library${ q ? `?q=${encodeURIComponent(q)}` : "" }`;
     const response = await axios.get(url, {
       timeout: 8000,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; SYMBIOSIS-Dashboard/1.0)" }
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; LaLlamaStation-MCP/1.0)" }
     });
     const $ = cheerio.load(response.data);
     const models: any[] = [];

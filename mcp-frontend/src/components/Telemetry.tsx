@@ -3,7 +3,8 @@ import axios from 'axios';
 import { Activity, Globe, Database, Shield, Power, Loader, Copy, Check } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const HEADERS = () => ({ 'x-api-key': localStorage.getItem('symbiosis_key') || '' });
+const HEADERS = () => ({ 'x-api-key': localStorage.getItem('llama_master_key') || '' });
+
 
 interface TelemetryProps {
     status: any;

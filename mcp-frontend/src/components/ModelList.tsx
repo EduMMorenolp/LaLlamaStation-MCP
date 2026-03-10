@@ -3,7 +3,8 @@ import axios from 'axios';
 import { Download, Layers, Trash2, Search, PlusCircle, Info, Sparkles, RefreshCw, BookOpen, ExternalLink, Loader } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const HEADERS = () => ({ 'x-api-key': localStorage.getItem('symbiosis_key') || '' });
+const HEADERS = () => ({ 'x-api-key': localStorage.getItem('llama_master_key') || '' });
+
 
 interface ModelListProps {
     models: any[];
