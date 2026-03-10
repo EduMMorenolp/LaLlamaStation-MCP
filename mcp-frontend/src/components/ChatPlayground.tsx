@@ -11,7 +11,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
     const [message, setMessage] = useState('');
     const [history, setHistory] = useState<any[]>([]);
     const [temperature, setTemperature] = useState(0.7);
-    const [numCtx, setNumCtx] = useState(4096);
+    const [numCtx] = useState(4096);
     const [loading, setLoading] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
 

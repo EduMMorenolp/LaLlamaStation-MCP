@@ -119,44 +119,104 @@ body {
   flex-direction: column;
 }
 
+/* ─── Sidebar Nav Sections ─────────────────────────────────────────────── */
 .nav-section {
   margin-bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
-.section-label {
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 12px;
+}
+
+.section-title {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: var(--text-muted);
   font-weight: 600;
-  padding: 0 12px 12px;
 }
 
-.nav-item {
+.commands-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.cmd-pill {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  color: var(--text-dim);
-  font-size: 14px;
-  font-weight: 500;
+  gap: 8px;
   cursor: pointer;
   transition: var(--transition);
 }
 
-.nav-item:hover {
+.cmd-pill:hover {
+  border-color: var(--accent);
+  color: var(--text-main);
+  background: rgba(79, 140, 255, 0.05);
+}
+
+.experts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.expert-item-wrap {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.expert-item-wrap:hover {
   background: var(--bg-surface);
+}
+
+.expert-item-wrap.active {
+  background: rgba(79, 140, 255, 0.1);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.expert-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-input);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  color: var(--accent);
+}
+
+.expert-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.expert-name {
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-main);
 }
 
-.nav-item.active {
-  background: rgba(79, 140, 255, 0.1);
-  color: var(--text-main);
-  box-shadow: inset 0 0 0 1px var(--accent);
+.expert-model {
+  font-size: 10px;
+  color: var(--text-muted);
 }
 
 .sidebar-footer {

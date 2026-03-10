@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Globe, HardDrive, ShieldAlert } from 'lucide-react';
+import { Activity, Globe, Database, Shield } from 'lucide-react';
 
 interface TelemetryProps {
     status: any;
@@ -8,35 +8,60 @@ interface TelemetryProps {
 export const Telemetry: React.FC<TelemetryProps> = ({ status }) => {
     if (!status) return <div className="card-glass p-8 flex-center animate-pulse" style={{ color: 'var(--text-dim)' }}>Sincronizando telemetría en tiempo real...</div>;
 
-    const { diskSpace, loadedModels, ngrokInfo } = status;
-    const usedPercent = ((diskSpace.total - diskSpace.free) / diskSpace.total) * 100;
-    const isLowSpace = (diskSpace.free / diskSpace.total) < 0.1;
+    const { diskSpace, ngrokInfo } = status;
+    const freeSpace = diskSpace?.free || 0;
+    const totalSpace = diskSpace?.total || 1;
+    const usedPercent = ((totalSpace - freeSpace) / totalSpace) * 100;
+    const isLowSpace = (freeSpace / totalSpace) < 0.1;
 
     return (
-        <div style={{ marginBottom: '2rem' }}>
-            {isLowSpace && (
-                <div className="badge-error animate-fade mb-6" style={{ padding: '1rem', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <ShieldAlert size={24} />
-                    <div>
-                        <p style={{ fontWeight: 800, fontSize: '0.9rem' }}>DISCO CRÍTICO</p>
-                        <p style={{ fontSize: '0.8rem', opacity: 0.8 }}>Restan solo {diskSpace.free.toFixed(2)}GB. El sistema podría fallar al descargar nuevos modelos.</p>
-                    </div>
+        <div className="kpi-grid animate-fade">
+            <div className="kpi-card">
+                <span className="kpi-label">Estado del Motor</span>
+                <div className="flex-between">
+                    <span className="kpi-value" style={{ color: status?.ollamaRunning ? 'var(--success)' : 'var(--error)' }}>
+                        {status?.ollamaRunning ? 'ONLINE' : 'OFFLINE'}
+                    </span>
+                    <Activity size={24} style={{ opacity: 0.2 }} />
                 </div>
-            )}
-            <div className="flex-between">
-                <div className="kpi-label">Puerta de Enlace (NGROK)</div>
-                <Globe size={18} style={{ color: 'var(--warning)' }} />
             </div>
-            <div className="kpi-value" style={{ fontSize: '1.2rem', fontFamily: 'var(--font-mono)', color: 'var(--warning)' }}>
-                {ngrokInfo?.url ? (
-                    <a href={ngrokInfo.url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
-                        {ngrokInfo.url.replace('https://', '')}
-                    </a>
-                ) : 'OFFLINE'}
+
+            <div className="kpi-card">
+                <span className="kpi-label">Almacenamiento Local</span>
+                <div className="flex-between">
+                    <span className="kpi-value">{freeSpace.toFixed(1)} <span style={{ fontSize: '12px', opacity: 0.5 }}>GB libres</span></span>
+                    <Database size={24} style={{ opacity: 0.2 }} />
+                </div>
+                <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '8px', overflow: 'hidden' }}>
+                    <div style={{
+                        width: `${usedPercent}%`,
+                        height: '100%',
+                        background: isLowSpace ? 'var(--error)' : 'var(--accent)',
+                        boxShadow: `0 0 10px ${isLowSpace ? 'var(--error)' : 'var(--accent-glow)'}`
+                    }} />
+                </div>
             </div>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Acceso remoto seguro habilitado vía túnel TLS</p>
+
+            <div className="kpi-card">
+                <span className="kpi-label">Tráfico Ngrok</span>
+                <div className="flex-between">
+                    <span className="kpi-value" style={{ fontSize: '14px', fontFamily: 'var(--font-mono)' }}>
+                        {ngrokInfo?.url ? 'TUNNEL_ACTIVE' : 'LOCAL_ONLY'}
+                    </span>
+                    <Globe size={24} style={{ opacity: 0.2 }} />
+                </div>
+                <p style={{ fontSize: '10px', marginTop: '8px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {ngrokInfo?.url || 'No hay tunel activo'}
+                </p>
+            </div>
+
+            <div className="kpi-card">
+                <span className="kpi-label">Sesiones Activas</span>
+                <div className="flex-between">
+                    <span className="kpi-value">{status?.recentLogs?.length || 0}</span>
+                    <Shield size={24} style={{ opacity: 0.2 }} />
+                </div>
+            </div>
         </div>
-            </div >
-        </div >
     );
 };

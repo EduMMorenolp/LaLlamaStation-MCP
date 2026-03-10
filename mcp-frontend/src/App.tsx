@@ -12,9 +12,7 @@ import {
 } from './services/socket.service';
 import {
   Shield,
-  Key,
   RefreshCw,
-  Bell,
   Eye,
   EyeOff,
   Activity,
@@ -22,14 +20,10 @@ import {
   Layers,
   Search,
   Check,
-  ChevronRight,
-  ChevronLeft,
-  X,
-  History,
-  Trash2,
-  Download,
-  Database,
-  Globe
+  Zap,
+  Bot,
+  Cpu,
+  Server
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -39,7 +33,6 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<any>(null);
   const [models, setModels] = useState<any[]>([]);
   const [pullProgress, setPullProgress] = useState<any>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -66,10 +59,6 @@ const App: React.FC = () => {
     if (!isAuthorized || !apiKey) return;
 
     const cleanupAccess = (data: any) => {
-      // Generar ID único usando timestamp + random para evitar duplicados en React keys
-      const notificationId = `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      setNotifications(prev => [{ ...data, type: 'info', id: notificationId }, ...prev].slice(0, 5));
-
       setStatus((prevStatus: any) => {
         if (!prevStatus) return prevStatus;
         // Evitar que logs duplicados entren por streaming rápido
@@ -83,7 +72,6 @@ const App: React.FC = () => {
 
     const cleanupPull = subscribeToPullProgress((data) => setPullProgress(data));
     const cleanupAlerts = subscribeToSecurityAlerts((data) => {
-      setNotifications(prev => [{ ...data, id: Date.now() }, ...prev].slice(0, 5));
       if (data.type === 'ban') fetchData(); // Solo refrescar en caso de baneo
     });
     const subAccess = subscribeToNewAccess(cleanupAccess);
@@ -286,39 +274,68 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav scrollbar-hide">
           <div className="nav-section">
-            <span className="section-label">Sistema</span>
-            <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-              <Activity size={18} />
-              Inferencia & CPU
+            <div className="section-header">
+              <span className="section-title">Navegación</span>
             </div>
-            <div className={`nav-item ${activeTab === 'playground' ? 'active' : ''}`} onClick={() => setActiveTab('playground')}>
-              <Terminal size={18} />
-              Playground
+            <div className="experts-list">
+              <div
+                className={`expert-item-wrap ${activeTab === 'dashboard' ? 'active' : ''}`}
+                onClick={() => setActiveTab('dashboard')}
+              >
+                <div className="expert-avatar">
+                  <Activity size={16} />
+                </div>
+                <div className="expert-info">
+                  <span className="expert-name">Dashboard</span>
+                  <span className="expert-model">Control de Sistema</span>
+                </div>
+              </div>
+
+              <div
+                className={`expert-item-wrap ${activeTab === 'playground' ? 'active' : ''}`}
+                onClick={() => setActiveTab('playground')}
+              >
+                <div className="expert-avatar">
+                  <Terminal size={16} />
+                </div>
+                <div className="expert-info">
+                  <span className="expert-name">Playground</span>
+                  <span className="expert-model">Inferencia Directa</span>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="nav-section">
-            <span className="section-label">Recursos</span>
-            <div className={`nav-item ${activeTab === 'models' ? 'active' : ''}`} onClick={() => setActiveTab('models')}>
-              <Layers size={18} />
-              Model Repository
+            <div className="section-header">
+              <span className="section-title">Opciones Rápidas</span>
             </div>
-          </div>
-
-          <div className="nav-section">
-            <span className="section-label">Seguridad</span>
-            <div className={`nav-item ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
-              <Shield size={18} />
-              Acceso & Tráfico
+            <div className="commands-grid">
+              <button className="cmd-pill" onClick={() => setActiveTab('models')}>
+                <Layers size={14} /> Modelos
+              </button>
+              <button className="cmd-pill" onClick={() => setActiveTab('security')}>
+                <Shield size={14} /> Seguridad
+              </button>
             </div>
           </div>
 
           <div className="nav-section" style={{ marginTop: 'auto' }}>
-            <div className="nav-item" onClick={handleCleanWorkspace} style={{ color: 'var(--text-muted)' }}>
-              <RefreshCw size={18} />
-              Clean Temporal
+            <div className="section-header">
+              <span className="section-title">Mantenimiento</span>
+            </div>
+            <div className="experts-list">
+              <div className="expert-item-wrap" onClick={handleCleanWorkspace}>
+                <div className="expert-avatar" style={{ color: 'var(--text-muted)' }}>
+                  <RefreshCw size={16} />
+                </div>
+                <div className="expert-info">
+                  <span className="expert-name">Limpiar Cache</span>
+                  <span className="expert-model">Archivos Temporales</span>
+                </div>
+              </div>
             </div>
           </div>
         </nav>
