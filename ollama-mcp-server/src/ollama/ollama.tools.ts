@@ -7,6 +7,13 @@ import { OllamaService } from "./ollama.service.js";
 import { AuthService } from "../auth/auth.service.js";
 import { z } from "zod";
 
+const InferenceOptionsSchema = z.object({
+  temperature: z.number().min(0).max(2).optional(),
+  num_ctx: z.number().min(128).max(131072).optional(),
+  top_p: z.number().min(0).max(1).optional(),
+  top_k: z.number().min(0).max(100).optional(),
+});
+
 export class OllamaTools {
   constructor(
     private readonly ollamaService: OllamaService,
@@ -59,6 +66,9 @@ export class OllamaTools {
                 model: { type: "string" },
                 prompt: { type: "string" },
                 apiKey: { type: "string" },
+                temperature: { type: "number", minimum: 0, maximum: 2 },
+                num_ctx: { type: "number", minimum: 128 },
+                keep_alive: { type: "string" },
               },
               required: ["model", "prompt", "apiKey"],
             },
@@ -81,8 +91,23 @@ export class OllamaTools {
                   },
                 },
                 apiKey: { type: "string" },
+                temperature: { type: "number", minimum: 0, maximum: 2 },
+                num_ctx: { type: "number", minimum: 128 },
+                session_id: { type: "string" },
+                keep_alive: { type: "string" },
               },
               required: ["model", "messages", "apiKey"],
+            },
+          },
+          {
+            name: "unload_models",
+            description: "Unload all models from VRAM (Free GPU)",
+            inputSchema: {
+              type: "object",
+              properties: {
+                apiKey: { type: "string" },
+              },
+              required: ["apiKey"],
             },
           },
           {
@@ -135,22 +160,43 @@ export class OllamaTools {
               ],
             };
 
-          case "generate":
+          case "generate": {
+            const options = InferenceOptionsSchema.parse({
+              temperature: args?.temperature,
+              num_ctx: args?.num_ctx,
+            });
             const genResponse = await this.ollamaService.generate(
               args?.model as string,
               args?.prompt as string,
+              options,
+              args?.keep_alive as string | number,
             );
             return {
               content: [{ type: "text", text: genResponse }],
             };
+          }
 
-          case "chat":
+          case "chat": {
+            const options = InferenceOptionsSchema.parse({
+              temperature: args?.temperature,
+              num_ctx: args?.num_ctx,
+            });
             const chatResponse = await this.ollamaService.chat(
               args?.model as string,
               args?.messages as any[],
+              options,
+              args?.keep_alive as string | number,
+              args?.session_id as string,
             );
             return {
               content: [{ type: "text", text: chatResponse.content }],
+            };
+          }
+
+          case "unload_models":
+            await this.ollamaService.unloadModels();
+            return {
+              content: [{ type: "text", text: "All models unloaded from VRAM successfully." }],
             };
 
           case "get_server_status":

@@ -12,6 +12,7 @@ export class OllamaService {
   private readonly requestLogs: any[] = [];
   private readonly blacklist: Set<string> = new Set();
   private readonly failedAttempts: Map<string, number> = new Map();
+  private readonly sessionCache: Map<string, any[]> = new Map();
 
   constructor() {
     this.baseUrl = process.env.OLLAMA_URL || "http://ollama:11434";
@@ -22,22 +23,63 @@ export class OllamaService {
     return response.data.models;
   }
 
-  async generate(model: string, prompt: string): Promise<string> {
+  async generate(
+    model: string,
+    prompt: string,
+    options: any = {},
+    keep_alive: string | number = "5m",
+  ): Promise<string> {
     const response = await axios.post(`${this.baseUrl}/api/generate`, {
       model,
       prompt,
+      options,
+      keep_alive,
       stream: false,
     });
     return response.data.response;
   }
 
-  async chat(model: string, messages: any[]): Promise<any> {
+  async chat(
+    model: string,
+    messages: any[],
+    options: any = {},
+    keep_alive: string | number = "5m",
+    sessionId?: string,
+  ): Promise<any> {
+    let finalMessages = messages;
+
+    // Context Caching Logic (Fase 3)
+    if (sessionId) {
+      const cached = this.sessionCache.get(sessionId) || [];
+      // Si recibimos un solo mensaje nuevo, lo añadimos al caché
+      if (messages.length === 1 && cached.length > 0) {
+        finalMessages = [...cached, ...messages];
+      }
+      this.sessionCache.set(sessionId, finalMessages);
+      // Limitar tamaño de caché a los últimos 20 mensajes
+      if (this.sessionCache.get(sessionId)!.length > 20) {
+        this.sessionCache.set(sessionId, this.sessionCache.get(sessionId)!.slice(-20));
+      }
+    }
+
     const response = await axios.post(`${this.baseUrl}/api/chat`, {
       model,
-      messages,
+      messages: finalMessages,
+      options,
+      keep_alive,
       stream: false,
     });
     return response.data.message;
+  }
+
+  async unloadModels(): Promise<void> {
+    const models = await this.listModels();
+    for (const model of models) {
+      await axios.post(`${this.baseUrl}/api/chat`, {
+        model: model.name,
+        keep_alive: 0,
+      }).catch(() => {}); // Ignorar errores si el modelo no está cargado
+    }
   }
 
   async pullModel(model: string): Promise<void> {
