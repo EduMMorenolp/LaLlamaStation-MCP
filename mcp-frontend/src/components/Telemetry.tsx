@@ -1,16 +1,18 @@
 import React, { useState, useCallback } from 'react';
 import axios from 'axios';
-import { Database, Power, Loader, Copy, Check, Clock, Zap, BarChart2, Cpu } from 'lucide-react';
+import { Database, Power, Loader, Copy, Check, Clock, Zap, BarChart2, Cpu, RefreshCw } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const HEADERS = () => ({ 'x-api-key': localStorage.getItem('llama_master_key') || '' });
 
 interface TelemetryProps {
     status: any;
+    onOllamaControl?: (action: 'start' | 'stop' | 'restart') => Promise<void>;
 }
 
-export const Telemetry: React.FC<TelemetryProps> = ({ status }) => {
+export const Telemetry: React.FC<TelemetryProps> = ({ status, onOllamaControl }) => {
     const [ngrokLoading, setNgrokLoading] = useState(false);
+    const [ollamaLoading, setOllamaLoading] = useState(false);
     const [ngrokRunning, setNgrokRunning] = useState<boolean | null>(null);
     const [ngrokUrl, setNgrokUrl] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
@@ -49,6 +51,16 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status }) => {
         }
     };
 
+    const handleAction = async (action: 'start' | 'stop' | 'restart') => {
+        if (!onOllamaControl) return;
+        setOllamaLoading(true);
+        try {
+            await onOllamaControl(action);
+        } finally {
+            setOllamaLoading(false);
+        }
+    };
+
     if (!status) return (
         <div className="card-glass p-8 flex-center animate-pulse" style={{ color: 'var(--text-dim)' }}>
             Sincronizando telemetría en tiempo real...
@@ -67,13 +79,56 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status }) => {
             {/* Fila 1: KPIs principales */}
             <div className="kpi-grid animate-fade">
                 {/* Estado Motor */}
-                <div className="kpi-card">
-                    <span className="kpi-label">Motor Ollama</span>
+                <div className="kpi-card" style={{ borderColor: status?.ollamaRunning ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)' }}>
+                    <div className="flex-between" style={{ marginBottom: '12px' }}>
+                        <span className="kpi-label">Motor Ollama</span>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                            {status?.ollamaRunning ? (
+                                <button 
+                                    onClick={() => handleAction('stop')} 
+                                    disabled={ollamaLoading}
+                                    className="btn-icon"
+                                    style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', padding: '4px 8px', borderRadius: '4px' }}
+                                    title="Detener Motor"
+                                >
+                                    <Power size={14} color="var(--error)" />
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={() => handleAction('start')} 
+                                    disabled={ollamaLoading}
+                                    className="btn-icon"
+                                    style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 8px', borderRadius: '4px' }}
+                                    title="Arrancar Motor"
+                                >
+                                    <Power size={14} color="var(--success)" />
+                                </button>
+                            )}
+                            <button 
+                                onClick={() => handleAction('restart')} 
+                                disabled={ollamaLoading}
+                                className="btn-icon"
+                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', padding: '4px 8px', borderRadius: '4px' }}
+                                title="Reiniciar Motor"
+                            >
+                                <RefreshCw size={14} className={ollamaLoading ? 'animate-spin' : ''} />
+                            </button>
+                        </div>
+                    </div>
+                    
                     <div className="flex-between">
-                        <span className="kpi-value" style={{ color: status?.ollamaRunning ? 'var(--success)' : 'var(--error)', fontSize: '22px' }}>
-                            {status?.ollamaRunning ? 'ONLINE' : 'OFFLINE'}
-                        </span>
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: status?.ollamaRunning ? 'var(--success)' : 'var(--error)', boxShadow: `0 0 10px ${status?.ollamaRunning ? 'var(--success)' : 'var(--error)'}`, animation: status?.ollamaRunning ? 'pulse 2s infinite' : 'none' }} />
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                            <span className="kpi-value" style={{ color: status?.ollamaRunning ? 'var(--success)' : 'var(--error)', fontSize: '24px' }}>
+                                {status?.ollamaRunning ? 'ONLINE' : 'OFFLINE'}
+                            </span>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>v0.5.7</span>
+                        </div>
+                        <div style={{ 
+                            width: '10px', height: '10px', borderRadius: '50%', 
+                            background: status?.ollamaRunning ? 'var(--success)' : 'var(--error)', 
+                            boxShadow: `0 0 12px ${status?.ollamaRunning ? 'var(--success)' : 'var(--error)'}`, 
+                            animation: status?.ollamaRunning ? 'pulse 2s infinite' : 'none' 
+                        }} />
                     </div>
                     {currentModel && (
                         <p style={{ fontSize: '10px', color: 'var(--success)', marginTop: '6px', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

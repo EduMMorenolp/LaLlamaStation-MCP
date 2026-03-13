@@ -21,8 +21,7 @@ import {
   Terminal,
   Layers,
   Cpu,
-  Zap,
-  Power
+  Zap
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -309,7 +308,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return (
           <>
-            <Telemetry status={status} />
+            <Telemetry status={status} onOllamaControl={handleOllamaControl} />
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) 300px', gap: '24px', alignItems: 'start', marginTop: '8px' }}>
               {/* Accesos Recientes */}
               <div className="card-glass" style={{ padding: '24px' }}>
@@ -498,40 +497,10 @@ const App: React.FC = () => {
               {models?.length || 0} Modelos Disponibles
             </div>
           </div>
-          <div className="status-badge" style={{ marginTop: '8px', padding: '0 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="status-badge" style={{ marginTop: '8px', padding: '0 4px', display: 'flex', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div className={`status-led ${status?.ollamaRunning ? 'online' : 'offline'}`} />
               <span style={{ fontWeight: 600, color: status?.ollamaRunning ? 'var(--text-main)' : 'var(--text-muted)' }}>{status?.ollamaRunning ? 'Conectado' : 'Sin conexión'}</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: '4px' }}>
-              {status?.ollamaRunning ? (
-                <button
-                  onClick={() => handleOllamaControl('stop')}
-                  className="btn-icon"
-                  title="Apagar Motor"
-                  style={{ padding: '4px', borderRadius: '4px' }}
-                >
-                  <Power size={14} color="var(--error)" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleOllamaControl('start')}
-                  className="btn-icon"
-                  title="Iniciar Motor"
-                  style={{ padding: '4px', borderRadius: '4px' }}
-                >
-                  <Power size={14} color="var(--success)" />
-                </button>
-              )}
-              <button
-                onClick={() => handleOllamaControl('restart')}
-                className="btn-icon"
-                title="Reiniciar Motor"
-                style={{ padding: '4px', borderRadius: '4px' }}
-              >
-                <RefreshCw size={14} />
-              </button>
             </div>
           </div>
         </div>
@@ -549,9 +518,6 @@ const App: React.FC = () => {
             <button onClick={fetchData} className="btn-icon" title="Refrescar Estado">
               <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             </button>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--accent), #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '13px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              AD
-            </div>
           </div>
         </header>
 
