@@ -32,6 +32,8 @@ const App: React.FC = () => {
   const [models, setModels] = useState<any[]>([]);
   const [pullProgress, setPullProgress] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -87,7 +89,7 @@ const App: React.FC = () => {
       cleanupAlerts();
       subAccess();
     };
-  }, [apiKey, fetchData]);
+  }, [apiKey, fetchData, isAuthorized]);
 
   const handleSendMessage = async (model: string, content: string, options: any) => {
     const res = await axios.post(`${API_BASE}/v1/chat/completions`, {
@@ -173,18 +175,37 @@ const App: React.FC = () => {
     if (apiKey) fetchData();
   }, [apiKey, fetchData]);
 
-  const handleAuth = async () => {
-    // Solo cuando se pulsa el botón, actualizamos la apiKey REAL
+  const handleAuth = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     const keyToUse = apiKeyInput.trim();
     if (!keyToUse) return;
 
-    if (rememberKey) {
-      localStorage.setItem('llama_master_key', keyToUse);
-    } else {
-      localStorage.removeItem('llama_master_key');
-    }
+    setIsAuthenticating(true);
+    setAuthError('');
 
-    setApiKey(keyToUse); // Esto disparará el useEffect de arriba una sola vez
+    try {
+      const [statusRes, modelsRes] = await Promise.all([
+        axios.get(`${API_BASE}/api/status`, { headers: { 'x-api-key': keyToUse } }),
+        axios.get(`${API_BASE}/api/models`, { headers: { 'x-api-key': keyToUse } })
+      ]);
+      setStatus(statusRes.data);
+      setModels(modelsRes.data.models || []);
+      setIsAuthorized(true);
+      setApiKey(keyToUse);
+      if (rememberKey) {
+        localStorage.setItem('llama_master_key', keyToUse);
+      } else {
+        localStorage.removeItem('llama_master_key');
+      }
+    } catch (err: any) {
+      setIsAuthorized(false);
+      let errorMsg = 'Error de conexión con el servidor MCP';
+      if (err.response?.status === 401) errorMsg = 'Acceso denegado: PIN incorrecto o inválido';
+      if (err.response?.status === 403) errorMsg = 'Acceso denegado: IP bloqueada temporalmente temporalmente por seguridad';
+      setAuthError(errorMsg);
+    } finally {
+      setIsAuthenticating(false);
+    }
   };
 
   if (!isAuthorized) {
@@ -199,41 +220,56 @@ const App: React.FC = () => {
             <p>Master Session Key • LaLlamaStation MCP</p>
           </div>
 
-          <div className="pin-group" style={{ position: 'relative' }}>
-            <input
-              type={showKey ? "text" : "password"}
-              placeholder="••••••••"
-              value={apiKeyInput}
-              onChange={(e) => setApiKeyInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
-              className="pin-input"
-            />
-            <button
-              onClick={() => setShowKey(!showKey)}
-              style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-            >
-              {showKey ? <EyeOff size={20} /> : <Eye size={20} />}
+          <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+            <div className="pin-group" style={{ position: 'relative', marginBottom: authError ? '16px' : '32px' }}>
+              <input
+                type={showKey ? "text" : "password"}
+                placeholder="••••••••"
+                value={apiKeyInput}
+                onChange={(e) => { setApiKeyInput(e.target.value); setAuthError(''); }}
+                className={`pin-input ${authError ? 'error' : ''}`}
+                style={authError ? { borderColor: 'var(--error)', backgroundColor: 'rgba(239,68,68,0.05)' } : {}}
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey(!showKey)}
+                style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                {showKey ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            {authError && (
+              <div style={{ color: 'var(--error)', fontSize: '13px', marginBottom: '24px', fontWeight: 600 }}>
+                {authError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', justifyContent: 'center' }}>
+              <div className="custom-checkbox">
+                <input
+                  type="checkbox"
+                  id="remember"
+                  checked={rememberKey}
+                  onChange={(e) => setRememberKey(e.target.checked)}
+                />
+                <span className="checkmark"></span>
+              </div>
+              <label htmlFor="remember" style={{ fontSize: '13px', color: 'var(--text-dim)', cursor: 'pointer', userSelect: 'none' }}>
+                Recordar Master Key en esta estación
+              </label>
+            </div>
+
+            <button type="submit" disabled={isAuthenticating} className="auth-btn" style={{ position: 'relative', opacity: isAuthenticating ? 0.7 : 1 }}>
+              {isAuthenticating ? (
+                <RefreshCw size={20} className="animate-spin" style={{ margin: '0 auto', display: 'block' }} />
+              ) : (
+                'Sincronizar Escudo'
+              )}
             </button>
-          </div>
+          </form>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', justifyContent: 'center' }}>
-            <input
-              type="checkbox"
-              id="remember"
-              checked={rememberKey}
-              onChange={(e) => setRememberKey(e.target.checked)}
-              style={{ accentColor: 'var(--accent)' }}
-            />
-            <label htmlFor="remember" style={{ fontSize: '12px', color: 'var(--text-dim)', cursor: 'pointer' }}>
-              Recordar Master Key en esta estación
-            </label>
-          </div>
-
-          <button onClick={handleAuth} className="auth-btn">
-            Sincronizar Escudo
-          </button>
-
-          <div style={{ marginTop: '24px', opacity: 0.3, fontSize: '10px' }}>
+          <div style={{ marginTop: '32px', opacity: 0.6, fontSize: '12px', fontWeight: 600, letterSpacing: '1px', color: 'var(--text-muted)' }}>
             ARGENTEIA CORE V5 • AMBIENTE PROTEGIDO
           </div>
         </div>
@@ -247,6 +283,8 @@ const App: React.FC = () => {
       case 'playground': return { title: 'PLAYGROUND', sub: 'Terminal de Inferencia Directa' };
       case 'models': return { title: 'REPOSITORIO DE MODELOS', sub: 'Gestiona tu Arsenal de LLMs Locales' };
       case 'security': return { title: 'CENTRO DE SEGURIDAD', sub: `${status?.recentLogs?.length || 0} Sesiones Registradas` };
+      case 'hardware': return { title: 'HARDWARE SENTINEL', sub: 'Monitor de GPU, VRAM y configuración de rendimiento' };
+      case 'engine': return { title: 'AI ENGINE TUNER', sub: 'Consumo energético, contador de tokens y ahorro vs cloud' };
       default: return { title: activeTab.toUpperCase(), sub: '' };
     }
   };
@@ -342,27 +380,9 @@ const App: React.FC = () => {
           </div>
         );
       case 'hardware':
-        return (
-          <>
-            <div className="view-header">
-              <div><h1>Hardware Sentinel</h1><p>Monitor de GPU, VRAM y configuracion de rendimiento</p></div>
-            </div>
-            <div className="view-body">
-              <HardwareSentinel status={status} />
-            </div>
-          </>
-        );
+        return <HardwareSentinel status={status} />;
       case 'engine':
-        return (
-          <>
-            <div className="view-header">
-              <div><h1>AI Engine Tuner</h1><p>Consumo energetico, contador de tokens y ahorro vs cloud</p></div>
-            </div>
-            <div className="view-body">
-              <AiEngineTuner status={status} />
-            </div>
-          </>
-        );
+        return <AiEngineTuner status={status} />;
       default:
         return null;
     }
@@ -463,9 +483,9 @@ const App: React.FC = () => {
               {models?.length || 0} Modelos Disponibles
             </div>
           </div>
-          <div className="conn-status-wrap">
+          <div className="status-badge" style={{ marginTop: '8px', padding: '0 4px' }}>
             <div className={`status-led ${status?.ollamaRunning ? 'online' : 'offline'}`} />
-            <span className="status-label">{status?.ollamaRunning ? 'Conectado' : 'Sin conexión'}</span>
+            <span style={{ fontWeight: 600, color: status?.ollamaRunning ? 'var(--text-main)' : 'var(--text-muted)' }}>{status?.ollamaRunning ? 'Conectado' : 'Sin conexión'}</span>
           </div>
         </div>
       </aside>

@@ -38,7 +38,7 @@ services:
     #           count: all
     #           capabilities: [gpu]
     # alternativa simplificada en Compose 3.8+:
-    gpus: all
+    # gpus: all
     networks:
       - mcp-network
     restart: always

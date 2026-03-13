@@ -68,9 +68,13 @@ const authMiddleware = (req: Request, res: Response, next: Function) => {
     req.headers["authorization"]?.toString().replace("Bearer ", "");
 
   const action = `${req.method} ${req.path}`;
+  // Omitir logging de endpoints de polling interno para no saturar el panel de seguridad
+  const isPolling = req.method === "GET" && ["/api/status", "/api/engine-stats", "/api/hardware"].includes(req.path);
 
   if (appModule.authService.validate(apiKey as string)) {
-    appModule.ollamaService.logRequest(ip, action, "Success");
+    if (!isPolling) {
+      appModule.ollamaService.logRequest(ip, action, "Success");
+    }
     next();
   } else {
     appModule.ollamaService.logRequest(ip, action, "Unauthorized");

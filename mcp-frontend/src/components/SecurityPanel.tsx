@@ -18,7 +18,7 @@ export const SecurityPanel: React.FC<SecurityPanelProps> = ({ blacklistedIps, on
                 <button
                     onClick={onPanic}
                     className="btn btn-danger"
-                    style={{ fontWeight: 800, padding: '0.5rem 1rem' }}
+                    style={{ fontWeight: 800 }}
                 >
                     <Zap size={18} />
                     PÁNICO

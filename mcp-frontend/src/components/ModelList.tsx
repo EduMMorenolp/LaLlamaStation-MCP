@@ -106,7 +106,7 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
                     </div>
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                     {(models?.filter(m => !!m?.name) || []).length === 0 ? (
                         <div style={{ gridColumn: '1/-1', textAlign: 'center', opacity: 0.2, padding: '3rem' }}>
                             <Info size={40} style={{ margin: '0 auto 12px', display: 'block' }} />
@@ -170,32 +170,6 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
                 <a href="https://ollama.com/library" target="_blank" rel="noopener noreferrer"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '12px', fontSize: '11px', color: 'var(--text-muted)', textDecoration: 'none' }}>
                     <ExternalLink size={11} /> Explorar Ollama Library completa →
-                </a>
-            </div>
-
-            {/* ── Buscador / Descubrir ─────────────────────────────── */}
-            <div className="card-glass" style={{ padding: '24px', borderLeft: '3px solid var(--accent)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <BookOpen size={18} style={{ color: 'var(--accent)' }} />
-                    <h3 style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '1px' }}>¿Cómo agregar modelos?</h3>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                        <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', marginBottom: '8px', letterSpacing: '1px' }}>OPCIÓN 1 — NOMBRE DIRECTO</p>
-                        <p style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: '1.6' }}>
-                            Escribe el nombre exacto del modelo en el buscador (ej: <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>llama3.2:3b</code>) y presiona el botón <strong>＋</strong> para descargarlo directo.
-                        </p>
-                    </div>
-                    <div style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                        <p style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', marginBottom: '8px', letterSpacing: '1px' }}>OPCIÓN 2 — BÚSQUEDA EN LIBRERÍA</p>
-                        <p style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: '1.6' }}>
-                            Escribe un término (ej: <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>vision</code>) y presiona <strong>Enter</strong> para buscar en la librería oficial de Ollama en tiempo real.
-                        </p>
-                    </div>
-                </div>
-                <a href="https://ollama.com/library" target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '14px', fontSize: '11px', color: 'var(--text-muted)', textDecoration: 'none' }}>
-                    <ExternalLink size={12} /> Explorar Ollama Library completa →
                 </a>
             </div>
 
