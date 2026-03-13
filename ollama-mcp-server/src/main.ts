@@ -17,10 +17,17 @@ app.use(cors()); // Habilitar CORS para desarrollo local del frontend
 // --- Middleware de Seguridad (Fase 1) ---
 app.use(helmet());
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5000, // Límite mucho más alto para el Dashboard local
+  windowMs: 15 * 60 * 1000, 
+  max: 15000, 
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "";
+    const isLocal = ip === "::1" || ip === "127.0.0.1" || ip.includes("127.0.0.1");
+    const apiKey = req.headers["x-api-key"] || req.headers["authorization"]?.toString().replace("Bearer ", "");
+    const isValidKey = appModule.authService.validate(apiKey as string);
+    return isLocal || isValidKey;
+  }
 });
 app.use(limiter);
 

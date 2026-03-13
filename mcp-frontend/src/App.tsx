@@ -61,8 +61,12 @@ const App: React.FC = () => {
     const cleanupAccess = (data: any) => {
       setStatus((prevStatus: any) => {
         if (!prevStatus) return prevStatus;
-        // Evitar que logs duplicados entren por streaming rápido
-        const isDuplicate = prevStatus.recentLogs?.some((l: any) => l.timestamp === data.timestamp && l.ip === data.ip);
+        // Evitar duplicados considerando IP, Acción y Timestamp exacto
+        const isDuplicate = prevStatus.recentLogs?.some((l: any) => 
+          l.timestamp === data.timestamp && 
+          l.ip === data.ip && 
+          l.action === data.action
+        );
         if (isDuplicate) return prevStatus;
 
         const newLogs = [data, ...(prevStatus.recentLogs || [])].slice(0, 100);
@@ -156,11 +160,11 @@ const App: React.FC = () => {
   };
 
   const handlePull = async (model: string) => {
-    // La herramienta MCP pull_model se puede llamar via un endpoint similar
-    // Por simplicidad, asumimos que el servidor maneja el pull y emite via socket
     try {
+      setPullProgress({ model, percent: 0, status: 'pulling' });
       await axios.post(`${API_BASE}/api/pull`, { model }, { headers: { 'x-api-key': apiKey } });
     } catch (e: any) {
+      setPullProgress(null);
       alert(e.response?.data?.error || "Error al iniciar descarga");
     }
   };

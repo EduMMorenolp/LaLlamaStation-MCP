@@ -30,6 +30,7 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
     const [isSearching, setIsSearching] = useState(false);
     const [searchError, setSearchError] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
+    const [verificationModel, setVerificationModel] = useState<any | null>(null);
 
     const installedNames = models?.filter(m => !!m?.name).map(m => m.name as string) || [];
 
@@ -55,13 +56,20 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 
     const handleManualPull = () => {
         if (searchTerm.trim()) {
-            // Si el término parece un nombre de modelo directo, descargarlo
+            // Si el término parece un nombre de modelo directo, mostrar modal de verificación
             if (!searchTerm.includes(' ') && (searchTerm.includes(':') || searchTerm.includes('/') || !hasSearched)) {
-                onPull(searchTerm.trim());
-                setSearchTerm('');
+                setVerificationModel({ name: searchTerm.trim(), title: searchTerm.trim(), desc: 'Modelo ingresado manualmente. Verifica el nombre antes de continuar.' });
             } else {
                 handleSearch(searchTerm);
             }
+        }
+    };
+
+    const confirmPull = () => {
+        if (verificationModel) {
+            onPull(verificationModel.name);
+            setVerificationModel(null);
+            setSearchTerm('');
         }
     };
 
@@ -81,28 +89,62 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
                 </h2>
 
                 {pullProgress && (
-                    <div className="card-glass" style={{ padding: '16px', background: 'rgba(79,140,255,0.05)', border: '1px solid var(--accent)', marginBottom: '20px' }}>
-                        <div className="flex-between" style={{ marginBottom: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <RefreshCw size={14} className="animate-spin" style={{ color: 'var(--accent)' }} />
-                                <span style={{ fontSize: '12px', fontWeight: 700 }}>DESCARGANDO: {pullProgress.model}</span>
+                    <div className="card-glass" style={{ 
+                        padding: '24px', 
+                        background: 'rgba(79,140,255,0.05)', 
+                        border: '1px solid var(--accent)', 
+                        marginBottom: '32px',
+                        boxShadow: '0 0 40px rgba(79, 140, 255, 0.1)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}>
+                        <div className="flex-between" style={{ marginBottom: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <RefreshCw size={18} className="animate-spin" style={{ color: 'var(--accent)' }} />
+                                <div>
+                                    <span style={{ fontSize: '14px', fontWeight: 800, display: 'block', color: 'var(--accent)' }}>
+                                        DESCARGANDO MOTOR DIGITAL
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                        {pullProgress.model}
+                                    </span>
+                                </div>
                             </div>
-                            <span style={{ fontSize: '14px', fontWeight: 800, color: pullProgress.status === 'completed' ? 'var(--success)' : 'var(--accent)' }}>
-                                {pullProgress.percent}%
-                            </span>
+                            <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '24px', fontWeight: 900, color: pullProgress.status === 'completed' ? 'var(--success)' : 'var(--text-main)', letterSpacing: '-1px' }}>
+                                    {pullProgress.percent}%
+                                </span>
+                            </div>
                         </div>
-                        <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px', overflow: 'hidden' }}>
-                            <div style={{
-                                width: `${pullProgress.percent}%`, height: '100%',
-                                background: pullProgress.status === 'completed' ? 'var(--success)' : 'var(--accent)',
-                                boxShadow: '0 0 15px var(--accent-glow)', transition: 'width 0.5s ease'
+
+                        <div style={{ 
+                            width: '100%', 
+                            height: '10px', 
+                            background: 'rgba(0,0,0,0.4)', 
+                            borderRadius: '20px', 
+                            overflow: 'hidden',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            position: 'relative'
+                        }}>
+                            <div className="progress-active" style={{
+                                width: `${pullProgress.percent}%`, 
+                                height: '100%',
+                                background: pullProgress.status === 'completed' ? 'var(--success)' : 'linear-gradient(90deg, #4f8cff, #a5b4fc, #4f8cff)',
+                                backgroundSize: '200% 100%',
+                                transition: 'width 0.4s cubic-bezier(0.1, 0.7, 0.1, 1)'
                             }} />
                         </div>
-                        {pullProgress.status === 'completed' && (
-                            <p style={{ fontSize: '11px', color: 'var(--success)', marginTop: '8px', fontWeight: 700 }}>
-                                ✓ Descarga completa — actualizando lista...
-                            </p>
-                        )}
+
+                        <div className="flex-between" style={{ marginTop: '12px' }}>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                {pullProgress.status === 'completed' ? 'FINALIZADO' : 'SINCRONIZANDO PESOS...'}
+                            </span>
+                            {pullProgress.status === 'completed' && (
+                                <span style={{ fontSize: '10px', color: 'var(--success)', fontWeight: 800 }}>
+                                    ✓ LISTO PARA OPERAR
+                                </span>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -232,7 +274,7 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
                     ) : displayModels.map((s: any) => {
                         const isInstalled = installedNames.some(n => n.startsWith(s.name.split(':')[0]));
                         return (
-                            <div key={s.name} className="suggested-card" onClick={() => !isInstalled && onPull(s.name)}>
+                            <div key={s.name} className="suggested-card" onClick={() => !isInstalled && setVerificationModel(s)}>
                                 <div className="flex-between">
                                     <span className={`model-tag ${isInstalled ? '' : 'prime'}`}>
                                         {s.tags?.[0] || 'LLM'}
@@ -262,6 +304,59 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
                     })}
                 </div>
             </div>
+
+            {/* Modal de Verificación */}
+            {verificationModel && (
+                <div className="modal-overlay" onClick={() => setVerificationModel(null)}>
+                    <div className="verification-modal" onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                            <div style={{ background: 'rgba(79, 140, 255, 0.1)', padding: '10px', borderRadius: '12px' }}>
+                                <Download size={24} style={{ color: 'var(--accent)' }} />
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Confirmar Descarga</h3>
+                                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>LaLlamaStation Repository</p>
+                            </div>
+                        </div>
+
+                        <div className="card-glass" style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', marginBottom: '20px' }}>
+                            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>{verificationModel.title || verificationModel.name}</p>
+                            <p style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: '1.5' }}>{verificationModel.desc}</p>
+                            {verificationModel.tags && (
+                                <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                                    {verificationModel.tags.map((t: string) => (
+                                        <span key={t} style={{ fontSize: '10px', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px', color: 'var(--text-muted)' }}>{t}</span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '8px' }}>
+                            <p style={{ fontSize: '11px', color: 'var(--warning)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <Info size={14} />
+                                La descarga consumirá ancho de banda y espacio en disco significativo.
+                            </p>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button 
+                                className="btn-icon" 
+                                style={{ flex: 1, padding: '12px', borderRadius: '8px', fontSize: '13px', fontWeight: 600 }}
+                                onClick={() => setVerificationModel(null)}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                className="auth-btn" 
+                                style={{ flex: 2, padding: '12px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                onClick={confirmPull}
+                            >
+                                <Download size={16} /> Confirmar Descarga
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -366,21 +366,23 @@ export class OllamaService {
       globalNumCtx: this.globalNumCtx,
       engineStats: this.getStats(),
       timestamp: new Date().toISOString(),
-      recentLogs: this.requestLogs.slice(-20).reverse(),
+      recentLogs: this.requestLogs.slice(-100).reverse(),
       blacklistedIps: Array.from(this.blacklist),
     };
   }
 
   logRequest(ip: string, action: string, status: string) {
     this.totalRequests++;
-    this.requestLogs.push({
+    const logEntry = {
       ip, action, status,
       timestamp: new Date().toISOString(),
-    });
-    if (this.requestLogs.length > 100) this.requestLogs.shift();
+    };
+    
+    this.requestLogs.push(logEntry);
+    if (this.requestLogs.length > 200) this.requestLogs.shift();
 
-    if (this.io && status === "Success") {
-      this.io.emit("new-access", { ip, action, timestamp: new Date().toISOString() });
+    if (this.io) {
+      this.io.emit("new-access", logEntry);
     }
   }
 
