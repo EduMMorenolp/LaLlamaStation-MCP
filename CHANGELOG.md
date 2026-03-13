@@ -5,6 +5,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### Añadido
+- Establecida regla obligatoria para la IA: registrar todos los cambios en el `CHANGELOG.md`.
+- Archivo de reglas `.cursorrules` y `.agents/rules/changelog-rules.md` para automatizar este proceso.
+
 ## [0.3.0] — 2026-03-10 🦙 Renaming + Model Discovery + Ngrok Control
 
 ### 💫 Rebrand
