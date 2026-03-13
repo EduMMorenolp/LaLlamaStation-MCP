@@ -21,7 +21,8 @@ import {
   Terminal,
   Layers,
   Cpu,
-  Zap
+  Zap,
+  Power
 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -111,6 +112,16 @@ const App: React.FC = () => {
     fetchData();
   };
 
+  const handleOllamaControl = async (action: 'start' | 'stop' | 'restart') => {
+    try {
+      await axios.post(`${API_BASE}/api/ollama/${action}`, {}, { headers: { 'x-api-key': apiKey } });
+      // Dar un pequeño delay para que el contenedor reaccione antes de refrescar
+      setTimeout(fetchData, 2000);
+    } catch (e) {
+      console.error(`Error with Ollama ${action}:`, e);
+    }
+  };
+
   const handlePanic = async () => {
     await axios.post(`${API_BASE}/api/unload`, {}, { headers: { 'x-api-key': apiKey } });
     fetchData();
@@ -170,9 +181,13 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Disparar fetchData cuando la apiKey real cambie (solo por load inicial o handleAuth exitoso)
+  // Disparar fetchData cuando la apiKey real cambie y mantener un heartbeat de 15s para telemetría
   useEffect(() => {
-    if (apiKey) fetchData();
+    if (apiKey) {
+      fetchData();
+      const interval = setInterval(fetchData, 15000);
+      return () => clearInterval(interval);
+    }
   }, [apiKey, fetchData]);
 
   const handleAuth = async (e?: React.FormEvent) => {
@@ -364,7 +379,7 @@ const App: React.FC = () => {
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <SecurityPanel blacklistedIps={status?.blacklistedIps || []} onUnban={handleUnban} onPanic={handlePanic} />
-            <IpLogs logs={status?.recentLogs} onBan={handleBan} />
+            <IpLogs logs={status?.recentLogs} status={status} onBan={handleBan} />
           </div>
         );
       case 'playground':
@@ -483,9 +498,41 @@ const App: React.FC = () => {
               {models?.length || 0} Modelos Disponibles
             </div>
           </div>
-          <div className="status-badge" style={{ marginTop: '8px', padding: '0 4px' }}>
-            <div className={`status-led ${status?.ollamaRunning ? 'online' : 'offline'}`} />
-            <span style={{ fontWeight: 600, color: status?.ollamaRunning ? 'var(--text-main)' : 'var(--text-muted)' }}>{status?.ollamaRunning ? 'Conectado' : 'Sin conexión'}</span>
+          <div className="status-badge" style={{ marginTop: '8px', padding: '0 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className={`status-led ${status?.ollamaRunning ? 'online' : 'offline'}`} />
+              <span style={{ fontWeight: 600, color: status?.ollamaRunning ? 'var(--text-main)' : 'var(--text-muted)' }}>{status?.ollamaRunning ? 'Conectado' : 'Sin conexión'}</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {status?.ollamaRunning ? (
+                <button
+                  onClick={() => handleOllamaControl('stop')}
+                  className="btn-icon"
+                  title="Apagar Motor"
+                  style={{ padding: '4px', borderRadius: '4px' }}
+                >
+                  <Power size={14} color="var(--error)" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleOllamaControl('start')}
+                  className="btn-icon"
+                  title="Iniciar Motor"
+                  style={{ padding: '4px', borderRadius: '4px' }}
+                >
+                  <Power size={14} color="var(--success)" />
+                </button>
+              )}
+              <button
+                onClick={() => handleOllamaControl('restart')}
+                className="btn-icon"
+                title="Reiniciar Motor"
+                style={{ padding: '4px', borderRadius: '4px' }}
+              >
+                <RefreshCw size={14} />
+              </button>
+            </div>
           </div>
         </div>
       </aside>

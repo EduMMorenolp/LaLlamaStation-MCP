@@ -324,6 +324,50 @@ app.post("/api/ngrok/stop", authMiddleware, async (req, res) => {
   }
 });
 
+// --- Control de Ollama Motor via Docker API ---
+const OLLAMA_CONTAINER = "mcp-ollama-motor";
+
+async function getOllamaContainer() {
+  try {
+    return docker.getContainer(OLLAMA_CONTAINER);
+  } catch {
+    return null;
+  }
+}
+
+app.post("/api/ollama/start", authMiddleware, async (req, res) => {
+  try {
+    const container = await getOllamaContainer();
+    if (!container) return res.status(404).json({ error: "Contenedor Ollama no encontrado." });
+    await container.start();
+    res.json({ message: "Motor Ollama iniciado" });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/ollama/stop", authMiddleware, async (req, res) => {
+  try {
+    const container = await getOllamaContainer();
+    if (!container) return res.status(404).json({ error: "Contenedor Ollama no encontrado." });
+    await container.stop();
+    res.json({ message: "Motor Ollama detenido" });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/ollama/restart", authMiddleware, async (req, res) => {
+  try {
+    const container = await getOllamaContainer();
+    if (!container) return res.status(404).json({ error: "Contenedor Ollama no encontrado." });
+    await container.restart();
+    res.json({ message: "Motor Ollama reiniciado" });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // --- Scraper de Ollama Library ---
 app.get("/api/search-models", authMiddleware, async (req, res) => {
   const q = (req.query.q as string) || "";

@@ -3,10 +3,11 @@ import { Shield, XCircle, Search, Activity } from 'lucide-react';
 
 interface IpLogsProps {
     logs: any[];
+    status: any;
     onBan: (ip: string) => void;
 }
 
-export const IpLogs: React.FC<IpLogsProps> = ({ logs, onBan }) => {
+export const IpLogs: React.FC<IpLogsProps> = ({ logs, status, onBan }) => {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'success' | 'fail'>('all');
 
@@ -20,16 +21,16 @@ export const IpLogs: React.FC<IpLogsProps> = ({ logs, onBan }) => {
     });
 
     const successCount = (logs || []).filter(l => l.status === 'Success').length;
-    const failCount = (logs || []).length - successCount;
+    const failCount = (logs || []).filter(l => l.status !== 'Success').length;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Stats Row */}
             <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
                 <div className="kpi-card">
-                    <span className="kpi-label">Total Sesiones</span>
+                    <span className="kpi-label">Actividad Total</span>
                     <div className="flex-between">
-                        <span className="kpi-value">{logs?.length || 0}</span>
+                        <span className="kpi-value">{status?.totalRequests || logs?.length || 0}</span>
                         <Activity size={24} style={{ opacity: 0.15 }} />
                     </div>
                 </div>
