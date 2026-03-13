@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, XCircle, Search, Activity, Filter } from 'lucide-react';
+import { Shield, XCircle, Search, Activity } from 'lucide-react';
 
 interface IpLogsProps {
     logs: any[];

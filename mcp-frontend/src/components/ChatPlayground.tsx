@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Settings2, RefreshCw, X, Bot, Cpu, Zap, Clock, ChevronDown, Trash2, Copy, Check } from 'lucide-react';
+import { Send, Settings2, RefreshCw, Bot, Cpu, Zap, Clock, ChevronDown, Trash2, Copy, Check } from 'lucide-react';
 
 interface Message {
     id: string;
