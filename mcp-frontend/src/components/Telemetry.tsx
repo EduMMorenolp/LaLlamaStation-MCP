@@ -6,8 +6,10 @@ import { useCallback, useState } from "react";
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const HEADERS = () => ({ "x-api-key": localStorage.getItem("llama_master_key") || "" });
 
+import type { StatusResponse } from "../types/api";
+
 interface TelemetryProps {
-	status: any;
+	status?: StatusResponse;
 	onOllamaControl?: (action: "start" | "stop" | "restart") => Promise<void>;
 }
 
@@ -39,7 +41,7 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status, onOllamaControl })
 			} else {
 				setNgrokUrl(null);
 			}
-		} catch (e: any) {
+		} catch (e: unknown) {
 			alert(`Error controlando ngrok: ${e?.response?.data?.error || e.message}`);
 		} finally {
 			setNgrokLoading(false);

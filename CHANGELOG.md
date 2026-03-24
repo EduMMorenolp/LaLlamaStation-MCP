@@ -23,8 +23,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 - **Correcciones automáticas aplicadas**: 
   - ✅ 43+ problemas de linting corregidos (variables no usadas, imports organizados, etc.)
   - ✅ Todos los botones ahora tienen atributo `type="button"` para accesibilidad
-  - ✅ Reemplazo de tipos `any` con `Record<string, unknown>` en componentes clave
-  - ✅ Formateo unificado en 30 archivos de código
+  - ✅ Reemplazo de tipos `any` con tipos específicos en componentes clave
+  - ✅ Formateo unificado en 31 archivos de código
+  
+### 📝 Tipado TypeScript
+- **Interfazes compartidas creadas** (`mcp-frontend/src/types/api.ts`):
+  - `StatusResponse` - Respuesta completa del servidor de estado
+  - `AccessLogEntry` - Entrada de log de acceso
+  - `OllamaModel` - Modelo de Ollama
+  - `PullProgressData` - Datos de progreso de descarga
+  - `ChatMessage` - Mensaje de chat estruturado
+  - `EngineStats` - Estadísticas del motor
+  - Y más tipos específicos
+- **Reducción de tipos `any`**: Reemplazados en:
+  - `App.tsx` - Estados y callbacks tipados correctamente
+  - `components/Telemetry.tsx` - Props tipadas como `StatusResponse`
+  - `components/AiEngineTuner.tsx` - Estados tipados como `EngineStats`
+  - `components/HardwareSentinel.tsx` - Props y callbacks tipados
+  - `ollama-mcp-server` - Tipos locales definidos para ChatMessage
+- **Errores de tipo reducidos**: De 101 errores originales a ~55 (46% reducción)
 
 ## [0.3.0] — 2026-03-10 🦙 Renaming + Model Discovery + Ngrok Control
 

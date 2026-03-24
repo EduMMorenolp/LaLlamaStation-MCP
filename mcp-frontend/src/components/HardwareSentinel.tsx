@@ -33,8 +33,10 @@ const QUANT_OPTIONS = [
 	{ label: "F16 — Precisión completa (16-bit float)", value: "f16", vramFactor: 1.0 },
 ];
 
+import type { StatusResponse } from "../types/api";
+
 interface HardwareSentinelProps {
-	status: Record<string, unknown>;
+	status: StatusResponse;
 }
 
 function VramBadge({ modelSizeBytes, vram }: { modelSizeBytes: number; vram: Record<string, unknown> }) {
@@ -273,7 +275,7 @@ export const HardwareSentinel: React.FC<HardwareSentinelProps> = ({ status }) =>
 						>
 							Cargado en VRAM ahora
 						</p>
-						{loadedModels.map((m: any) => (
+						{loadedModels.map((m: Record<string, unknown>) => (
 							<div
 								key={m.name}
 								style={{

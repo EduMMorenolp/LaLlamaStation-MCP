@@ -10,14 +10,16 @@ import { ModelList } from "./components/ModelList";
 import { SecurityPanel } from "./components/SecurityPanel";
 import { Telemetry } from "./components/Telemetry";
 import { subscribeToNewAccess, subscribeToPullProgress, subscribeToSecurityAlerts } from "./services/socket.service";
+import type { AccessLogEntry, OllamaModel, PullProgressData, StatusResponse } from "./types/api";
+import { AxiosError } from "axios";
 
 const App: React.FC = () => {
 	const [apiKey, setApiKey] = useState("");
 	const [apiKeyInput, setApiKeyInput] = useState(""); // Estado separado para el input
 	const [isAuthorized, setIsAuthorized] = useState(false);
-	const [status, setStatus] = useState<any>(null);
-	const [models, setModels] = useState<any[]>([]);
-	const [pullProgress, setPullProgress] = useState<any>(null);
+	const [status, setStatus] = useState<StatusResponse | null>(null);
+	const [models, setModels] = useState<OllamaModel[]>([]);
+	const [pullProgress, setPullProgress] = useState<PullProgressData | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [authError, setAuthError] = useState("");
 	const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -45,12 +47,12 @@ const App: React.FC = () => {
 		// Si ya tenemos una API Key vÁlida (cargada por localStorage o auth), suscribimos sockets
 		if (!isAuthorized || !apiKey) return;
 
-		const cleanupAccess = (data: any) => {
-			setStatus((prevStatus: any) => {
+		const cleanupAccess = (data: AccessLogEntry) => {
+			setStatus((prevStatus: StatusResponse | null) => {
 				if (!prevStatus) return prevStatus;
 				// Evitar duplicados considerando IP, Acción y Timestamp exacto
 				const isDuplicate = prevStatus.recentLogs?.some(
-					(l: any) => l.timestamp === data.timestamp && l.ip === data.ip && l.action === data.action
+					(l: AccessLogEntry) => l.timestamp === data.timestamp && l.ip === data.ip && l.action === data.action
 				);
 				if (isDuplicate) return prevStatus;
 
@@ -80,7 +82,7 @@ const App: React.FC = () => {
 		};
 	}, [apiKey, fetchData, isAuthorized]);
 
-	const handleSendMessage = async (model: string, content: string, options: any) => {
+	const handleSendMessage = async (model: string, content: string, options: Record<string, unknown>) => {
 		const res = await axios.post(
 			`${API_BASE}/v1/chat/completions`,
 			{
@@ -125,8 +127,9 @@ const App: React.FC = () => {
 			const res = await axios.post(`${API_BASE}/api/clean`, {}, { headers: { "x-api-key": apiKey } });
 			alert(`¡Limpieza completada! Se han liberado ${res.data.freed.toFixed(2)} GB de archivos temporales.`);
 			fetchData();
-		} catch (err: any) {
-			alert(`Error al limpiar workspace: ${err.message}`);
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : "Error desconocido";
+			alert(`Error al limpiar workspace: ${message}`);
 		} finally {
 			setLoading(false);
 		}

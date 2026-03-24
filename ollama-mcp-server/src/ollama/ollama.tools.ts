@@ -4,6 +4,11 @@ import { z } from "zod";
 import type { AuthService } from "../auth/auth.service.js";
 import type { OllamaService } from "./ollama.service.js";
 
+type ChatMessage = {
+\trole: "user" | "assistant" | "system";
+\tcontent: string;
+};
+
 const InferenceOptionsSchema = z.object({
 	temperature: z.number().min(0).max(2).optional(),
 	num_ctx: z.number().min(128).max(131072).optional(),
@@ -223,7 +228,8 @@ export class OllamaTools {
 					default:
 						throw new Error(`Tool ${name} not found`);
 				}
-			} catch (error: any) {
+			} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : "Unknown error";
 				return {
 					content: [{ type: "text", text: `Error: ${error.message}` }],
 					isError: true,
