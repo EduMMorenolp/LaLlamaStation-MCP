@@ -16,6 +16,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
   - Los cambios se sincronizan en tiempo real sin afectar el rendimiento
   - El botón limpiar chat también limpia la persistencia
 
+### 🔧 Mejoras de Calidad de Código
+- **Biome instalado y configurado** para linting y formateo automático
+  - Scripts: `pnpm lint`, `pnpm format`, `pnpm check`
+  - Configuración: `biome.json` con reglas estrictas de TypeScript y a11y
+- **Correcciones automáticas aplicadas**: 
+  - ✅ 43+ problemas de linting corregidos (variables no usadas, imports organizados, etc.)
+  - ✅ Todos los botones ahora tienen atributo `type="button"` para accesibilidad
+  - ✅ Reemplazo de tipos `any` con `Record<string, unknown>` en componentes clave
+  - ✅ Formateo unificado en 30 archivos de código
+
 ## [0.3.0] — 2026-03-10 🦙 Renaming + Model Discovery + Ngrok Control
 
 ### 💫 Rebrand
