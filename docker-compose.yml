@@ -30,13 +30,13 @@ services:
     ports:
       - "${APP_PORT:-3000}:${APP_PORT:-3000}"
     # habilita acceso a GPU si el host y Docker lo soportan
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     # alternativa simplificada en Compose 3.8+:
     # gpus: all
     networks:

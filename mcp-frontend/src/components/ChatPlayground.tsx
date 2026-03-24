@@ -60,19 +60,54 @@ function CopyButton({ text }: { text: string }) {
     );
 }
 
+const STORAGE_KEY = 'llama-chat-playground';
+
+interface PlaygroundState {
+    history: Message[];
+    selectedModel: string;
+    temperature: number;
+    numCtx: number;
+    totalTokensSession: number;
+    totalTimeSession: number;
+}
+
 export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMessage }) => {
-    const [selectedModel, setSelectedModel] = useState(models[0]?.name || '');
+    // Load persisted state from localStorage
+    const loadPersistedState = (): Partial<PlaygroundState> => {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            return stored ? JSON.parse(stored) : {};
+        } catch {
+            return {};
+        }
+    };
+
+    const persistedState = loadPersistedState();
+    const [selectedModel, setSelectedModel] = useState(persistedState.selectedModel || models[0]?.name || '');
     const [message, setMessage] = useState('');
-    const [history, setHistory] = useState<Message[]>([]);
-    const [temperature, setTemperature] = useState(0.7);
-    const [numCtx, setNumCtx] = useState(4096);
+    const [history, setHistory] = useState<Message[]>(persistedState.history || []);
+    const [temperature, setTemperature] = useState(persistedState.temperature ?? 0.7);
+    const [numCtx, setNumCtx] = useState(persistedState.numCtx ?? 4096);
     const [loading, setLoading] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [totalTokensSession, setTotalTokensSession] = useState(0);
-    const [totalTimeSession, setTotalTimeSession] = useState(0);
+    const [totalTokensSession, setTotalTokensSession] = useState(persistedState.totalTokensSession ?? 0);
+    const [totalTimeSession, setTotalTimeSession] = useState(persistedState.totalTimeSession ?? 0);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // ─── PERSIST STATE TO LOCALSTORAGE ────────────────────────
+    useEffect(() => {
+        const state: PlaygroundState = {
+            history,
+            selectedModel,
+            temperature,
+            numCtx,
+            totalTokensSession,
+            totalTimeSession,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }, [history, selectedModel, temperature, numCtx, totalTokensSession, totalTimeSession]);
 
     // Sync selected model if models load after component
     useEffect(() => {
@@ -159,6 +194,8 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
         setHistory([]);
         setTotalTokensSession(0);
         setTotalTimeSession(0);
+        // Clear persisted state
+        localStorage.removeItem(STORAGE_KEY);
     };
 
     const modelShortName = selectedModel.split(':')[0] || selectedModel;
@@ -454,11 +491,10 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 
             {/* ── INPUT ─────────────────────────────────────── */}
             <div style={{
-                padding: '12px 16px', borderTop: '1px solid var(--border-light)',
-                background: 'rgba(0,0,0,0.2)', flexShrink: 0, borderRadius: '0 0 12px 12px',
+                padding: '12px 16px', flexShrink: 0, borderRadius: '0 0 12px 12px',
             }}>
                 <div style={{
-                    display: 'flex', alignItems: 'flex-end', gap: '10px',
+                    display: 'flex', alignItems: 'center', gap: '10px', 
                     background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-light)',
                     borderRadius: '14px', padding: '10px 14px',
                     transition: 'border-color 0.2s',
