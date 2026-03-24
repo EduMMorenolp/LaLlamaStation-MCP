@@ -92,11 +92,11 @@ function GaugeRing({
 import type { EngineStats, StatusResponse } from "../types/api";
 
 interface AiEngineTunerProps {
-	status: StatusResponse;
+	status?: StatusResponse;
 }
 
 export const AiEngineTuner: React.FC<AiEngineTunerProps> = ({ status }) => {
-\tconst [engineData, setEngineData] = useState<EngineStats | null>(null);
+	const [engineData, setEngineData] = useState<EngineStats | null>(null);
 	const [rateARS, setRateARS] = useState(150);
 	const [cloudPrice, setCloudPrice] = useState(5.0);
 	const [saving, setSaving] = useState(false);

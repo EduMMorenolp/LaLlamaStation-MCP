@@ -42,7 +42,11 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status, onOllamaControl })
 				setNgrokUrl(null);
 			}
 		} catch (e: unknown) {
-			alert(`Error controlando ngrok: ${e?.response?.data?.error || e.message}`);
+			const errorMsg = 
+				e instanceof Error ? e.message :
+				(e as any)?.response?.data?.error ||
+				String(e);
+			alert(`Error controlando ngrok: ${errorMsg}`);
 		} finally {
 			setNgrokLoading(false);
 		}
@@ -386,7 +390,7 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status, onOllamaControl })
 					<Zap
 						size={18}
 						style={{
-							color: status?.recentLogs?.length > 0 ? "var(--accent)" : "var(--text-muted)",
+							color: (status?.recentLogs?.length ?? 0) > 0 ? "var(--accent)" : "var(--text-muted)",
 							opacity: 0.7,
 						}}
 					/>

@@ -33,16 +33,16 @@ const QUANT_OPTIONS = [
 	{ label: "F16 — Precisión completa (16-bit float)", value: "f16", vramFactor: 1.0 },
 ];
 
-import type { StatusResponse } from "../types/api";
+import type { LoadedModel, StatusResponse } from "../types/api";
 
 interface HardwareSentinelProps {
-	status: StatusResponse;
+	status?: StatusResponse;
 }
 
-function VramBadge({ modelSizeBytes, vram }: { modelSizeBytes: number; vram: Record<string, unknown> }) {
+function VramBadge({ modelSizeBytes, vram }: { modelSizeBytes: number; vram?: { free?: number; used?: number; total?: number; available?: number } }) {
 	if (!vram?.available || !modelSizeBytes) return null;
 	const modelMb = modelSizeBytes / (1024 * 1024);
-	const vramFreeMb = vram.free;
+	const vramFreeMb = (vram.free as number) || 0;
 
 	let color = "var(--success)";
 	let bg = "rgba(16,185,129,0.1)";
@@ -275,9 +275,9 @@ export const HardwareSentinel: React.FC<HardwareSentinelProps> = ({ status }) =>
 						>
 							Cargado en VRAM ahora
 						</p>
-						{loadedModels.map((m: Record<string, unknown>) => (
+						{loadedModels.map((m: LoadedModel, idx: number) => (
 							<div
-								key={m.name}
+								key={String(m.name) || String(idx)}
 								style={{
 									display: "flex",
 									alignItems: "center",
@@ -300,7 +300,7 @@ export const HardwareSentinel: React.FC<HardwareSentinelProps> = ({ status }) =>
 										flexShrink: 0,
 									}}
 								/>
-								<span style={{ fontSize: "13px", fontWeight: 700, flex: 1 }}>{m.name}</span>
+								<span style={{ fontSize: "13px", fontWeight: 700, flex: 1 }}>{String(m.name || "Unknown")}</span>
 								{m.size_vram && (
 									<span
 										style={{

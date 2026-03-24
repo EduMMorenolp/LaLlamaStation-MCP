@@ -9,31 +9,78 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ### Añadido
 - Establecida regla obligatoria para la IA: registrar todos los cambios en el `CHANGELOG.md`.
-- Archivo de reglas `.cursorrules` y `.agents/rules/changelog-rules.md` para automatizar este proceso.
+- Archivo de reglas `.cursorrules` para automatizar el proceso de documentación.
 - **Persistencia del Chat en ChatPlayground**: historial de mensajes y configuraciones se guardan automáticamente en `localStorage`
   - Las conversaciones se mantienen al navegar entre pestañas
   - Se persisten modelo seleccionado, temperatura, contexto y estadísticas de sesión
   - Los cambios se sincronizan en tiempo real sin afectar el rendimiento
-  - El botón limpiar chat también limpia la persistencia
-
-### 🔧 Mejoras de Calidad de Código
-- **Biome instalado y configurado** para linting y formateo automático
+- **Biome instalado** para linting y formateo automático
   - Scripts: `pnpm lint`, `pnpm format`, `pnpm check`
   - Configuración: `biome.json` con reglas estrictas de TypeScript y a11y
-- **Correcciones automáticas aplicadas**: 
-  - ✅ 43+ problemas de linting corregidos (variables no usadas, imports organizados, etc.)
-  - ✅ Todos los botones ahora tienen atributo `type="button"` para accesibilidad
-  - ✅ Reemplazo de tipos `any` con tipos específicos en componentes clave
-  - ✅ Formateo unificado en 31 archivos de código
-  
-### 📝 Tipado TypeScript
-- **Interfazes compartidas creadas** (`mcp-frontend/src/types/api.ts`):
-  - `StatusResponse` - Respuesta completa del servidor de estado
-  - `AccessLogEntry` - Entrada de log de acceso
-  - `OllamaModel` - Modelo de Ollama
-  - `PullProgressData` - Datos de progreso de descarga
-  - `ChatMessage` - Mensaje de chat estruturado
-  - `EngineStats` - Estadísticas del motor
+- **Interfazes compartidas** (`mcp-frontend/src/types/api.ts`):
+  - `StatusResponse` - Respuesta completa del servidor de estado con propiedades VRAM
+  - `AccessLogEntry` - Entrada de log de acceso con propiedades tipadas
+  - `OllamaModel` - Modelo de Ollama con propiedades name, model, size, digest
+  - `LoadedModel` - Modelo cargado en VRAM con propiedades name, size_vram, percentage
+  - `ChatMessage` - Mensaje de chat estructura con role y content
+  - `EngineStats` - Estadísticas del motor con tokensSession y timeSession
+  - `VramInfo` - Información de VRAM con total, used, free, available
+
+### Mejorado
+- **Calidad de Código**:
+  - 43+ problemas de linting corregidos (variables no usadas, imports organizados, etc.)
+  - Todos los botones ahora tienen atributo `type="button"` para accesibilidad
+  - Reemplazo de tipos `any` con tipos específicos en componentes clave
+  - Formateo unificado en 31 archivos de código
+- **Error Handling**:
+  - Type guards implementados para manejo seguro de `unknown` en catch blocks
+  - Manejo seguro de propiedades undefined con nullish coalescing operator (`??`)
+- **Tipado TypeScript**:
+  - Función `VramBadge` tipada correctamente con interfaz específica para parámetro vram
+  - Tipado de `loadedModels.map()` con LoadedModel interface
+  - Props interfaces mejoradas con parámetros opcionales donde sea apropiado
+
+### Corregido
+- **App.tsx**:
+  - Removido import no usado `AxiosError`
+  - Cambio de `useState<StatusResponse | null>` a `useState<StatusResponse | undefined>` para coherencia de tipos
+- **Telemetry.tsx**:
+  - Error handling mejorado con type guard `instanceof Error`
+  - Acceso seguro a `status?.recentLogs?.length` con nullish coalescing
+- **HardwareSentinel.tsx**:
+  - Key element usando `String()` con fallback a index en map loops
+  - Props interface para aceptar `status` opcional
+  - Tipado correcto de parámetro vram en VramBadge
+- **AiEngineTuner.tsx**:
+  - Props interface para aceptar `status` opcional
+- **IpLogs.tsx**:
+  - Props mejoradas con tipos específicos: `logs?: AccessLogEntry[]`, `status?: StatusResponse`
+  - Importación correcta de tipos desde api.ts
+- **ollama.tools.ts**:
+  - Caracteres de escape `\t` reemplazados con indentación real en ChatMessage type
+  - CallToolRequestHandler mejorado con type assertion para request.params
+  - Error handling en catch block usando variable tipada como string
+- **ollama.service.ts**:
+  - Session cache logic mejorada para evitar acceso undefined con variable intermedia
+
+### Cambiado
+- **StatusResponse**: Cambio de `Record<string, any>` a interfaz con propiedades específicas
+  - Agregadas propiedades VRAM: `vramFreeMb`, `vramTotalMb`, `vramUsedMb`
+  - Agregadas propiedades modelos: `models` (LoadedModel[]), `recentLogs` (AccessLogEntry[])
+  - Mantenida compatibilidad con `[key: string]: any` para propiedades adicionales
+- **OllamaModel**: De `Record<string, any>` a interfaz con propiedades esperadas
+- **LoadedModel**: De `Record<string, any>` a interfaz con propiedades tipadas
+- **EngineStats**: De `Record<string, any>` a interfaz que extiende Record
+
+### Información de Build
+- **Frontend Build**: ✅ Exitoso
+  - TypeScript compilation: 0 errores
+  - Vite production build: 361.9 KB JS (111.4 KB gzip)
+  - Build time: 7.17 segundos
+  - Módulos transformados: 1829
+- **Backend Build**: ✅ Exitoso
+  - TypeScript compilation en ollama-mcp-server: 0 errores
+  - Types resueltos para OllamaService y OllamaTools
   - Y más tipos específicos
 - **Reducción de tipos `any`**: Reemplazados en:
   - `App.tsx` - Estados y callbacks tipados correctamente

@@ -1,10 +1,11 @@
 import { Activity, Search, Shield, XCircle } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
+import type { AccessLogEntry, StatusResponse } from "../types/api";
 
 interface IpLogsProps {
-	logs: Record<string, unknown>[];
-	status: Record<string, unknown>;
+	logs?: AccessLogEntry[];
+	status?: StatusResponse;
 	onBan: (ip: string) => void;
 }
 

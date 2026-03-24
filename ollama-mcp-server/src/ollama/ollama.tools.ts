@@ -5,8 +5,8 @@ import type { AuthService } from "../auth/auth.service.js";
 import type { OllamaService } from "./ollama.service.js";
 
 type ChatMessage = {
-\trole: "user" | "assistant" | "system";
-\tcontent: string;
+	role: "user" | "assistant" | "system";
+	content: string;
 };
 
 const InferenceOptionsSchema = z.object({
@@ -140,8 +140,9 @@ export class OllamaTools {
 		});
 
 		// 2. Call Tools
-		server.setRequestHandler(CallToolRequestSchema, async (request: Record<string, unknown>) => {
-			const { name, arguments: args } = request.params;
+		server.setRequestHandler(CallToolRequestSchema, async (request) => {
+			const params = request.params as { name: string; arguments?: Record<string, unknown> };
+			const { name, arguments: args } = params;
 			const ip = "MCP-Client";
 
 			// Global Auth Check
@@ -229,9 +230,9 @@ export class OllamaTools {
 						throw new Error(`Tool ${name} not found`);
 				}
 			} catch (error: unknown) {
-			const message = error instanceof Error ? error.message : "Unknown error";
+				const message = error instanceof Error ? error.message : "Unknown error";
 				return {
-					content: [{ type: "text", text: `Error: ${error.message}` }],
+					content: [{ type: "text", text: `Error: ${message}` }],
 					isError: true,
 				};
 			}

@@ -2,23 +2,16 @@
  * Tipos compartidos para API responses y componentes
  */
 
-export interface VramInfo {
-	total: number;
-	used: number;
-	free: number;
-	available?: number;
-}
-
-export interface LoadedModel {
-	name: string;
-	size?: number;
-	size_vram?: number;
-}
-
-export interface OllamaModel {
-	name: string;
-	size: number;
-	modified_at: string;
+export interface StatusResponse {
+	gpuMemoryTotal?: number;
+	gpuMemoryUsed?: number;
+	gpuMemoryAvailable?: number;
+	vramFreeMb?: number;
+	vramTotalMb?: number;
+	vramUsedMb?: number;
+	models?: LoadedModel[];
+	recentLogs?: AccessLogEntry[];
+	[key: string]: any;
 }
 
 export interface AccessLogEntry {
@@ -28,22 +21,42 @@ export interface AccessLogEntry {
 	status: "Success" | "Failed";
 }
 
-export interface PullProgressData {
+export interface OllamaModel {
+	name: string;
 	model: string;
-	percent: number;
-	status: "pulling" | "done" | "failed";
+	modified_at: string;
+	size: number;
+	digest: string;
+	[key: string]: any;
 }
 
-export interface StatusResponse {
-	recentLogs?: AccessLogEntry[];
-	vram?: VramInfo;
-	loadedModels?: LoadedModel[];
-	ngrokInfo?: {
-		active: boolean;
-		url?: string | null;
-	};
-	autoUnloadMinutes?: number;
-	globalNumCtx?: number;
+export interface LoadedModel {
+	name?: string | unknown;
+	size_vram?: number;
+	percentage?: number;
+	[key: string]: any;
+}
+
+export type PullProgressData = Record<string, any>;
+
+export interface ChatMessage {
+	role: "user" | "assistant";
+	content: string;
+	[key: string]: any;
+}
+
+export interface EngineStats extends Record<string, any> {
+	totalTokensSession?: number;
+	totalTimeSession?: number;
+	[key: string]: any;
+}
+
+// Para casos donde se necesita tipado estricto
+export interface VramInfo {
+	total: number;
+	used: number;
+	free: number;
+	available?: number;
 }
 
 export interface ChatCompletionOptions {
@@ -51,19 +64,5 @@ export interface ChatCompletionOptions {
 	num_ctx?: number;
 	top_p?: number;
 	top_k?: number;
-	[key: string]: unknown;
+	[key: string]: any;
 }
-
-export interface EngineStats {
-	stats?: {
-		electricityRateARS: number;
-		cloudPricePerMToken: number;
-		tokens?: number;
-		costSaved?: number;
-	};
-}
-
-export type ChatMessage = {
-	role: "user" | "assistant" | "system";
-	content: string;
-};

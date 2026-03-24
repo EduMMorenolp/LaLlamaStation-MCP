@@ -11,13 +11,12 @@ import { SecurityPanel } from "./components/SecurityPanel";
 import { Telemetry } from "./components/Telemetry";
 import { subscribeToNewAccess, subscribeToPullProgress, subscribeToSecurityAlerts } from "./services/socket.service";
 import type { AccessLogEntry, OllamaModel, PullProgressData, StatusResponse } from "./types/api";
-import { AxiosError } from "axios";
 
 const App: React.FC = () => {
 	const [apiKey, setApiKey] = useState("");
 	const [apiKeyInput, setApiKeyInput] = useState(""); // Estado separado para el input
 	const [isAuthorized, setIsAuthorized] = useState(false);
-	const [status, setStatus] = useState<StatusResponse | null>(null);
+	const [status, setStatus] = useState<StatusResponse | undefined>(undefined);
 	const [models, setModels] = useState<OllamaModel[]>([]);
 	const [pullProgress, setPullProgress] = useState<PullProgressData | null>(null);
 	const [loading, setLoading] = useState(false);

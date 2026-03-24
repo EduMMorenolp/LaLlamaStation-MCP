@@ -211,8 +211,9 @@ export class OllamaService {
 				finalMessages = [...cached, ...messages];
 			}
 			this.sessionCache.set(sessionId, finalMessages);
-			if (this.sessionCache.get(sessionId)?.length > 20) {
-				this.sessionCache.set(sessionId, this.sessionCache.get(sessionId)?.slice(-20));
+			const cached2 = this.sessionCache.get(sessionId);
+			if (cached2?.length && cached2.length > 20) {
+				this.sessionCache.set(sessionId, cached2.slice(-20));
 			}
 		}
 
