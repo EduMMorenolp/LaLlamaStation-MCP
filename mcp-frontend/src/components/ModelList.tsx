@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
 	BookOpen,
 	Download,
@@ -14,9 +13,7 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useState } from "react";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
-const HEADERS = () => ({ "x-api-key": localStorage.getItem("llama_master_key") || "" });
+import { api } from "../services/api.service";
 
 interface ModelListProps {
 	models: any[];
@@ -92,9 +89,7 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 		setSearchError("");
 		setHasSearched(true);
 		try {
-			const res = await axios.get(`${API}/api/search-models?q=${encodeURIComponent(term)}`, {
-				headers: HEADERS(),
-			});
+			const res = await api.get(`/api/search-models?q=${encodeURIComponent(term)}`);
 			setSearchResults(res.data.models || []);
 		} catch {
 			setSearchError("No se pudo conectar con ollama.com. Usa los modelos sugeridos abajo.");

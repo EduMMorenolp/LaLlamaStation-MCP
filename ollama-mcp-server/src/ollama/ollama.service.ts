@@ -234,7 +234,12 @@ export class OllamaService {
 		const gpuPower = this.getGpuMetrics().powerDraw;
 		this.trackTokenUsage(promptTokens, evalTokens, durationMs, gpuPower);
 
-		return response.data.message;
+		return {
+			message: response.data.message,
+			prompt_eval_count: promptTokens,
+			eval_count: evalTokens,
+			total_duration: durationMs,
+		};
 	}
 
 	async unloadModels(): Promise<void> {

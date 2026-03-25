@@ -1,10 +1,7 @@
-import axios from "axios";
 import { BarChart2, Check, Clock, Copy, Cpu, Database, Loader, Power, RefreshCw, Zap } from "lucide-react";
 import type React from "react";
 import { useCallback, useState } from "react";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
-const HEADERS = () => ({ "x-api-key": localStorage.getItem("llama_master_key") || "" });
+import { api } from "../services/api.service";
 
 import type { StatusResponse } from "../types/api";
 
@@ -27,12 +24,12 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status, onOllamaControl })
 		setNgrokLoading(true);
 		try {
 			const endpoint = ngrokActive ? "/api/ngrok/stop" : "/api/ngrok/start";
-			const res = await axios.post(`${API}${endpoint}`, {}, { headers: HEADERS() });
+			const res = await api.post(endpoint, {});
 			setNgrokRunning(res.data.running);
 			if (res.data.running) {
 				setTimeout(async () => {
 					try {
-						const statusRes = await axios.get(`${API}/api/ngrok/status`, { headers: HEADERS() });
+						const statusRes = await api.get("/api/ngrok/status");
 						setNgrokUrl(statusRes.data.url);
 					} catch {
 						/* aún iniciando */

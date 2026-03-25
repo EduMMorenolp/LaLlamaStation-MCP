@@ -25,6 +25,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
   - `ChatMessage` - Mensaje de chat estructura con role y content
   - `EngineStats` - Estadísticas del motor con tokensSession y timeSession
   - `VramInfo` - Información de VRAM con total, used, free, available
+- **Contratos limpios API + frontend**
+  - Contrato OpenAI `/v1/chat/completions` con `usage` real (tokens de prompt/completion) y validación de payload
+  - Cliente API centralizado en frontend (`mcp-frontend/src/services/api.service.ts`) con interceptor para `x-api-key`
+  - Helpers de sesión de API key (`setApiKey`, `clearApiKey`, persistencia opcional)
 
 ### Mejorado
 - **Calidad de Código**:
@@ -39,6 +43,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
   - Función `VramBadge` tipada correctamente con interfaz específica para parámetro vram
   - Tipado de `loadedModels.map()` con LoadedModel interface
   - Props interfaces mejoradas con parámetros opcionales donde sea apropiado
+- **Integración Backend/Frontend**:
+  - `OllamaService.chat()` ahora retorna estructura enriquecida (`message`, `prompt_eval_count`, `eval_count`, `total_duration`)
+  - `App.tsx` migrado a cliente API compartido para eliminar headers duplicados y llamadas axios dispersas
+  - Componentes migrados a cliente unificado: `Telemetry`, `ModelList`, `HardwareSentinel`, `AiEngineTuner`
 
 ### Corregido
 - **App.tsx**:
@@ -62,6 +70,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
   - Error handling en catch block usando variable tipada como string
 - **ollama.service.ts**:
   - Session cache logic mejorada para evitar acceso undefined con variable intermedia
+- **Contrato y UX**:
+  - `usage` en `/v1/chat/completions` dejó de retornar ceros y ahora usa métricas reales de inferencia
+  - `ollama.tools.ts` actualizado para leer el nuevo shape de respuesta de `chat` sin romper herramientas MCP
+  - Auto-scroll de `ChatPlayground` corregido para reaccionar a nuevos mensajes y estado de carga
+  - Documentación de eventos Socket alineada con nombres reales en kebab-case (`pull-progress`, `security-alert`, `new-access`)
 
 ### Cambiado
 - **StatusResponse**: Cambio de `Record<string, any>` a interfaz con propiedades específicas
@@ -71,6 +84,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 - **OllamaModel**: De `Record<string, any>` a interfaz con propiedades esperadas
 - **LoadedModel**: De `Record<string, any>` a interfaz con propiedades tipadas
 - **EngineStats**: De `Record<string, any>` a interfaz que extiende Record
+- **Servicio API Frontend**:
+  - Reemplazo del `api.service.ts` anterior (orientado a `/sse`) por una capa HTTP real para endpoints REST del dashboard
 
 ### Información de Build
 - **Frontend Build**: ✅ Exitoso
@@ -89,6 +104,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
   - `components/HardwareSentinel.tsx` - Props y callbacks tipados
   - `ollama-mcp-server` - Tipos locales definidos para ChatMessage
 - **Errores de tipo reducidos**: De 101 errores originales a ~55 (46% reducción)
+- **Build Fase 2 (2026-03-25)**: ✅ Exitoso
+  - Frontend (`pnpm run build`): TypeScript + Vite OK
+  - Bundle frontend: `361.53 kB` JS (`111.63 kB` gzip), `1830` módulos transformados
+  - Backend (`pnpm run build`): `tsc` completado sin errores
 
 ## [0.3.0] — 2026-03-10 🦙 Renaming + Model Discovery + Ngrok Control
 

@@ -165,9 +165,9 @@ El frontend se conecta a `ws://localhost:3000` y escucha los siguientes eventos:
 
 | Evento | Payload | Descripción |
 |---|---|---|
-| `pull_progress` | `{ model, percent, status }` | Progreso de descarga de modelo |
-| `security_alert` | `{ type, ip, message }` | Alerta de seguridad (ban, intento, etc.) |
-| `new_access` | `{ ip, action, status, timestamp }` | Nueva solicitud registrada |
+| `pull-progress` | `{ model, percent, status }` | Progreso de descarga de modelo |
+| `security-alert` | `{ type, ip, message }` | Alerta de seguridad (ban, intento, etc.) |
+| `new-access` | `{ ip, action, status, timestamp }` | Nueva solicitud registrada |
 
 ---
 

@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
 	AlertTriangle,
 	CheckCircle,
@@ -13,9 +12,7 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useState } from "react";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
-const HEADERS = () => ({ "x-api-key": localStorage.getItem("llama_master_key") || "" });
+import { api } from "../services/api.service";
 
 const AUTO_UNLOAD_OPTIONS = [
 	{ label: "Nunca", value: 0 },
@@ -104,8 +101,8 @@ export const HardwareSentinel: React.FC<HardwareSentinelProps> = ({ status }) =>
 		setSaving(true);
 		try {
 			await Promise.all([
-				axios.post(`${API}/api/hardware/auto-unload`, { minutes: autoUnload }, { headers: HEADERS() }),
-				axios.post(`${API}/api/hardware/num-ctx`, { numCtx }, { headers: HEADERS() }),
+				api.post("/api/hardware/auto-unload", { minutes: autoUnload }),
+				api.post("/api/hardware/num-ctx", { numCtx }),
 			]);
 			setSavedMsg("✓ Configuración guardada");
 			setTimeout(() => setSavedMsg(""), 3000);

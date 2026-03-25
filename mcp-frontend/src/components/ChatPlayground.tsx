@@ -133,7 +133,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 	// Auto-scroll
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, []);
+	}, [history, loading]);
 
 	// Auto-resize textarea
 	const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

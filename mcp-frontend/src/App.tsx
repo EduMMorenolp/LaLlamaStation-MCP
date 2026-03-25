@@ -1,4 +1,3 @@
-import axios from "axios";
 import { Activity, Cpu, Eye, EyeOff, Layers, RefreshCw, Shield, Terminal, Zap } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -9,6 +8,14 @@ import { IpLogs } from "./components/IpLogs";
 import { ModelList } from "./components/ModelList";
 import { SecurityPanel } from "./components/SecurityPanel";
 import { Telemetry } from "./components/Telemetry";
+import {
+	api,
+	clearApiKey,
+	getStoredApiKey,
+	persistApiKey,
+	removePersistedApiKey,
+	setApiKey as setApiClientKey,
+} from "./services/api.service";
 import { subscribeToNewAccess, subscribeToPullProgress, subscribeToSecurityAlerts } from "./services/socket.service";
 import type { AccessLogEntry, OllamaModel, PullProgressData, StatusResponse } from "./types/api";
 
@@ -23,19 +30,16 @@ const App: React.FC = () => {
 	const [authError, setAuthError] = useState("");
 	const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-	const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
 	const fetchData = useCallback(async () => {
 		if (!apiKey) return;
 		try {
 			const [statusRes, modelsRes] = await Promise.all([
-				axios.get(`${API_BASE}/api/status`, { headers: { "x-api-key": apiKey } }),
-				axios.get(`${API_BASE}/api/models`, { headers: { "x-api-key": apiKey } }),
+				api.get("/api/status"),
+				api.get("/api/models"),
 			]);
 			setStatus(statusRes.data);
 			setModels(modelsRes.data.models || []);
 			setIsAuthorized(true);
-			localStorage.setItem("llama_master_key", apiKey);
 		} catch (err) {
 			setIsAuthorized(false);
 			console.error("Auth failed", err);
@@ -82,32 +86,33 @@ const App: React.FC = () => {
 	}, [apiKey, fetchData, isAuthorized]);
 
 	const handleSendMessage = async (model: string, content: string, options: Record<string, unknown>) => {
-		const res = await axios.post(
-			`${API_BASE}/v1/chat/completions`,
-			{
-				model,
-				messages: [{ role: "user", content }],
-				...options,
-			},
-			{ headers: { "x-api-key": apiKey } }
-		);
+		const res = await api.post("/v1/chat/completions", {
+			model,
+			messages: [{ role: "user", content }],
+			...options,
+		});
 
-		return res.data.choices[0].message;
+		return {
+			content: res.data?.choices?.[0]?.message?.content || "",
+			message: res.data?.choices?.[0]?.message,
+			prompt_eval_count: res.data?.usage?.prompt_tokens || 0,
+			eval_count: res.data?.usage?.completion_tokens || 0,
+		};
 	};
 
 	const handleBan = async (ip: string) => {
-		await axios.post(`${API_BASE}/api/ban`, { ip }, { headers: { "x-api-key": apiKey } });
+		await api.post("/api/ban", { ip });
 		fetchData();
 	};
 
 	const handleUnban = async (ip: string) => {
-		await axios.post(`${API_BASE}/api/unban`, { ip }, { headers: { "x-api-key": apiKey } });
+		await api.post("/api/unban", { ip });
 		fetchData();
 	};
 
 	const handleOllamaControl = async (action: "start" | "stop" | "restart") => {
 		try {
-			await axios.post(`${API_BASE}/api/ollama/${action}`, {}, { headers: { "x-api-key": apiKey } });
+			await api.post(`/api/ollama/${action}`, {});
 			// Dar un pequeño delay para que el contenedor reaccione antes de refrescar
 			setTimeout(fetchData, 2000);
 		} catch (e) {
@@ -116,14 +121,14 @@ const App: React.FC = () => {
 	};
 
 	const handlePanic = async () => {
-		await axios.post(`${API_BASE}/api/unload`, {}, { headers: { "x-api-key": apiKey } });
+		await api.post("/api/unload", {});
 		fetchData();
 	};
 
 	const handleCleanWorkspace = async () => {
 		try {
 			setLoading(true);
-			const res = await axios.post(`${API_BASE}/api/clean`, {}, { headers: { "x-api-key": apiKey } });
+			const res = await api.post("/api/clean", {});
 			alert(`¡Limpieza completada! Se han liberado ${res.data.freed.toFixed(2)} GB de archivos temporales.`);
 			fetchData();
 		} catch (err: unknown) {
@@ -145,7 +150,7 @@ const App: React.FC = () => {
 
 		try {
 			setLoading(true);
-			await axios.delete(`${API_BASE}/api/models/${name}`, { headers: { "x-api-key": apiKey } });
+			await api.delete(`/api/models/${name}`);
 			fetchData();
 		} catch (err: any) {
 			alert(`Error al eliminar el modelo: ${err.message}`);
@@ -157,7 +162,7 @@ const App: React.FC = () => {
 	const handlePull = async (model: string) => {
 		try {
 			setPullProgress({ model, percent: 0, status: "pulling" });
-			await axios.post(`${API_BASE}/api/pull`, { model }, { headers: { "x-api-key": apiKey } });
+			await api.post("/api/pull", { model });
 		} catch (e: any) {
 			setPullProgress(null);
 			alert(e.response?.data?.error || "Error al iniciar descarga");
@@ -171,7 +176,7 @@ const App: React.FC = () => {
 
 	// Cargar key recordada al inicio
 	useEffect(() => {
-		const saved = localStorage.getItem("llama_master_key");
+		const saved = getStoredApiKey();
 		if (saved) {
 			setApiKeyInput(saved);
 			setApiKey(saved);
@@ -182,10 +187,12 @@ const App: React.FC = () => {
 	// Disparar fetchData cuando la apiKey real cambie y mantener un heartbeat de 15s para telemetría
 	useEffect(() => {
 		if (apiKey) {
+			setApiClientKey(apiKey);
 			fetchData();
 			const interval = setInterval(fetchData, 15000);
 			return () => clearInterval(interval);
 		}
+		clearApiKey();
 	}, [apiKey, fetchData]);
 
 	const handleAuth = async (e?: React.FormEvent) => {
@@ -197,20 +204,22 @@ const App: React.FC = () => {
 		setAuthError("");
 
 		try {
+			setApiClientKey(keyToUse);
 			const [statusRes, modelsRes] = await Promise.all([
-				axios.get(`${API_BASE}/api/status`, { headers: { "x-api-key": keyToUse } }),
-				axios.get(`${API_BASE}/api/models`, { headers: { "x-api-key": keyToUse } }),
+				api.get("/api/status"),
+				api.get("/api/models"),
 			]);
 			setStatus(statusRes.data);
 			setModels(modelsRes.data.models || []);
 			setIsAuthorized(true);
 			setApiKey(keyToUse);
 			if (rememberKey) {
-				localStorage.setItem("llama_master_key", keyToUse);
+				persistApiKey(keyToUse);
 			} else {
-				localStorage.removeItem("llama_master_key");
+				removePersistedApiKey();
 			}
 		} catch (err: any) {
+			clearApiKey();
 			setIsAuthorized(false);
 			let errorMsg = "Error de conexión con el servidor MCP";
 			if (err.response?.status === 401) errorMsg = "Acceso denegado: PIN incorrecto o inválido";

@@ -31,9 +31,9 @@ LaLlamaStation MCP es una plataforma de administración local para modelos de le
 │                                                               │
 │  ┌───────────────────┐  ┌─────────────────────────────────┐  │
 │  │   OllamaService   │  │        Socket.io Server         │  │
-│  │  - listModels()   │  │  - pull_progress event          │  │
-│  │  - chat()         │  │  - security_alert event         │  │
-│  │  - pullModel()    │  │  - new_access event             │  │
+│  │  - listModels()   │  │  - pull-progress event          │  │
+│  │  - chat()         │  │  - security-alert event         │  │
+│  │  - pullModel()    │  │  - new-access event             │  │
 │  │  - deleteModel()  │  └─────────────────────────────────┘  │
 │  │  - getStatus()    │                                        │
 │  │  - banIp()        │  ┌─────────────────────────────────┐  │
@@ -95,7 +95,7 @@ Request entrante
     → securityMiddleware (chequea blacklist)
     → authMiddleware (valida API Key)
     → Si falla: reportFailedAuth(ip)
-    → Si >= 5 intentos: banIp(ip) + emit "security_alert"
+    → Si >= 5 intentos: banIp(ip) + emit "security-alert"
     → Frontend recibe alerta via WebSocket
 ```
 
@@ -105,7 +105,7 @@ Usuario click "DESCARGAR"
     → POST /api/pull { model: "llama3.2" }
     → OllamaService.pullModel() [async, no bloquea]
     → Stream de progreso recibido de Ollama
-    → emit "pull_progress" via Socket.io
+    → emit "pull-progress" via Socket.io
     → Frontend actualiza barra de progreso en tiempo real
 ```
 

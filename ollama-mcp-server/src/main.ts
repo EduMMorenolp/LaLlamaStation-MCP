@@ -120,12 +120,25 @@ app.get("/api/models", authMiddleware, async (_req, res) => {
 
 // 2. Chat Completions (OpenAI Format)
 app.post("/v1/chat/completions", authMiddleware, async (req, res) => {
-	const { model, messages, stream } = req.body;
+	const { model, messages, stream, temperature, num_ctx, top_p, top_k } = req.body;
+
+	if (!model || !Array.isArray(messages)) {
+		return res.status(400).json({ error: "model y messages son obligatorios" });
+	}
+	if (stream === true) {
+		return res.status(400).json({ error: "stream=true no soportado en esta version" });
+	}
 
 	try {
-		const response = await appModule.ollamaService.chat(model, messages);
+		const response = await appModule.ollamaService.chat(model, messages, {
+			temperature,
+			num_ctx,
+			top_p,
+			top_k,
+		});
+		const promptTokens = response.prompt_eval_count || 0;
+		const completionTokens = response.eval_count || 0;
 
-		// Simplificado para no-streaming por ahora
 		res.json({
 			id: `chatcmpl-${Date.now()}`,
 			object: "chat.completion",
@@ -134,14 +147,14 @@ app.post("/v1/chat/completions", authMiddleware, async (req, res) => {
 			choices: [
 				{
 					index: 0,
-					message: response,
+					message: response.message,
 					finish_reason: "stop",
 				},
 			],
 			usage: {
-				prompt_tokens: 0,
-				completion_tokens: 0,
-				total_tokens: 0,
+				prompt_tokens: promptTokens,
+				completion_tokens: completionTokens,
+				total_tokens: promptTokens + completionTokens,
 			},
 		});
 	} catch (error: any) {

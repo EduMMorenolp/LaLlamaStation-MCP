@@ -203,7 +203,7 @@ export class OllamaTools {
 							args?.session_id as string
 						);
 						return {
-							content: [{ type: "text", text: chatResponse.content }],
+							content: [{ type: "text", text: chatResponse?.message?.content || "" }],
 						};
 					}
 

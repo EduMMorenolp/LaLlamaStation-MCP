@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
 	AlertTriangle,
 	Award,
@@ -14,9 +13,7 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
-const HEADERS = () => ({ "x-api-key": localStorage.getItem("llama_master_key") || "" });
+import { api } from "../services/api.service";
 
 // USD/ARS reference (approximate)
 const USD_TO_ARS = 1200;
@@ -104,7 +101,7 @@ export const AiEngineTuner: React.FC<AiEngineTunerProps> = ({ status }) => {
 
 	const fetchEngineStats = useCallback(async () => {
 		try {
-			const res = await axios.get(`${API}/api/engine-stats`, { headers: HEADERS() });
+			const res = await api.get("/api/engine-stats");
 			setEngineData(res.data);
 			setRateARS(res.data.stats?.electricityRateARS ?? 150);
 			setCloudPrice(res.data.stats?.cloudPricePerMToken ?? 5.0);
@@ -134,12 +131,8 @@ export const AiEngineTuner: React.FC<AiEngineTunerProps> = ({ status }) => {
 		setSaving(true);
 		try {
 			await Promise.all([
-				axios.post(`${API}/api/engine-stats/electricity-rate`, { rateARS }, { headers: HEADERS() }),
-				axios.post(
-					`${API}/api/engine-stats/cloud-price`,
-					{ pricePerMToken: cloudPrice },
-					{ headers: HEADERS() }
-				),
+				api.post("/api/engine-stats/electricity-rate", { rateARS }),
+				api.post("/api/engine-stats/cloud-price", { pricePerMToken: cloudPrice }),
 			]);
 			setSavedMsg("✓ Configuracion guardada");
 			setTimeout(() => setSavedMsg(""), 3000);
