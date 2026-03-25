@@ -8,6 +8,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 ## [Unreleased]
 
 ### Añadido
+- **Blindaje & Seguridad**:
+  - API_KEY obligatoria en startup: El servidor fallará si `API_KEY` no está configurada en `.env` o docker-compose
+  - SessionManager: Nuevo servicio para manejar sesiones aisladas por IP (Fase 1 - Prevenir interferencia de estado global)
+  - Autenticación en SSE/MCP: Las conexiones `/sse` y `/messages` ahora requieren `x-api-key` válida
+  - Cleanup seguro: `deleteModel()` y `cleanWorkspace()` ahora rastrean operaciones en progreso para evitar conflictos
+  - Auto-unload mejorado: Mejor manejo de errores con notificaciones explícitas al usuario
 - Establecida regla obligatoria para la IA: registrar todos los cambios en el `CHANGELOG.md`.
 - Archivo de reglas `.cursorrules` para automatizar el proceso de documentación.
 - **Persistencia del Chat en ChatPlayground**: historial de mensajes y configuraciones se guardan automáticamente en `localStorage`

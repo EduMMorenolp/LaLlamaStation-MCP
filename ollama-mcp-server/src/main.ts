@@ -431,17 +431,35 @@ app.get("/api/search-models", authMiddleware, async (req, res) => {
 	}
 });
 
-// --- Endpoints MCP (SSE) ---
+// --- Endpoints MCP (SSE) with Auth ---
 
 let transport: SSEServerTransport | null = null;
 
-app.get("/sse", async (_req: Request, res: Response) => {
-	console.log("New SSE connection");
+app.get("/sse", async (req: Request, res: Response) => {
+	const apiKey = req.headers["x-api-key"] || req.headers.authorization?.toString().replace("Bearer ", "");
+	const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
+
+	if (!appModule.authService.validate(apiKey as string)) {
+		console.warn(`[SSE-AUTH-FAIL] Unauthorized MCP connection attempt from ${ip}`);
+		appModule.ollamaService.logRequest(ip, "GET /sse", "Unauthorized");
+		appModule.ollamaService.reportFailedAuth(ip);
+		return res.status(401).json({ error: "Unauthorized: Invalid API Key" });
+	}
+
+	console.log(`[SSE] New authenticated connection from ${ip}`);
+	const sessionId = appModule.sessionManager.createSession(ip, apiKey as string);
+
 	transport = new SSEServerTransport("/messages", res);
 	await server.connect(transport);
 });
 
 app.post("/messages", async (req: Request, res: Response) => {
+	const apiKey = req.headers["x-api-key"] || req.headers.authorization?.toString().replace("Bearer ", "");
+
+	if (!appModule.authService.validate(apiKey as string)) {
+		return res.status(401).json({ error: "Unauthorized: Invalid API Key" });
+	}
+
 	if (transport) {
 		await transport.handlePostMessage(req, res);
 	} else {

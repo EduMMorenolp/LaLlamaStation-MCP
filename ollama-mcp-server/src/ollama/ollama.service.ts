@@ -15,6 +15,7 @@ export class OllamaService {
 	private readonly blacklist: Set<string> = new Set();
 	private readonly failedAttempts: Map<string, number> = new Map();
 	private readonly sessionCache: Map<string, any[]> = new Map();
+	private readonly modelDeletePending: Set<string> = new Set();
 	private io?: SocketServer;
 	private readonly pullStates: Map<string, { percent: number; status: string; lastUpdate: number }> = new Map();
 	private readonly startTime: number = Date.now();
@@ -51,12 +52,21 @@ export class OllamaService {
 			const inactiveMins = (Date.now() - this.lastChatTime) / 60000;
 			if (inactiveMins >= this.autoUnloadMinutes) {
 				console.log(`[auto-unload] ${inactiveMins.toFixed(1)}min inactividad — liberando VRAM...`);
-				await this.unloadModels().catch(() => {});
-				if (this.io)
-					this.io.emit("security-alert", {
-						type: "info",
-						message: `Auto-Unload: VRAM liberada por inactividad (${this.autoUnloadMinutes}min)`,
-					});
+				try {
+					await this.unloadModels();
+					if (this.io)
+						this.io.emit("security-alert", {
+							type: "info",
+							message: `Auto-Unload: VRAM liberada por inactividad (${this.autoUnloadMinutes}min)`,
+						});
+				} catch (err) {
+					console.error("[auto-unload-error]", err);
+					if (this.io)
+						this.io.emit("security-alert", {
+							type: "error",
+							message: `Auto-Unload falló: revisa los logs`,
+						});
+				}
 				this.lastChatTime = Date.now();
 			}
 		}, 60 * 1000);
@@ -306,40 +316,98 @@ export class OllamaService {
 	}
 
 	async deleteModel(model: string): Promise<void> {
-		await axios({
-			method: "DELETE",
-			url: `${this.baseUrl}/api/delete`,
-			data: { name: model },
-		});
-		if (this.io) {
-			this.io.emit("security-alert", {
-				type: "info",
-				message: `Modelo ${model} eliminado para liberar espacio.`,
-			});
+		try {
+			// Fase 1: Prevent double-delete and track pending deletions
+			if (this.modelDeletePending.has(model)) {
+				throw new Error(`Model ${model} deletion already in progress`);
+			}
+
+			this.modelDeletePending.add(model);
+			try {
+				// Verify model exists before attempting delete
+				const models = await this.listModels();
+				if (!models.find((m) => m.name === model)) {
+					throw new Error(`Model ${model} not found`);
+				}
+
+				await axios({
+					method: "DELETE",
+					url: `${this.baseUrl}/api/delete`,
+					data: { name: model },
+					timeout: 30000,
+				});
+
+				console.log(`[delete] Model ${model} deleted successfully`);
+				if (this.io) {
+					this.io.emit("security-alert", {
+						type: "info",
+						message: `Modelo ${model} eliminado correctamente.`,
+					});
+				}
+			} finally {
+				this.modelDeletePending.delete(model);
+			}
+		} catch (e) {
+			console.error(`[delete-error] Failed to delete model ${model}:`, e);
+			if (this.io) {
+				this.io.emit("security-alert", {
+					type: "error",
+					message: `Error al eliminar modelo: ${e instanceof Error ? e.message : "desconocido"}`,
+				});
+			}
+			throw e;
 		}
 	}
 
-	async cleanWorkspace(): Promise<{ freed: number }> {
+	async cleanWorkspace(): Promise<{ freed: number; details?: string }> {
+		// Fase 1: Safe cleanup - don't clean if there are pending operations
+		if (this.modelDeletePending.size > 0) {
+			const pendingModels = Array.from(this.modelDeletePending).join(", ");
+			throw new Error(
+				`Cannot clean workspace: ${this.modelDeletePending.size} model(s) deletion in progress: ${pendingModels}`
+			);
+		}
+
 		let freed = 0;
+		let cleanedFiles = 0;
 		try {
 			const blobsPath = "/root/.ollama/models/blobs";
+			console.log(`[cleanup] Starting safe workspace cleanup in ${blobsPath}`);
+
 			if (fs.existsSync(blobsPath)) {
 				const files = fs.readdirSync(blobsPath);
+				console.log(`[cleanup] Found ${files.length} blob files to scan`);
+
 				for (const file of files) {
-					const filePath = `${blobsPath}/${file}`;
-					const stats = fs.statSync(filePath);
-					const now = Date.now();
-					const lastAccess = stats.atimeMs;
-					if (now - lastAccess > 24 * 60 * 60 * 1000) {
-						freed += stats.size;
-						fs.unlinkSync(filePath);
+					try {
+						const filePath = `${blobsPath}/${file}`;
+						const stats = fs.statSync(filePath);
+						const now = Date.now();
+						const lastAccess = stats.atimeMs;
+
+						// Only clean blobs older than 24 hours
+						if (now - lastAccess > 24 * 60 * 60 * 1000) {
+							freed += stats.size;
+							fs.unlinkSync(filePath);
+							cleanedFiles++;
+						}
+					} catch (e) {
+						console.warn(`[cleanup] Error processing file ${file}:`, e);
 					}
 				}
 			}
+
+			const freedGb = (freed / 1024 ** 3).toFixed(2);
+			console.log(`[cleanup] Cleanup complete: freed ${freedGb} GB (${cleanedFiles} files)`);
+
+			return {
+				freed: parseFloat(freedGb) as number,
+				details: `${cleanedFiles} blob files deleted, ${freedGb} GB freed`,
+			};
 		} catch (e) {
-			console.error("Error cleaning workspace:", e);
+			console.error("[cleanup-error]", e);
+			throw e;
 		}
-		return { freed: freed / 1024 ** 3 };
 	}
 
 	async getServerStatus(): Promise<any> {
