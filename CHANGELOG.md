@@ -7,6 +7,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-03-25
+
 ### Añadido
 - **Blindaje & Seguridad**:
   - API_KEY obligatoria en startup: El servidor fallará si `API_KEY` no está configurada en `.env` o docker-compose
