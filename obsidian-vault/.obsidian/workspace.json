@@ -1,0 +1,239 @@
+{
+  "main": {
+    "id": "0559b5a8764caf12",
+    "type": "split",
+    "children": [
+      {
+        "id": "460de7a5359e7635",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3ed32d4935ef109f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "06-Troubleshooting/Errores-Comunes.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Errores-Comunes"
+            }
+          },
+          {
+            "id": "04a2023e6952ad22",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "03-Backend/Postman-Collection.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Postman-Collection"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "6df4fdbd06b2ed05",
+    "type": "split",
+    "children": [
+      {
+        "id": "72b39dd4079b6558",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3c8c9c9d1d4a3ca9",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de archivos"
+            }
+          },
+          {
+            "id": "38708a49dd077b1b",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Buscar"
+            }
+          },
+          {
+            "id": "f06990208e12ce8a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "1462a3427f90436a",
+    "type": "split",
+    "children": [
+      {
+        "id": "6667b837cea45bb6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d7845f6670275982",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "03-Backend/Postman-Collection.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": true,
+                "searchQuery": "Como navegar",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Enlaces entrantes de Postman-Collection"
+            }
+          },
+          {
+            "id": "d3c22ada455a737d",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "03-Backend/Postman-Collection.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Enlaces salientes de Postman-Collection"
+            }
+          },
+          {
+            "id": "75b6593e8c99a751",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "621deddd841a4f08",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas las propiedades"
+            }
+          },
+          {
+            "id": "7580dd82c64593d3",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "03-Backend/Postman-Collection.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Esquema de Postman-Collection"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false
+    }
+  },
+  "active": "04a2023e6952ad22",
+  "lastOpenFiles": [
+    "03-Backend/Postman-Collection.md",
+    "06-Troubleshooting/Errores-Comunes.md",
+    "04-Frontend/Dashboard.md",
+    "02-Arquitectura/Indice-Frontend.md",
+    "LaLlamaStation-MCP-Postman-Collection.json",
+    "02-Arquitectura/Variables-Entorno.md",
+    "02-Arquitectura/Comandos.md",
+    "04-Frontend/Indice-Frontend.md",
+    "02-Arquitectura/Componentes.md",
+    "02-Arquitectura/Indice-Arquitectura.md",
+    "99-Referencia/Variables-Entorno.md",
+    "99-Referencia/Indice-Referencia.md",
+    "99-Referencia/Comandos.md",
+    "README.md",
+    "03-Backend/Seguridad.md",
+    "05-Operaciones/Docker.md",
+    "01-Inicio/Getting-Started.md",
+    "02-Arquitectura/Arquitectura.md",
+    "05-Operaciones/Hardware.md",
+    "01-Inicio/Instalacion.md",
+    "05-Operaciones/Indice-Operaciones.md",
+    "05-Operaciones/Performance-y-GPU.md",
+    "Indice-Inicio.md",
+    "01-Inicio/Indice-Inicio.md",
+    "LaLlamaStation-MCP.md",
+    "LaLlamaStation.md",
+    "RESUMEN-MEJORA.md",
+    "Sin título.canvas",
+    "_deprecated",
+    "99-Referencia",
+    "06-Troubleshooting",
+    "05-Operaciones",
+    "04-Frontend",
+    "03-Backend",
+    "02-Arquitectura",
+    "01-Inicio"
+  ]
+}
