@@ -1,6 +1,8 @@
 import { Bot, Check, ChevronDown, Clock, Copy, Cpu, FileText, Paperclip, RefreshCw, Send, Settings2, Trash2, X, Zap } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
 	id: string;
@@ -399,6 +401,93 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
                     font-size: 12px; font-weight: 700; cursor: pointer; outline: none;
                     appearance: none; min-width: 160px;
                 }
+				.markdown-content {
+					color: var(--text-main);
+					line-height: 1.75;
+				}
+				.markdown-content p { margin: 0 0 12px 0; }
+				.markdown-content p:last-child { margin-bottom: 0; }
+				.markdown-content h1,
+				.markdown-content h2,
+				.markdown-content h3,
+				.markdown-content h4 {
+					margin: 14px 0 10px;
+					line-height: 1.3;
+					font-weight: 800;
+				}
+				.markdown-content h1 { font-size: 21px; }
+				.markdown-content h2 { font-size: 18px; }
+				.markdown-content h3 { font-size: 16px; }
+				.markdown-content h4 { font-size: 14px; }
+				.markdown-content ul,
+				.markdown-content ol {
+					margin: 0 0 12px 0;
+					padding-left: 22px;
+				}
+				.markdown-content li { margin-bottom: 6px; }
+				.markdown-content blockquote {
+					margin: 0 0 12px 0;
+					border-left: 3px solid rgba(79,140,255,0.45);
+					padding: 8px 12px;
+					background: rgba(79,140,255,0.08);
+					border-radius: 0 8px 8px 0;
+					color: var(--text-dim);
+				}
+				.markdown-content code {
+					font-family: var(--font-mono, monospace);
+					font-size: 12px;
+					background: rgba(0,0,0,0.28);
+					border: 1px solid rgba(255,255,255,0.08);
+					border-radius: 6px;
+					padding: 2px 6px;
+				}
+				.markdown-content pre {
+					margin: 0 0 12px 0;
+					background: rgba(0,0,0,0.42);
+					border: 1px solid rgba(255,255,255,0.1);
+					border-radius: 10px;
+					padding: 12px;
+					overflow-x: auto;
+				}
+				.markdown-content pre code {
+					background: transparent;
+					border: none;
+					border-radius: 0;
+					padding: 0;
+					display: block;
+					white-space: pre;
+				}
+				.markdown-content a {
+					color: var(--accent);
+					text-decoration: underline;
+					text-underline-offset: 2px;
+				}
+				.markdown-content hr {
+					border: none;
+					border-top: 1px solid rgba(255,255,255,0.12);
+					margin: 16px 0;
+				}
+				.markdown-content table {
+					width: 100%;
+					border-collapse: collapse;
+					margin: 0 0 12px 0;
+					font-size: 12px;
+					background: rgba(255,255,255,0.02);
+					border: 1px solid rgba(255,255,255,0.12);
+					border-radius: 8px;
+					overflow: hidden;
+				}
+				.markdown-content th,
+				.markdown-content td {
+					border: 1px solid rgba(255,255,255,0.08);
+					padding: 8px 10px;
+					text-align: left;
+					vertical-align: top;
+				}
+				.markdown-content th {
+					background: rgba(255,255,255,0.06);
+					font-weight: 700;
+				}
             `}</style>
 
 			{/* ── HEADER ────────────────────────────────────── */}
@@ -749,7 +838,9 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 						>
 							{/* Content */}
 							{msg.role === "assistant" ? (
-								<div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
+								<div className="markdown-content">
+									<ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+								</div>
 							) : (
 								<div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
 							)}
