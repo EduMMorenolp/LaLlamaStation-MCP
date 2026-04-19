@@ -1,0 +1,916 @@
+{
+  "info": {
+    "name": "LaLlamaStation MCP - API Collection",
+    "description": "Coleccion completa de endpoints de LaLlamaStation MCP\n\nBase URL: http://localhost:3000\nAutenticacion: x-api-key header o Authorization: Bearer",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0",
+    "exporter": {
+      "name": "Postman",
+      "version": "10.0.0"
+    }
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "default"
+    },
+    {
+      "key": "api_key",
+      "value": "mcp_test_key",
+      "type": "default"
+    },
+    {
+      "key": "model",
+      "value": "qwen3.5:4b",
+      "type": "default"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Models (OpenAI Compatible)",
+      "item": [
+        {
+          "name": "List Models (v1/models)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/models",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "models"
+              ]
+            },
+            "description": "Listar todos los modelos instalados en formato OpenAI compatible"
+          },
+          "response": []
+        },
+        {
+          "name": "List Models (API Format)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/models",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "models"
+              ]
+            },
+            "description": "Listar modelos con detalles completos"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Chat & Completions",
+      "item": [
+        {
+          "name": "Chat Completions (Non-Streaming)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a helpful assistant.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Hola, como te llamas?\"\n    }\n  ],\n  \"stream\": false,\n  \"temperature\": 0.7,\n  \"num_ctx\": 2048,\n  \"top_p\": 0.9,\n  \"top_k\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/chat/completions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "chat",
+                "completions"
+              ]
+            },
+            "description": "Enviar prompt y recibir respuesta (modo no-streaming)"
+          },
+          "response": []
+        },
+        {
+          "name": "Chat Completions (Streaming)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Explica brevemente que es Machine Learning\"\n    }\n  ],\n  \"stream\": true,\n  \"temperature\": 0.7,\n  \"num_ctx\": 2048,\n  \"top_p\": 0.9,\n  \"top_k\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/chat/completions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "chat",
+                "completions"
+              ]
+            },
+            "description": "Enviar prompt y recibir respuesta en streaming (Server-Sent Events)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Status & Monitoring",
+      "item": [
+        {
+          "name": "Status - Fast",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/status/fast",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "status",
+                "fast"
+              ]
+            },
+            "description": "Estado rapido para polling (bajo costo)"
+          },
+          "response": []
+        },
+        {
+          "name": "Status - Full",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/status/full",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "status",
+                "full"
+              ]
+            },
+            "description": "Estado completo con todos los campos"
+          },
+          "response": []
+        },
+        {
+          "name": "Status - General",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "status"
+              ]
+            },
+            "description": "Estado general (backward compatible)"
+          },
+          "response": []
+        },
+        {
+          "name": "Performance Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/metrics/performance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "metrics",
+                "performance"
+              ]
+            },
+            "description": "Metricas de rendimiento (TTFT, throughput, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "Engine Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/engine-stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "engine-stats"
+              ]
+            },
+            "description": "Estadisticas del motor (requests, latencia, etc.)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Model Management",
+      "item": [
+        {
+          "name": "Pull Model",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"llama3\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/pull",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pull"
+              ]
+            },
+            "description": "Descargar un modelo desde Ollama registry"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Model",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/models/llama3",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "models",
+                "llama3"
+              ]
+            },
+            "description": "Eliminar un modelo instalado"
+          },
+          "response": []
+        },
+        {
+          "name": "Unload All Models",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/unload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "unload"
+              ]
+            },
+            "description": "Descargar todos los modelos de VRAM"
+          },
+          "response": []
+        },
+        {
+          "name": "Clean Cache",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/clean",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "clean"
+              ]
+            },
+            "description": "Limpiar cache de Ollama"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Models",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/search-models?q=qwen",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "search-models"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "qwen"
+                }
+              ]
+            },
+            "description": "Buscar modelos en ollama.com/library"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Hardware Management",
+      "item": [
+        {
+          "name": "Hardware Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/hardware",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "hardware"
+              ]
+            },
+            "description": "Obtener informacion de hardware (CPU, RAM, GPU, VRAM)"
+          },
+          "response": []
+        },
+        {
+          "name": "Auto-Unload Settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"thresholdPercent\": 85\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/hardware/auto-unload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "hardware",
+                "auto-unload"
+              ]
+            },
+            "description": "Configurar auto-unload de modelos por presion de memoria"
+          },
+          "response": []
+        },
+        {
+          "name": "Set Context Size",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"num_ctx\": 4096\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/hardware/num-ctx",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "hardware",
+                "num-ctx"
+              ]
+            },
+            "description": "Establecer tamano maximo de contexto en tokens"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Engine Configuration",
+      "item": [
+        {
+          "name": "Set Electricity Rate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ratePerKwh\": 0.12\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/engine-stats/electricity-rate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "engine-stats",
+                "electricity-rate"
+              ]
+            },
+            "description": "Configurar tarifa de electricidad por kWh"
+          },
+          "response": []
+        },
+        {
+          "name": "Set Cloud Price",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"costPerMillionTokens\": 0.50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/engine-stats/cloud-price",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "engine-stats",
+                "cloud-price"
+              ]
+            },
+            "description": "Configurar precio de referencia en cloud por 1M tokens"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Ollama Service Control",
+      "item": [
+        {
+          "name": "Start Ollama",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ollama/start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ollama",
+                "start"
+              ]
+            },
+            "description": "Iniciar servicio Ollama (via Docker)"
+          },
+          "response": []
+        },
+        {
+          "name": "Stop Ollama",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ollama/stop",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ollama",
+                "stop"
+              ]
+            },
+            "description": "Detener servicio Ollama"
+          },
+          "response": []
+        },
+        {
+          "name": "Restart Ollama",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ollama/restart",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ollama",
+                "restart"
+              ]
+            },
+            "description": "Reiniciar servicio Ollama"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Security & Access Control",
+      "item": [
+        {
+          "name": "Ban IP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ip\": \"192.168.1.100\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ban",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ban"
+              ]
+            },
+            "description": "Agregar una IP a la lista negra"
+          },
+          "response": []
+        },
+        {
+          "name": "Unban IP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ip\": \"192.168.1.100\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/unban",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "unban"
+              ]
+            },
+            "description": "Remover una IP de la lista negra"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. ngrok Tunnel Management",
+      "item": [
+        {
+          "name": "ngrok Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ngrok/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ngrok",
+                "status"
+              ]
+            },
+            "description": "Obtener estado del tunel ngrok (URL publica, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "Start ngrok",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ngrok/start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ngrok",
+                "start"
+              ]
+            },
+            "description": "Iniciar tunel ngrok (publica el backend)"
+          },
+          "response": []
+        },
+        {
+          "name": "Stop ngrok",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ngrok/stop",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ngrok",
+                "stop"
+              ]
+            },
+            "description": "Detener tunel ngrok"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10. MCP Protocol (Server-Sent Events)",
+      "item": [
+        {
+          "name": "MCP SSE Connection",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sse",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sse"
+              ]
+            },
+            "description": "Conexion SSE para MCP (mantener abierta para recibir eventos)"
+          },
+          "response": []
+        },
+        {
+          "name": "MCP Message (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"tools/list\",\n  \"params\": {}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "messages"
+              ]
+            },
+            "description": "Enviar mensaje MCP por POST (usado despues de conectar SSE)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
