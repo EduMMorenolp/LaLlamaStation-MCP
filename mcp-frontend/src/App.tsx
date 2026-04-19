@@ -8,6 +8,7 @@ import { IpLogs } from "./components/IpLogs";
 import { ModelList } from "./components/ModelList";
 import { SecurityPanel } from "./components/SecurityPanel";
 import { Telemetry } from "./components/Telemetry";
+import PerformanceMetrics from "./components/PerformanceMetrics";
 import {
 	api,
 	clearApiKey,
@@ -33,8 +34,9 @@ const App: React.FC = () => {
 	const fetchData = useCallback(async () => {
 		if (!apiKey) return;
 		try {
+			// Use fast status for frequent polling
 			const [statusRes, modelsRes] = await Promise.all([
-				api.get("/api/status"),
+				api.get("/api/status/fast"),
 				api.get("/api/models"),
 			]);
 			setStatus(statusRes.data);
@@ -85,19 +87,102 @@ const App: React.FC = () => {
 		};
 	}, [apiKey, fetchData, isAuthorized]);
 
-	const handleSendMessage = async (model: string, content: string, options: Record<string, unknown>) => {
-		const res = await api.post("/v1/chat/completions", {
-			model,
-			messages: [{ role: "user", content }],
-			...options,
-		});
+	const handleSendMessage = async (
+		model: string,
+		content: string,
+		options: Record<string, unknown> & { stream?: boolean }
+	) => {
+		const useStream = options.stream !== false; // Default to streaming
+		const apiKey = getStoredApiKey();
 
-		return {
-			content: res.data?.choices?.[0]?.message?.content || "",
-			message: res.data?.choices?.[0]?.message,
-			prompt_eval_count: res.data?.usage?.prompt_tokens || 0,
-			eval_count: res.data?.usage?.completion_tokens || 0,
-		};
+		if (useStream) {
+			// Streaming mode using SSE/fetch
+			let fullContent = "";
+			let promptTokens = 0;
+			let completionTokens = 0;
+
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/v1/chat/completions`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						"x-api-key": apiKey,
+					},
+					body: JSON.stringify({
+						model,
+						messages: [{ role: "user", content }],
+						stream: true,
+						...options,
+					}),
+				}
+			);
+
+			if (!response.body) throw new Error("No response body");
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+
+			// Return a stream object that ChatPlayground can consume
+			return {
+				isStream: true,
+				stream: (async function* () {
+					try {
+						while (true) {
+							const { done, value } = await reader.read();
+							if (done) break;
+
+							const chunk = decoder.decode(value);
+							const lines = chunk.split("\n");
+
+							for (const line of lines) {
+								if (!line.startsWith("data: ") || line === "data: [DONE]") continue;
+
+								const jsonStr = line.slice(6); // Remove "data: " prefix
+								try {
+									const data = JSON.parse(jsonStr);
+									if (data.choices?.[0]?.delta?.content) {
+										fullContent += data.choices[0].delta.content;
+										yield {
+											content: data.choices[0].delta.content,
+											full_content: fullContent,
+										};
+									}
+									if (data.usage) {
+										promptTokens = data.usage.prompt_tokens || 0;
+										completionTokens = data.usage.completion_tokens || 0;
+									}
+								} catch (_e) {
+									// ignore JSON parse errors
+								}
+							}
+						}
+					} finally {
+						reader.releaseLock();
+					}
+				})(),
+				content: fullContent,
+				message: { content: fullContent },
+				prompt_eval_count: promptTokens,
+				eval_count: completionTokens,
+			};
+		} else {
+			// Non-streaming mode (fallback)
+			const res = await api.post("/v1/chat/completions", {
+				model,
+				messages: [{ role: "user", content }],
+				stream: false,
+				...options,
+			});
+
+			return {
+				isStream: false,
+				content: res.data?.choices?.[0]?.message?.content || "",
+				message: res.data?.choices?.[0]?.message,
+				prompt_eval_count: res.data?.usage?.prompt_tokens || 0,
+				eval_count: res.data?.usage?.completion_tokens || 0,
+			};
+		}
 	};
 
 	const handleBan = async (ip: string) => {
@@ -184,12 +269,12 @@ const App: React.FC = () => {
 		}
 	}, []);
 
-	// Disparar fetchData cuando la apiKey real cambie y mantener un heartbeat de 15s para telemetría
+	// Disparar fetchData cuando la apiKey real cambie y mantener un heartbeat de 60s para telemetría
 	useEffect(() => {
 		if (apiKey) {
 			setApiClientKey(apiKey);
 			fetchData();
-			const interval = setInterval(fetchData, 15000);
+			const interval = setInterval(fetchData, 60000); // Reduced from 15s to 60s
 			return () => clearInterval(interval);
 		}
 		clearApiKey();
@@ -374,6 +459,8 @@ const App: React.FC = () => {
 				return { title: "HARDWARE SENTINEL", sub: "Monitor de GPU, VRAM y configuración de rendimiento" };
 			case "engine":
 				return { title: "AI ENGINE TUNER", sub: "Consumo energético, contador de tokens y ahorro vs cloud" };
+			case "performance":
+				return { title: "PERFORMANCE METRICS", sub: "TTFT, Throughput y estadísticas de inferencia" };
 			default:
 				return { title: activeTab.toUpperCase(), sub: "" };
 		}
@@ -627,27 +714,6 @@ const App: React.FC = () => {
 							height: "calc(100vh - 160px)",
 						}}
 					>
-						<div
-							style={{
-								padding: "20px 24px",
-								borderBottom: "1px solid var(--border)",
-								display: "flex",
-								alignItems: "center",
-								gap: "10px",
-							}}
-						>
-							<Terminal size={16} style={{ color: "var(--accent)" }} />
-							<span
-								style={{
-									fontSize: "12px",
-									fontWeight: 700,
-									letterSpacing: "2px",
-									color: "var(--text-dim)",
-								}}
-							>
-								TERMINAL DE INFERENCIA MCP
-							</span>
-						</div>
 						<div style={{ flex: 1, padding: "16px", overflow: "hidden" }}>
 							<ChatPlayground models={models} onSendMessage={handleSendMessage} />
 						</div>
@@ -657,6 +723,12 @@ const App: React.FC = () => {
 				return <HardwareSentinel status={status} />;
 			case "engine":
 				return <AiEngineTuner status={status} />;
+			case "performance":
+				return (
+					<div className="card-glass" style={{ padding: "24px" }}>
+						<PerformanceMetrics />
+					</div>
+				);
 			default:
 				return null;
 		}
@@ -725,6 +797,9 @@ const App: React.FC = () => {
 							</button>
 							<button className="cmd-pill" onClick={() => setActiveTab("engine")}>
 								<Zap size={14} /> Engine Tuner
+							</button>
+							<button className="cmd-pill" onClick={() => setActiveTab("performance")}>
+								<Activity size={14} /> Performance
 							</button>
 						</div>
 					</div>

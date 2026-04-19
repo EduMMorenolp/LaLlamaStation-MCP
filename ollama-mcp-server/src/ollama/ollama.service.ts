@@ -1,6 +1,9 @@
-import { execSync } from "node:child_process";
+import { exec } from "node:child_process";
 import * as fs from "node:fs";
+import http from "node:http";
+import https from "node:https";
 import axios from "axios";
+import type { AxiosInstance } from "axios";
 import type { Server as SocketServer } from "socket.io";
 
 export interface OllamaModel {
@@ -19,10 +22,61 @@ export class OllamaService {
 	private io?: SocketServer;
 	private readonly pullStates: Map<string, { percent: number; status: string; lastUpdate: number }> = new Map();
 	private readonly startTime: number = Date.now();
+	private readonly httpAgent: http.Agent;
+	private readonly httpsAgent: https.Agent;
+	private readonly axiosClient: AxiosInstance;
+	private activeRequests: number = 0;
+	private readonly maxConcurrentRequests: number = 3;
+	private readonly requestQueue: Array<() => Promise<any>> = [];
 	private totalRequests: number = 0;
 	private lastChatTime: number = Date.now();
 	private autoUnloadMinutes: number = 0;
 	private globalNumCtx: number = 4096;
+
+	// --- GPU Metrics Cache (async, non-blocking) ---
+	private cachedGpuMetrics: any = {
+		vram: { total: 0, used: 0, free: 0, available: false },
+		powerDraw: null,
+		temperature: null,
+		fanSpeed: null,
+		gpuUtil: null,
+	};
+
+	// --- Request Concurrency Control ---
+	private async enqueueRequest<T>(fn: () => Promise<T>): Promise<T> {
+		// If we're under the limit, execute immediately
+		if (this.activeRequests < this.maxConcurrentRequests) {
+			this.activeRequests++;
+			try {
+				return await fn();
+			} finally {
+				this.activeRequests--;
+				// Process next queued request
+				const nextFn = this.requestQueue.shift();
+				if (nextFn) {
+					this.enqueueRequest(nextFn).catch(console.error);
+				}
+			}
+		}
+
+		// Otherwise, queue for later
+		return new Promise((resolve, reject) => {
+			this.requestQueue.push(async () => {
+				this.activeRequests++;
+				try {
+					resolve(await fn());
+				} catch (e) {
+					reject(e);
+				} finally {
+					this.activeRequests--;
+					const next = this.requestQueue.shift();
+					if (next) {
+						this.enqueueRequest(next).catch(console.error);
+					}
+				}
+			});
+		});
+	}
 
 	// --- Persistent Stats ---
 	private readonly statsFile = "/root/.ollama/lallama_stats.json";
@@ -37,12 +91,69 @@ export class OllamaService {
 		electricityRateARS: 150,
 		cloudPricePerMToken: 5.0,
 		createdAt: new Date().toISOString(),
+		// Fase 3: Performance metrics
+		ttftHistory: [] as number[], // TTFT (time to first token) per request
+		tokensPerSecHistor: [] as number[], // tokens/sec per request
 	};
 
 	constructor() {
 		this.baseUrl = process.env.OLLAMA_URL || "http://ollama:11434";
+		
+		// Setup HTTP agents with keep-alive
+		this.httpAgent = new http.Agent({
+			keepAlive: true,
+			keepAliveMsecs: 1000,
+			maxSockets: 10,
+			maxFreeSockets: 5,
+		});
+		this.httpsAgent = new https.Agent({
+			keepAlive: true,
+			keepAliveMsecs: 1000,
+			maxSockets: 10,
+			maxFreeSockets: 5,
+		});
+
+		// Create axios client with keep-alive
+		this.axiosClient = axios.create({
+			httpAgent: this.httpAgent,
+			httpsAgent: this.httpsAgent,
+			timeout: 120000, // 2 min timeout for long inference
+		});
+
 		this.loadStats();
 		this.startAutoUnloadWatcher();
+		this.startGpuMetricsWatcher();
+	}
+
+	// --- GPU Metrics Watcher (async, non-blocking) ---
+	private startGpuMetricsWatcher() {
+		setInterval(() => {
+			const cmd =
+				"nvidia-smi --query-gpu=memory.total,memory.used,memory.free,power.draw,temperature.gpu,fan.speed,utilization.gpu --format=csv,noheader,nounits";
+			const timeoutHandle = setTimeout(() => {}, 2000);
+			exec(cmd, (err: any, stdout: string) => {
+				clearTimeout(timeoutHandle);
+				if (err) return;
+				try {
+					const parts = stdout
+						.trim()
+						.split(",")
+						.map((v: string) => parseFloat(v.trim()));
+					this.cachedGpuMetrics = {
+						vram: { total: parts[0], used: parts[1], free: parts[2], available: true },
+						powerDraw: Number.isNaN(parts[3]) ? null : parts[3],
+						temperature: Number.isNaN(parts[4]) ? null : parts[4],
+						fanSpeed: Number.isNaN(parts[5]) ? null : parts[5],
+						gpuUtil: Number.isNaN(parts[6]) ? null : parts[6],
+					};
+					if (this.cachedGpuMetrics.temperature !== null) {
+						this.addThermalStress(this.cachedGpuMetrics.temperature);
+					}
+				} catch (_e) {
+					// ignore parse errors
+				}
+			});
+		}, 3000);
 	}
 
 	// --- Auto-Unload Watcher ---
@@ -87,7 +198,7 @@ export class OllamaService {
 		return this.autoUnloadMinutes;
 	}
 
-	// --- GPU Metrics (nvidia-smi extendido) ---
+	// --- GPU Metrics (now cached, non-blocking) ---
 	getGpuMetrics(): {
 		vram: { total: number; used: number; free: number; available: boolean };
 		powerDraw: number | null;
@@ -95,31 +206,7 @@ export class OllamaService {
 		fanSpeed: number | null;
 		gpuUtil: number | null;
 	} {
-		try {
-			const output = execSync(
-				"nvidia-smi --query-gpu=memory.total,memory.used,memory.free,power.draw,temperature.gpu,fan.speed,utilization.gpu --format=csv,noheader,nounits",
-				{ timeout: 3000, encoding: "utf8" }
-			).trim();
-			const parts = output.split(",").map((v) => parseFloat(v.trim()));
-			const gpu = {
-				vram: { total: parts[0], used: parts[1], free: parts[2], available: true },
-				powerDraw: Number.isNaN(parts[3]) ? null : parts[3],
-				temperature: Number.isNaN(parts[4]) ? null : parts[4],
-				fanSpeed: Number.isNaN(parts[5]) ? null : parts[5],
-				gpuUtil: Number.isNaN(parts[6]) ? null : parts[6],
-			};
-			// Registrar estres termico si aplica
-			if (gpu.temperature !== null) this.addThermalStress(gpu.temperature);
-			return gpu;
-		} catch {
-			return {
-				vram: { total: 0, used: 0, free: 0, available: false },
-				powerDraw: null,
-				temperature: null,
-				fanSpeed: null,
-				gpuUtil: null,
-			};
-		}
+		return { ...this.cachedGpuMetrics };
 	}
 
 	getVramInfo() {
@@ -186,7 +273,7 @@ export class OllamaService {
 	}
 
 	async listModels(): Promise<OllamaModel[]> {
-		const response = await axios.get(`${this.baseUrl}/api/tags`);
+		const response = await this.axiosClient.get(`${this.baseUrl}/api/tags`);
 		return response.data.models;
 	}
 
@@ -196,7 +283,7 @@ export class OllamaService {
 		options: any = {},
 		keep_alive: string | number = "5m"
 	): Promise<string> {
-		const response = await axios.post(`${this.baseUrl}/api/generate`, {
+		const response = await this.axiosClient.post(`${this.baseUrl}/api/generate`, {
 			model,
 			prompt,
 			options,
@@ -213,49 +300,89 @@ export class OllamaService {
 		keep_alive: string | number = "5m",
 		sessionId?: string
 	): Promise<any> {
-		let finalMessages = messages;
+		// Enqueue the chat request to limit GPU concurrency
+		return this.enqueueRequest(async () => {
+			let finalMessages = messages;
 
-		if (sessionId) {
-			const cached = this.sessionCache.get(sessionId) || [];
-			if (messages.length === 1 && cached.length > 0) {
-				finalMessages = [...cached, ...messages];
+			if (sessionId) {
+				const cached = this.sessionCache.get(sessionId) || [];
+				if (messages.length === 1 && cached.length > 0) {
+					finalMessages = [...cached, ...messages];
+				}
+				this.sessionCache.set(sessionId, finalMessages);
+				const cached2 = this.sessionCache.get(sessionId);
+				if (cached2?.length && cached2.length > 20) {
+					this.sessionCache.set(sessionId, cached2.slice(-20));
+				}
 			}
-			this.sessionCache.set(sessionId, finalMessages);
-			const cached2 = this.sessionCache.get(sessionId);
-			if (cached2?.length && cached2.length > 20) {
-				this.sessionCache.set(sessionId, cached2.slice(-20));
-			}
-		}
 
-		this.lastChatTime = Date.now();
-		const startMs = Date.now();
-		const response = await axios.post(`${this.baseUrl}/api/chat`, {
-			model,
-			messages: finalMessages,
-			options: { ...options, num_ctx: options?.num_ctx || this.globalNumCtx },
-			keep_alive,
-			stream: false,
+			this.lastChatTime = Date.now();
+			const startMs = Date.now();
+			const response = await this.axiosClient.post(`${this.baseUrl}/api/chat`, {
+				model,
+				messages: finalMessages,
+				options: { ...options, num_ctx: options?.num_ctx || this.globalNumCtx },
+				keep_alive,
+				stream: false,
+			});
+
+			// Trackear tokens y tiempo (usar cache GPU sin bloqueo)
+			const durationMs = Date.now() - startMs;
+			const promptTokens = response.data.prompt_eval_count || 0;
+			const evalTokens = response.data.eval_count || 0;
+			const gpuPower = this.cachedGpuMetrics.powerDraw;
+			this.trackTokenUsage(promptTokens, evalTokens, durationMs, gpuPower);
+
+			return {
+				message: response.data.message,
+				prompt_eval_count: promptTokens,
+				eval_count: evalTokens,
+				total_duration: durationMs,
+			};
 		});
+	}
 
-		// Trackear tokens y tiempo
-		const durationMs = Date.now() - startMs;
-		const promptTokens = response.data.prompt_eval_count || 0;
-		const evalTokens = response.data.eval_count || 0;
-		const gpuPower = this.getGpuMetrics().powerDraw;
-		this.trackTokenUsage(promptTokens, evalTokens, durationMs, gpuPower);
+	async chatStream(
+		model: string,
+		messages: any[],
+		options: any = {},
+		keep_alive: string | number = "5m",
+		sessionId?: string
+	): Promise<any> {
+		// Enqueue streaming request to limit GPU concurrency
+		return this.enqueueRequest(async () => {
+			let finalMessages = messages;
 
-		return {
-			message: response.data.message,
-			prompt_eval_count: promptTokens,
-			eval_count: evalTokens,
-			total_duration: durationMs,
-		};
+			if (sessionId) {
+				const cached = this.sessionCache.get(sessionId) || [];
+				if (messages.length === 1 && cached.length > 0) {
+					finalMessages = [...cached, ...messages];
+				}
+				this.sessionCache.set(sessionId, finalMessages);
+				const cached2 = this.sessionCache.get(sessionId);
+				if (cached2?.length && cached2.length > 20) {
+					this.sessionCache.set(sessionId, cached2.slice(-20));
+				}
+			}
+
+			this.lastChatTime = Date.now();
+			
+			return this.axiosClient.post(`${this.baseUrl}/api/chat`, {
+				model,
+				messages: finalMessages,
+				options: { ...options, num_ctx: options?.num_ctx || this.globalNumCtx },
+				keep_alive,
+				stream: true,
+			}, {
+				responseType: 'stream',
+			});
+		});
 	}
 
 	async unloadModels(): Promise<void> {
 		const models = await this.listModels();
 		for (const model of models) {
-			await axios
+			await this.axiosClient
 				.post(`${this.baseUrl}/api/chat`, {
 					model: model.name,
 					keep_alive: 0,
@@ -273,7 +400,7 @@ export class OllamaService {
 		}
 
 		try {
-			const response = await axios.post(
+			const response = await this.axiosClient.post(
 				`${this.baseUrl}/api/pull`,
 				{
 					name: model,
@@ -330,7 +457,7 @@ export class OllamaService {
 					throw new Error(`Model ${model} not found`);
 				}
 
-				await axios({
+				await this.axiosClient({
 					method: "DELETE",
 					url: `${this.baseUrl}/api/delete`,
 					data: { name: model },
@@ -427,7 +554,7 @@ export class OllamaService {
 
 		let loadedModels = [];
 		try {
-			const psResponse = await axios.get(`${this.baseUrl}/api/ps`);
+			const psResponse = await this.axiosClient.get(`${this.baseUrl}/api/ps`);
 			loadedModels = psResponse.data.models || [];
 		} catch (e) {
 			console.error("Error fetching loaded models:", e);
@@ -435,7 +562,7 @@ export class OllamaService {
 
 		let ngrokInfo = { url: null as string | null, latency: 0, active: false };
 		try {
-			const ngrokResponse = await axios.get("http://mcp-ngrok-tunnel:4040/api/tunnels", { timeout: 2000 });
+			const ngrokResponse = await this.axiosClient.get("http://mcp-ngrok-tunnel:4040/api/tunnels", { timeout: 2000 });
 			const tunnel = ngrokResponse.data.tunnels[0];
 			if (tunnel) {
 				ngrokInfo = { url: tunnel.public_url, latency: 0, active: true };
@@ -448,7 +575,7 @@ export class OllamaService {
 
 		let ollamaRunning = false;
 		try {
-			await axios.get(`${this.baseUrl}/api/tags`, { timeout: 3000 });
+			await this.axiosClient.get(`${this.baseUrl}/api/tags`, { timeout: 3000 });
 			ollamaRunning = true;
 		} catch {
 			ollamaRunning = false;
@@ -476,6 +603,43 @@ export class OllamaService {
 			timestamp: new Date().toISOString(),
 			recentLogs: this.requestLogs.slice(-100).reverse(),
 			blacklistedIps: Array.from(this.blacklist),
+		};
+	}
+
+	async getFastStatus(): Promise<any> {
+		let diskSpace = { free: 0, total: 0 };
+		try {
+			const stats = fs.statfsSync("/root/.ollama");
+			const bavail = Number(stats.bavail);
+			const bsize = Number(stats.bsize);
+			const blocks = Number(stats.blocks);
+			diskSpace = {
+				free: (bavail * bsize) / 1024 ** 3,
+				total: (blocks * bsize) / 1024 ** 3,
+			};
+		} catch (_e) {
+			// Keep fallback values if disk stats are not available.
+		}
+
+		let loadedModels = [];
+		let ollamaRunning = false;
+		try {
+			const psResponse = await this.axiosClient.get(`${this.baseUrl}/api/ps`, { timeout: 3000 });
+			loadedModels = psResponse.data.models || [];
+			ollamaRunning = true;
+		} catch {
+			ollamaRunning = false;
+		}
+
+		const gpu = this.getGpuMetrics();
+		return {
+			ollamaRunning,
+			diskSpace,
+			gpu,
+			vram: gpu.vram,
+			loadedModels,
+			engineStats: this.getStats(),
+			timestamp: new Date().toISOString(),
 		};
 	}
 

@@ -110,7 +110,7 @@ export const AiEngineTuner: React.FC<AiEngineTunerProps> = ({ status }) => {
 
 	useEffect(() => {
 		fetchEngineStats();
-		const interval = setInterval(fetchEngineStats, 10000); // refresh cada 10s
+		const interval = setInterval(fetchEngineStats, 30000); // Reduced from 10s to 30s
 		return () => clearInterval(interval);
 	}, [fetchEngineStats]);
 

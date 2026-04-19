@@ -289,7 +289,7 @@ body {
 .view-body {
 	flex: 1;
 	overflow-y: auto;
-	padding: 32px;
+	padding: 5px;
 	scroll-behavior: smooth;
 }
 
@@ -711,7 +711,7 @@ body {
 	flex: 1;
 	height: 100vh;
 	overflow-y: auto;
-	padding: 40px;
+	padding: 10px;
 	background: radial-gradient(circle at 50% 0%, rgba(79, 140, 255, 0.05), transparent 70%);
 }
 
@@ -719,7 +719,6 @@ body {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 40px;
 	background: rgba(255, 255, 255, 0.02);
 	padding: 24px 32px;
 	border-radius: var(--radius-lg);

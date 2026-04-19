@@ -6,6 +6,8 @@ services:
     container_name: mcp-ollama-motor
     ports:
       - "11434:11434"
+    # habilita acceso a GPU para Ollama; este es el contenedor que realmente hace inferencia
+    gpus: all
     volumes:
       - ollama_data:/root/.ollama
     networks:

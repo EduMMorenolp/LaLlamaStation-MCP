@@ -1,4 +1,4 @@
-import { Bot, Check, ChevronDown, Clock, Copy, Cpu, RefreshCw, Send, Settings2, Trash2, Zap } from "lucide-react";
+import { Bot, Check, ChevronDown, Clock, Copy, Cpu, FileText, Paperclip, RefreshCw, Send, Settings2, Trash2, X, Zap } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -18,6 +18,19 @@ interface ChatPlaygroundProps {
 	models: any[];
 	onSendMessage: (model: string, message: string, options: any) => Promise<any>;
 }
+
+interface AttachmentFile {
+	id: string;
+	name: string;
+	type: string;
+	size: number;
+	content: string;
+	truncated: boolean;
+}
+
+const MAX_ATTACHMENT_SIZE_BYTES = 512 * 1024;
+const MAX_ATTACHMENT_CHARS = 12000;
+const MAX_ATTACHMENTS = 4;
 
 function TypingDots() {
 	return (
@@ -108,9 +121,11 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 	const [showSettings, setShowSettings] = useState(false);
 	const [totalTokensSession, setTotalTokensSession] = useState(persistedState.totalTokensSession ?? 0);
 	const [totalTimeSession, setTotalTimeSession] = useState(persistedState.totalTimeSession ?? 0);
+	const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
 
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// ─── PERSIST STATE TO LOCALSTORAGE ────────────────────────
 	useEffect(() => {
@@ -146,44 +161,113 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 	};
 
 	const handleSend = useCallback(async () => {
-		if (!message.trim() || loading || !selectedModel) return;
+		if ((!message.trim() && attachments.length === 0) || loading || !selectedModel) return;
+
+		const attachmentSummary = attachments.length
+			? `\n\n[Adjuntos: ${attachments.map((f) => f.name).join(", ")}]`
+			: "";
+		const baseMessage = message.trim() || "Analiza los archivos adjuntos y responde en espanol.";
+		const attachmentPayload = attachments.length
+			? `\n\n=== ARCHIVOS ADJUNTOS ===\n${attachments
+					.map(
+						(file, index) =>
+							`Archivo ${index + 1}: ${file.name}\nTipo: ${file.type || "text/plain"}\nTamano: ${file.size} bytes${file.truncated ? " (truncado)" : ""}\nContenido:\n${file.content}`
+					)
+					.join("\n\n---\n\n")}`
+			: "";
+		const promptWithAttachments = `${baseMessage}${attachmentPayload}`;
 
 		const id = Math.random().toString(36).slice(2);
 		const userMsg: Message = {
 			id,
 			role: "user",
-			content: message,
+			content: `${baseMessage}${attachmentSummary}`,
 			timestamp: Date.now(),
 		};
 
 		setHistory((prev) => [...prev, userMsg]);
 		setMessage("");
+		setAttachments([]);
+		if (fileInputRef.current) {
+			fileInputRef.current.value = "";
+		}
 		if (textareaRef.current) {
 			textareaRef.current.style.height = "auto";
 		}
 		setLoading(true);
 
 		const start = Date.now();
+		const assistantId = Math.random().toString(36).slice(2);
+
 		try {
-			const response = await onSendMessage(selectedModel, message, { temperature, num_ctx: numCtx });
-			const latencyMs = Date.now() - start;
-			const inputTok = response.prompt_eval_count || 0;
-			const outputTok = response.eval_count || 0;
+			const response = await onSendMessage(selectedModel, promptWithAttachments, {
+				temperature,
+				num_ctx: numCtx,
+			});
 
-			const assistantMsg: Message = {
-				id: Math.random().toString(36).slice(2),
-				role: "assistant",
-				content: response.content || response.message?.content || response.text || "",
-				model: selectedModel,
-				timestamp: Date.now(),
-				latencyMs,
-				inputTokens: inputTok,
-				outputTokens: outputTok,
-			};
+			if (response.isStream) {
+				// Streaming mode: add assistant message and update as tokens arrive
+				const assistantMsg: Message = {
+					id: assistantId,
+					role: "assistant",
+					content: "", // Start empty, will update
+					model: selectedModel,
+					timestamp: Date.now(),
+					latencyMs: 0,
+					inputTokens: 0,
+					outputTokens: 0,
+				};
+				setHistory((prev) => [...prev, assistantMsg]);
 
-			setHistory((prev) => [...prev, assistantMsg]);
-			setTotalTokensSession((prev) => prev + inputTok + outputTok);
-			setTotalTimeSession((prev) => prev + latencyMs);
+				// Consume the async generator
+				let fullContent = "";
+				if (response.stream) {
+					for await (const chunk of response.stream) {
+						fullContent = chunk.full_content;
+						setHistory((prev) => {
+							const last = { ...prev[prev.length - 1] };
+							last.content = fullContent;
+							return [...prev.slice(0, -1), last];
+						});
+					}
+				}
+
+				// Update with final stats
+				const latencyMs = Date.now() - start;
+				const inputTok = response.prompt_eval_count || 0;
+				const outputTok = response.eval_count || 0;
+
+				setHistory((prev) => {
+					const last = { ...prev[prev.length - 1] };
+					last.latencyMs = latencyMs;
+					last.inputTokens = inputTok;
+					last.outputTokens = outputTok;
+					return [...prev.slice(0, -1), last];
+				});
+
+				setTotalTokensSession((prev) => prev + inputTok + outputTok);
+				setTotalTimeSession((prev) => prev + latencyMs);
+			} else {
+				// Non-streaming mode (fallback)
+				const latencyMs = Date.now() - start;
+				const inputTok = response.prompt_eval_count || 0;
+				const outputTok = response.eval_count || 0;
+
+				const assistantMsg: Message = {
+					id: assistantId,
+					role: "assistant",
+					content: response.content || response.message?.content || response.text || "",
+					model: selectedModel,
+					timestamp: Date.now(),
+					latencyMs,
+					inputTokens: inputTok,
+					outputTokens: outputTok,
+				};
+
+				setHistory((prev) => [...prev, assistantMsg]);
+				setTotalTokensSession((prev) => prev + inputTok + outputTok);
+				setTotalTimeSession((prev) => prev + latencyMs);
+			}
 		} catch (err: any) {
 			setHistory((prev) => [
 				...prev,
@@ -200,7 +284,51 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 		} finally {
 			setLoading(false);
 		}
-	}, [message, loading, selectedModel, temperature, numCtx, onSendMessage]);
+	}, [message, attachments, loading, selectedModel, temperature, numCtx, onSendMessage]);
+
+	const handlePickFiles = () => {
+		fileInputRef.current?.click();
+	};
+
+	const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const picked = Array.from(e.target.files || []);
+		if (picked.length === 0) return;
+
+		const remainingSlots = Math.max(0, MAX_ATTACHMENTS - attachments.length);
+		const filesToProcess = picked.slice(0, remainingSlots);
+		const loadedFiles: AttachmentFile[] = [];
+
+		for (const file of filesToProcess) {
+			if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+				continue;
+			}
+
+			try {
+				const text = await file.text();
+				const truncated = text.length > MAX_ATTACHMENT_CHARS;
+				loadedFiles.push({
+					id: Math.random().toString(36).slice(2),
+					name: file.name,
+					type: file.type,
+					size: file.size,
+					content: truncated ? text.slice(0, MAX_ATTACHMENT_CHARS) : text,
+					truncated,
+				});
+			} catch {
+				// Ignore unreadable files and continue with the rest.
+			}
+		}
+
+		if (loadedFiles.length > 0) {
+			setAttachments((prev) => [...prev, ...loadedFiles]);
+		}
+
+		e.target.value = "";
+	};
+
+	const removeAttachment = (id: string) => {
+		setAttachments((prev) => prev.filter((file) => file.id !== id));
+	};
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
@@ -704,6 +832,76 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 					borderRadius: "0 0 12px 12px",
 				}}
 			>
+				<input
+					ref={fileInputRef}
+					type="file"
+					multiple
+					hidden
+					onChange={handleFilesSelected}
+					accept=".txt,.md,.json,.csv,.ts,.tsx,.js,.jsx,.py,.java,.go,.rs,.css,.html,.xml,.yaml,.yml,.log,text/*"
+				/>
+
+				{attachments.length > 0 && (
+					<div
+						style={{
+							display: "flex",
+							flexWrap: "wrap",
+							gap: "8px",
+							marginBottom: "10px",
+						}}
+					>
+						{attachments.map((file) => (
+							<div
+								key={file.id}
+								style={{
+									display: "flex",
+									alignItems: "center",
+									gap: "6px",
+									padding: "6px 8px",
+									borderRadius: "8px",
+									background: "rgba(79,140,255,0.12)",
+									border: "1px solid rgba(79,140,255,0.25)",
+									maxWidth: "100%",
+								}}
+							>
+								<FileText size={12} style={{ color: "var(--accent)", flexShrink: 0 }} />
+								<span
+									style={{
+										fontSize: "11px",
+										color: "var(--text-main)",
+										overflow: "hidden",
+										textOverflow: "ellipsis",
+										whiteSpace: "nowrap",
+									}}
+									title={file.name}
+								>
+									{file.name}
+								</span>
+								{file.truncated && (
+									<span style={{ fontSize: "10px", color: "#f59e0b" }} title="Contenido truncado por tamano">
+										truncado
+									</span>
+								)}
+								<button
+									onClick={() => removeAttachment(file.id)}
+									style={{
+										background: "transparent",
+										border: "none",
+										color: "var(--text-muted)",
+										cursor: "pointer",
+										display: "flex",
+										alignItems: "center",
+										padding: 0,
+									}}
+									title="Quitar adjunto"
+								>
+									<X size={12} />
+								</button>
+							</div>
+						))}
+					</div>
+				)}
+
 				<div
 					style={{
 						display: "flex",
@@ -728,22 +926,50 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 						disabled={loading || models.length === 0}
 					/>
 					<button
-						onClick={handleSend}
-						disabled={loading || !message.trim() || models.length === 0}
+						onClick={handlePickFiles}
+						disabled={loading || models.length === 0 || attachments.length >= MAX_ATTACHMENTS}
+						title={
+							attachments.length >= MAX_ATTACHMENTS
+								? `Maximo ${MAX_ATTACHMENTS} adjuntos por mensaje`
+								: "Adjuntar archivo"
+						}
 						style={{
 							width: "36px",
 							height: "36px",
 							borderRadius: "10px",
 							flexShrink: 0,
-							background: !message.trim() || loading ? "rgba(255,255,255,0.06)" : "var(--accent)",
+							background: "rgba(255,255,255,0.06)",
+							border: "1px solid var(--border-light)",
+							cursor:
+								loading || models.length === 0 || attachments.length >= MAX_ATTACHMENTS
+									? "not-allowed"
+									: "pointer",
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							color: attachments.length > 0 ? "var(--accent)" : "var(--text-muted)",
+							transition: "all 0.2s ease",
+						}}
+					>
+						<Paperclip size={16} />
+					</button>
+					<button
+						onClick={handleSend}
+						disabled={loading || (!message.trim() && attachments.length === 0) || models.length === 0}
+						style={{
+							width: "36px",
+							height: "36px",
+							borderRadius: "10px",
+							flexShrink: 0,
+							background: !message.trim() && attachments.length === 0 || loading ? "rgba(255,255,255,0.06)" : "var(--accent)",
 							border: "none",
-							cursor: !message.trim() || loading ? "not-allowed" : "pointer",
+							cursor: !message.trim() && attachments.length === 0 || loading ? "not-allowed" : "pointer",
 							display: "flex",
 							alignItems: "center",
 							justifyContent: "center",
 							color: "white",
 							transition: "all 0.2s ease",
-							boxShadow: message.trim() && !loading ? "0 4px 16px rgba(79,140,255,0.4)" : "none",
+							boxShadow: (message.trim() || attachments.length > 0) && !loading ? "0 4px 16px rgba(79,140,255,0.4)" : "none",
 						}}
 					>
 						{loading ? (
@@ -796,6 +1022,9 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 							}}
 						/>
 					</div>
+					<span style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+						Adjuntos: {attachments.length}/{MAX_ATTACHMENTS}
+					</span>
 					<span style={{ fontSize: "10px", color: "var(--text-muted)", marginLeft: "auto" }}>
 						⌨ Shift+Enter = nueva linea
 					</span>

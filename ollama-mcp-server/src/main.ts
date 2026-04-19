@@ -74,7 +74,9 @@ const authMiddleware = (req: Request, res: Response, next: Function) => {
 
 	const action = `${req.method} ${req.path}`;
 	// Omitir logging de endpoints de polling interno para no saturar el panel de seguridad
-	const isPolling = req.method === "GET" && ["/api/status", "/api/engine-stats", "/api/hardware"].includes(req.path);
+	const isPolling =
+		req.method === "GET" &&
+		["/api/status", "/api/status/fast", "/api/engine-stats", "/api/hardware"].includes(req.path);
 
 	if (appModule.authService.validate(apiKey as string)) {
 		if (!isPolling) {
@@ -118,45 +120,160 @@ app.get("/api/models", authMiddleware, async (_req, res) => {
 	}
 });
 
-// 2. Chat Completions (OpenAI Format)
+// 2. Chat Completions (OpenAI Format) - with streaming support
 app.post("/v1/chat/completions", authMiddleware, async (req, res) => {
-	const { model, messages, stream, temperature, num_ctx, top_p, top_k } = req.body;
+	const { model, messages, stream = false, temperature, num_ctx, top_p, top_k } = req.body;
 
 	if (!model || !Array.isArray(messages)) {
 		return res.status(400).json({ error: "model y messages son obligatorios" });
 	}
-	if (stream === true) {
-		return res.status(400).json({ error: "stream=true no soportado en esta version" });
-	}
 
 	try {
-		const response = await appModule.ollamaService.chat(model, messages, {
-			temperature,
-			num_ctx,
-			top_p,
-			top_k,
-		});
-		const promptTokens = response.prompt_eval_count || 0;
-		const completionTokens = response.eval_count || 0;
+		if (stream === true) {
+			// Streaming mode: send SSE chunks
+			res.setHeader("Content-Type", "text/event-stream");
+			res.setHeader("Cache-Control", "no-cache");
+			res.setHeader("Connection", "keep-alive");
 
-		res.json({
-			id: `chatcmpl-${Date.now()}`,
-			object: "chat.completion",
-			created: Math.floor(Date.now() / 1000),
-			model: model,
-			choices: [
-				{
-					index: 0,
-					message: response.message,
-					finish_reason: "stop",
+			try {
+				const streamStartMs = Date.now();
+				const streamResponse = await appModule.ollamaService.chatStream(model, messages, {
+					temperature,
+					num_ctx,
+					top_p,
+					top_k,
+				});
+
+				let fullResponse = "";
+				let promptTokens = 0;
+				let completionTokens = 0;
+				let firstTokenReceived = false;
+				let ttftMs = 0;
+
+				streamResponse.data.on("data", (chunk: Buffer) => {
+					try {
+						const lines = chunk.toString().split("\n");
+						for (const line of lines) {
+							if (!line || !line.trim()) continue;
+							const data = JSON.parse(line);
+
+							if (data.message?.content) {
+								// Track TTFT (time to first token)
+								if (!firstTokenReceived && data.message.content.length > 0) {
+									ttftMs = Date.now() - streamStartMs;
+									firstTokenReceived = true;
+									console.log(`[stream-ttft] ${model}: ${ttftMs}ms`);
+								}
+
+								fullResponse += data.message.content;
+								completionTokens = data.eval_count || 0;
+								promptTokens = data.prompt_eval_count || 0;
+							}
+
+							// Send as SSE chunk (OpenAI compatible format)
+							const sseData = {
+								id: `chatcmpl-${Date.now()}`,
+								object: "chat.completion.chunk",
+								created: Math.floor(Date.now() / 1000),
+								model,
+								choices: [
+									{
+										index: 0,
+										delta: {
+											content: data.message?.content || "",
+										},
+										finish_reason: null,
+									},
+								],
+							};
+							res.write(`data: ${JSON.stringify(sseData)}\n\n`);
+						}
+					} catch (_e) {
+						// ignore parse errors in streaming
+					}
+				});
+
+				streamResponse.data.on("end", () => {
+					const totalDurationMs = Date.now() - streamStartMs;
+					const tokensPerSec = completionTokens > 0 ? (completionTokens / totalDurationMs) * 1000 : 0;
+					
+					// Record metrics
+					if (ttftMs > 0) {
+						const stats = appModule.ollamaService.getStats();
+						if (!Array.isArray(stats.ttftHistory)) stats.ttftHistory = [];
+						stats.ttftHistory.push(ttftMs);
+						if (stats.ttftHistory.length > 100) stats.ttftHistory.shift(); // Keep last 100
+						
+						if (!Array.isArray(stats.tokensPerSecHistor)) stats.tokensPerSecHistor = [];
+						stats.tokensPerSecHistor.push(tokensPerSec);
+						if (stats.tokensPerSecHistor.length > 100) stats.tokensPerSecHistor.shift();
+					}
+
+					console.log(`[stream-final] ${model}: total=${totalDurationMs}ms, tok/s=${tokensPerSec.toFixed(2)}, ttft=${ttftMs}ms`);
+
+					// Send final chunk with finish_reason
+					const finalData = {
+						id: `chatcmpl-${Date.now()}`,
+						object: "chat.completion.chunk",
+						created: Math.floor(Date.now() / 1000),
+						model,
+						choices: [
+							{
+								index: 0,
+								delta: {},
+								finish_reason: "stop",
+							},
+						],
+						usage: {
+							prompt_tokens: promptTokens,
+							completion_tokens: completionTokens,
+							total_tokens: promptTokens + completionTokens,
+						},
+					};
+					res.write(`data: ${JSON.stringify(finalData)}\n\n`);
+					res.write("data: [DONE]\n\n");
+					res.end();
+				});
+
+				streamResponse.data.on("error", (err: any) => {
+					console.error("[stream-error]", err);
+					res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+					res.end();
+				});
+			} catch (err: any) {
+				res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+				res.end();
+			}
+		} else {
+			// Non-streaming mode (original behavior)
+			const response = await appModule.ollamaService.chat(model, messages, {
+				temperature,
+				num_ctx,
+				top_p,
+				top_k,
+			});
+			const promptTokens = response.prompt_eval_count || 0;
+			const completionTokens = response.eval_count || 0;
+
+			res.json({
+				id: `chatcmpl-${Date.now()}`,
+				object: "chat.completion",
+				created: Math.floor(Date.now() / 1000),
+				model: model,
+				choices: [
+					{
+						index: 0,
+						message: response.message,
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: promptTokens,
+					completion_tokens: completionTokens,
+					total_tokens: promptTokens + completionTokens,
 				},
-			],
-			usage: {
-				prompt_tokens: promptTokens,
-				completion_tokens: completionTokens,
-				total_tokens: promptTokens + completionTokens,
-			},
-		});
+			});
+		}
 	} catch (error: any) {
 		res.status(500).json({ error: error.message });
 	}
@@ -164,6 +281,65 @@ app.post("/v1/chat/completions", authMiddleware, async (req, res) => {
 
 // --- Endpoints de Telemetría y Gestión (Fase 5) ---
 
+// Endpoint status rápido (bajo costo, sin GPU/ngrok)
+app.get("/api/status/fast", authMiddleware, async (_req, res) => {
+	try {
+		const status = await appModule.ollamaService.getFastStatus();
+		res.json(status);
+	} catch (error: any) {
+		res.status(500).json({ error: error.message });
+	}
+});
+
+// Endpoint status completo (costoso, incluye todo)
+app.get("/api/status/full", authMiddleware, async (_req, res) => {
+	try {
+		const status = await appModule.ollamaService.getServerStatus();
+		res.json(status);
+	} catch (error: any) {
+		res.status(500).json({ error: error.message });
+	}
+});
+
+// Performance metrics: TTFT, throughput, etc
+app.get("/api/metrics/performance", authMiddleware, (_req, res) => {
+	try {
+		const stats = appModule.ollamaService.getStats();
+		const ttftHistory = (stats.ttftHistory || []) as number[];
+		const tokensPerSecHistory = (stats.tokensPerSecHistor || []) as number[];
+
+		// Calculate averages
+		const avgTtft = ttftHistory.length > 0 
+			? ttftHistory.reduce((a, b) => a + b, 0) / ttftHistory.length 
+			: 0;
+		const p95Ttft = ttftHistory.length > 0
+			? ttftHistory.sort((a, b) => a - b)[Math.floor(ttftHistory.length * 0.95)]
+			: 0;
+		const maxTtft = ttftHistory.length > 0 ? Math.max(...ttftHistory) : 0;
+
+		const avgTokPerSec = tokensPerSecHistory.length > 0
+			? tokensPerSecHistory.reduce((a, b) => a + b, 0) / tokensPerSecHistory.length
+			: 0;
+
+		res.json({
+			ttft: {
+				avg: avgTtft.toFixed(0),
+				p95: p95Ttft.toFixed(0),
+				max: maxTtft.toFixed(0),
+				samples: ttftHistory.length,
+			},
+			throughput: {
+				avgTokensPerSec: avgTokPerSec.toFixed(2),
+				samples: tokensPerSecHistory.length,
+			},
+			timestamp: new Date().toISOString(),
+		});
+	} catch (error: any) {
+		res.status(500).json({ error: error.message });
+	}
+});
+
+// Backward compatibility: /api/status redirige a /fast por defecto
 app.get("/api/status", authMiddleware, async (_req, res) => {
 	try {
 		const status = await appModule.ollamaService.getServerStatus();
