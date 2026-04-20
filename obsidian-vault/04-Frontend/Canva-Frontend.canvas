@@ -1,0 +1,23 @@
+{
+	"nodes":[
+		{"id":"0983e29d2a7020bb","x":-40,"y":-3,"width":185,"height":400,"type":"file","file":"Pasted image 20260419225725.png"},
+		{"id":"5b14fb66b9630874","type":"file","file":"04-Frontend/Img/Modelos.png","x":280,"y":101,"width":400,"height":195},
+		{"id":"0bab4e0175f61a22","type":"file","file":"04-Frontend/Img/Coneccion.png","x":280,"y":-157,"width":400,"height":190},
+		{"id":"4a7311b7b57be4fc","type":"file","file":"04-Frontend/Img/Seguridad.png","x":280,"y":363,"width":400,"height":195},
+		{"id":"de0957ee2500ed39","type":"file","file":"04-Frontend/Img/Hardware Sentinel.png","x":840,"y":-153,"width":400,"height":193},
+		{"id":"c832fa8f2673271c","type":"file","file":"04-Frontend/Img/AI Engine Tuner.png","x":840,"y":105,"width":400,"height":195},
+		{"id":"7d727ea03925ee98","type":"file","file":"04-Frontend/Img/Performance.png","x":840,"y":367,"width":400,"height":191},
+		{"id":"b1da0bd80a7188d9","type":"file","file":"04-Frontend/Img/Dashboard.png","x":-1080,"y":-222,"width":874,"height":320},
+		{"id":"1ee91782efaca4e4","type":"file","file":"04-Frontend/Img/Playground.png","x":-1080,"y":197,"width":874,"height":435}
+	],
+	"edges":[
+		{"id":"9b390646f83f9e8e","fromNode":"b1da0bd80a7188d9","fromSide":"right","toNode":"0983e29d2a7020bb","toSide":"left"},
+		{"id":"d34198f5487cb102","fromNode":"1ee91782efaca4e4","fromSide":"right","toNode":"0983e29d2a7020bb","toSide":"left"},
+		{"id":"249b545ed751e3ea","fromNode":"0983e29d2a7020bb","fromSide":"right","toNode":"0bab4e0175f61a22","toSide":"left"},
+		{"id":"4d7814a6f54abeb7","fromNode":"0983e29d2a7020bb","fromSide":"right","toNode":"5b14fb66b9630874","toSide":"left"},
+		{"id":"c9ae15734877bfe4","fromNode":"0983e29d2a7020bb","fromSide":"right","toNode":"4a7311b7b57be4fc","toSide":"left"},
+		{"id":"abfd0266b63e3c95","fromNode":"0983e29d2a7020bb","fromSide":"right","toNode":"de0957ee2500ed39","toSide":"left"},
+		{"id":"e6ddf3233da1c03f","fromNode":"0983e29d2a7020bb","fromSide":"right","toNode":"c832fa8f2673271c","toSide":"left"},
+		{"id":"a939077a3ff12839","fromNode":"0983e29d2a7020bb","fromSide":"right","toNode":"7d727ea03925ee98","toSide":"left"}
+	]
+}
