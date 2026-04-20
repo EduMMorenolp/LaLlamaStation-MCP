@@ -533,58 +533,60 @@ export const ConnectionPanel: React.FC<ConnectionPanelProps> = ({
 						) : !ngrokConfig ? (
 							<p style={{ fontSize: "12px", color: "var(--text-muted)" }}>No hay datos de configuracion.</p>
 						) : (
-							<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "10px" }}>
-								<div style={{ border: "1px solid var(--border-light)", borderRadius: "8px", padding: "10px" }}>
-									<p style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Contenedor</p>
-									<p style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{ngrokConfig.containerName}</p>
+							<div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+								<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "10px" }}>
+									<div style={{ border: "1px solid var(--border-light)", borderRadius: "8px", padding: "10px" }}>
+										<p style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Contenedor</p>
+										<p style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{ngrokConfig.containerName}</p>
+									</div>
+									<div style={{ border: "1px solid var(--border-light)", borderRadius: "8px", padding: "10px" }}>
+										<p style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Target</p>
+										<p style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{ngrokConfig.targetService}:{ngrokConfig.targetPort}</p>
+									</div>
+									<div style={{ border: "1px solid var(--border-light)", borderRadius: "8px", padding: "10px" }}>
+										<p style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Authtoken</p>
+										<p style={{ fontSize: "12px", color: ngrokConfig.authtokenConfigured ? "var(--success)" : "var(--warning)" }}>
+											{ngrokConfig.authtokenConfigured ? "Configurado" : "No configurado"}
+										</p>
+									</div>
+									<div style={{ border: "1px solid var(--border-light)", borderRadius: "8px", padding: "10px" }}>
+										<p style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Dashboard API</p>
+										<p style={{ fontSize: "11px", fontFamily: "var(--font-mono)" }}>{ngrokConfig.dashboardApiUrl}</p>
+									</div>
 								</div>
-								<div style={{ border: "1px solid var(--border-light)", borderRadius: "8px", padding: "10px" }}>
-									<p style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Target</p>
-									<p style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{ngrokConfig.targetService}:{ngrokConfig.targetPort}</p>
-								</div>
-								<div style={{ border: "1px solid var(--border-light)", borderRadius: "8px", padding: "10px" }}>
-									<p style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Authtoken</p>
-									<p style={{ fontSize: "12px", color: ngrokConfig.authtokenConfigured ? "var(--success)" : "var(--warning)" }}>
-										{ngrokConfig.authtokenConfigured ? "Configurado" : "No configurado"}
-									</p>
-								</div>
-								<div style={{ border: "1px solid var(--border-light)", borderRadius: "8px", padding: "10px" }}>
-									<p style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Dashboard API</p>
-									<p style={{ fontSize: "11px", fontFamily: "var(--font-mono)" }}>{ngrokConfig.dashboardApiUrl}</p>
-								</div>
-							</div>
 
-							<div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
-								<p style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-									Authtoken ngrok (se aplica desde el frontend al contenedor)
-								</p>
-								<div style={{ position: "relative" }}>
-									<input
-										type={showNgrokToken ? "text" : "password"}
-										value={ngrokTokenInput}
-										onChange={(e) => setNgrokTokenInput(e.target.value)}
-										placeholder="Pega tu authtoken de ngrok"
-										className="pin-input"
-										style={{ textAlign: "left", fontSize: "13px", paddingRight: "44px" }}
-									/>
+								<div style={{ marginTop: "2px", display: "flex", flexDirection: "column", gap: "8px" }}>
+									<p style={{ fontSize: "11px", color: "var(--text-dim)" }}>
+										Authtoken ngrok (se aplica desde el frontend al contenedor)
+									</p>
+									<div style={{ position: "relative" }}>
+										<input
+											type={showNgrokToken ? "text" : "password"}
+											value={ngrokTokenInput}
+											onChange={(e) => setNgrokTokenInput(e.target.value)}
+											placeholder="Pega tu authtoken de ngrok"
+											className="pin-input"
+											style={{ textAlign: "left", fontSize: "13px", paddingRight: "44px" }}
+										/>
+										<button
+											type="button"
+											onClick={() => setShowNgrokToken((v) => !v)}
+											className="btn-icon"
+											style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)" }}
+											title={showNgrokToken ? "Ocultar token" : "Mostrar token"}
+										>
+											{showNgrokToken ? <EyeOff size={14} /> : <Eye size={14} />}
+										</button>
+									</div>
 									<button
-										type="button"
-										onClick={() => setShowNgrokToken((v) => !v)}
-										className="btn-icon"
-										style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)" }}
-										title={showNgrokToken ? "Ocultar token" : "Mostrar token"}
+										onClick={handleSaveNgrokToken}
+										disabled={ngrokTokenSaving}
+										className="connection-main-btn"
+										style={{ width: "fit-content", display: "flex", gap: "8px", alignItems: "center" }}
 									>
-										{showNgrokToken ? <EyeOff size={14} /> : <Eye size={14} />}
+										<Save size={14} /> {ngrokTokenSaving ? "Guardando..." : "Guardar authtoken"}
 									</button>
 								</div>
-								<button
-									onClick={handleSaveNgrokToken}
-									disabled={ngrokTokenSaving}
-									className="connection-main-btn"
-									style={{ width: "fit-content", display: "flex", gap: "8px", alignItems: "center" }}
-								>
-									<Save size={14} /> {ngrokTokenSaving ? "Guardando..." : "Guardar authtoken"}
-								</button>
 							</div>
 						)}
 					</div>
