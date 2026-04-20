@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "03-Backend/Postman-Collection.md",
+                "file": "README.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Postman-Collection"
+              "title": "README"
             }
           }
         ],
@@ -109,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "03-Backend/Postman-Collection.md",
+                "file": "README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Enlaces entrantes de Postman-Collection"
+              "title": "Enlaces entrantes de README"
             }
           },
           {
@@ -128,12 +128,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "03-Backend/Postman-Collection.md",
+                "file": "README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Enlaces salientes de Postman-Collection"
+              "title": "Enlaces salientes de README"
             }
           },
           {
@@ -171,13 +171,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "03-Backend/Postman-Collection.md",
+                "file": "README.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Esquema de Postman-Collection"
+              "title": "Esquema de README"
             }
           }
         ]
@@ -199,9 +199,15 @@
   },
   "active": "04a2023e6952ad22",
   "lastOpenFiles": [
+    "06-Troubleshooting/Runbook.md",
+    "06-Troubleshooting/Indice-Troubleshooting.md",
+    "05-Operaciones/Performance-y-GPU.md",
+    "05-Operaciones/Indice-Operaciones.md",
+    "05-Operaciones/Hardware.md",
+    "05-Operaciones/Docker.md",
+    "04-Frontend/Dashboard.md",
     "03-Backend/Postman-Collection.md",
     "06-Troubleshooting/Errores-Comunes.md",
-    "04-Frontend/Dashboard.md",
     "02-Arquitectura/Indice-Frontend.md",
     "LaLlamaStation-MCP-Postman-Collection.json",
     "02-Arquitectura/Variables-Entorno.md",
@@ -214,18 +220,12 @@
     "99-Referencia/Comandos.md",
     "README.md",
     "03-Backend/Seguridad.md",
-    "05-Operaciones/Docker.md",
     "01-Inicio/Getting-Started.md",
     "02-Arquitectura/Arquitectura.md",
-    "05-Operaciones/Hardware.md",
     "01-Inicio/Instalacion.md",
-    "05-Operaciones/Indice-Operaciones.md",
-    "05-Operaciones/Performance-y-GPU.md",
     "Indice-Inicio.md",
     "01-Inicio/Indice-Inicio.md",
     "LaLlamaStation-MCP.md",
-    "LaLlamaStation.md",
-    "RESUMEN-MEJORA.md",
     "Sin título.canvas",
     "_deprecated",
     "99-Referencia",

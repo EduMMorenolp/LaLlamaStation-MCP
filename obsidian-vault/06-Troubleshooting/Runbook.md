@@ -1,4 +1,4 @@
-﻿# Runbook de Operacin
+# Runbook de Operacin
 
 Gua de procedimientos operacionales da a da.
 
