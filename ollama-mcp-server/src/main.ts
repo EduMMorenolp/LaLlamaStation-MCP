@@ -10,6 +10,7 @@ import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import { Server as SocketServer } from "socket.io";
 import { AppModule } from "./app.module.js";
+import { MCP_TOOL_CATALOG } from "./ollama/ollama.tools.js";
 
 const app = express();
 app.use(cors()); // Habilitar CORS para desarrollo local del frontend
@@ -382,6 +383,42 @@ app.post("/api/auth/mcp", authMiddleware, (req, res) => {
 	res.json(appModule.authService.getSettings());
 });
 
+app.get("/api/auth/mcp/tools", authMiddleware, (_req, res) => {
+	const permissions = appModule.authService.getMcpToolPermissions();
+	const byName = new Map(permissions.map((item) => [item.name, item.enabled]));
+	const tools = MCP_TOOL_CATALOG.map((tool) => ({
+		name: tool.name,
+		description: tool.description,
+		enabled: byName.get(tool.name) ?? true,
+	}));
+	res.json({ tools });
+});
+
+app.post("/api/auth/mcp/tools/:name", authMiddleware, (req, res) => {
+	const { name } = req.params;
+	const { enabled } = req.body;
+
+	if (typeof enabled !== "boolean") {
+		return res.status(400).json({ error: "enabled debe ser boolean" });
+	}
+
+	const knownTool = MCP_TOOL_CATALOG.some((tool) => tool.name === name);
+	if (!knownTool) {
+		return res.status(404).json({ error: `Tool ${name} no existe` });
+	}
+
+	const updated = appModule.authService.setMcpToolEnabled(name, enabled);
+	if (!updated) {
+		return res.status(404).json({ error: `Tool ${name} no existe` });
+	}
+
+	res.json({
+		name,
+		enabled,
+		mcpTools: appModule.authService.getMcpToolPermissions(),
+	});
+});
+
 app.post("/api/unload", authMiddleware, async (_req, res) => {
 	try {
 		await appModule.ollamaService.unloadModels();
@@ -497,12 +534,32 @@ app.post("/api/engine-stats/cloud-price", authMiddleware, (req, res) => {
 // --- Control de Ngrok via Docker API ---
 const docker = new Docker({ socketPath: "/var/run/docker.sock" });
 const NGROK_CONTAINER = process.env.NGROK_CONTAINER_NAME || "mcp-ngrok-tunnel";
+let ngrokAuthtokenConfigured = Boolean(process.env.NGROK_AUTHTOKEN?.trim());
 
 async function getNgrokContainer() {
 	try {
 		return docker.getContainer(NGROK_CONTAINER);
 	} catch {
 		return null;
+	}
+}
+
+async function runNgrokCommand(container: Docker.Container, cmd: string[]) {
+	const exec = await container.exec({
+		Cmd: cmd,
+		AttachStdout: true,
+		AttachStderr: true,
+	});
+
+	const stream = await exec.start({ hijack: true, stdin: false });
+	await new Promise<void>((resolve, reject) => {
+		stream.on("end", () => resolve());
+		stream.on("error", (err) => reject(err));
+	});
+
+	const result = await exec.inspect();
+	if (result.ExitCode !== 0) {
+		throw new Error(`Comando ngrok fallido (exit=${result.ExitCode})`);
 	}
 }
 
@@ -525,6 +582,54 @@ app.get("/api/ngrok/status", authMiddleware, async (_req, res) => {
 		res.json({ running, url });
 	} catch (e: any) {
 		res.json({ running: false, url: null, error: e.message });
+	}
+});
+
+app.get("/api/ngrok/config", authMiddleware, async (_req, res) => {
+	const appPort = process.env.APP_PORT || "3000";
+	res.json({
+		containerName: NGROK_CONTAINER,
+		targetService: "mcp-server",
+		targetPort: appPort,
+		dashboardApiUrl: "http://mcp-ngrok-tunnel:4040/api/tunnels",
+		authtokenConfigured: ngrokAuthtokenConfigured,
+	});
+});
+
+app.post("/api/ngrok/authtoken", authMiddleware, async (req, res) => {
+	const { authtoken } = req.body;
+	if (typeof authtoken !== "string" || authtoken.trim().length < 10) {
+		return res.status(400).json({ error: "authtoken invalido" });
+	}
+
+	let startedByThisRequest = false;
+	try {
+		const container = await getNgrokContainer();
+		if (!container) {
+			return res.status(404).json({ error: "Contenedor ngrok no encontrado" });
+		}
+
+		const info = await container.inspect();
+		const wasRunning = info.State?.Running === true;
+
+		if (!wasRunning) {
+			await container.start();
+			startedByThisRequest = true;
+		}
+
+		await runNgrokCommand(container, ["ngrok", "config", "add-authtoken", authtoken.trim()]);
+		ngrokAuthtokenConfigured = true;
+
+		if (wasRunning) {
+			await container.restart();
+		} else if (startedByThisRequest) {
+			await container.stop();
+		}
+
+		res.json({ message: "Authtoken de ngrok actualizado", authtokenConfigured: true });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : "Error actualizando authtoken de ngrok";
+		res.status(500).json({ error: message });
 	}
 });
 

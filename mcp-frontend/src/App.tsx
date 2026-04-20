@@ -1,4 +1,4 @@
-import { Activity, Cpu, Eye, EyeOff, Layers, RefreshCw, Shield, Terminal, Zap } from "lucide-react";
+import { Activity, Cpu, Eye, EyeOff, Layers, RefreshCw, Shield, Terminal, Zap, Cable } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { AiEngineTuner } from "./components/AiEngineTuner";
@@ -841,6 +841,9 @@ const App: React.FC = () => {
 							<button className="cmd-pill" onClick={() => setActiveTab("models")}>
 								<Layers size={14} /> Modelos
 							</button>
+							<button className="cmd-pill" onClick={() => setActiveTab("coneccion")}>
+								<Cable size={14} /> Coneccion
+							</button>
 							<button className="cmd-pill" onClick={() => setActiveTab("security")}>
 								<Shield size={14} /> Seguridad
 							</button>
@@ -852,9 +855,6 @@ const App: React.FC = () => {
 							</button>
 							<button className="cmd-pill" onClick={() => setActiveTab("performance")}>
 								<Activity size={14} /> Performance
-							</button>
-							<button className="cmd-pill" onClick={() => setActiveTab("coneccion")}>
-								<Shield size={14} /> Coneccion
 							</button>
 						</div>
 					</div>

@@ -16,6 +16,18 @@ const InferenceOptionsSchema = z.object({
 	top_k: z.number().min(0).max(100).optional(),
 });
 
+export const MCP_TOOL_CATALOG = [
+	{ name: "list_models", description: "List installed Ollama models" },
+	{ name: "pull_model", description: "Download a new model from Ollama library" },
+	{ name: "generate", description: "Generate a response for a prompt" },
+	{ name: "chat", description: "Send a chat message to a model" },
+	{ name: "unload_models", description: "Unload all models from VRAM (Free GPU)" },
+	{ name: "get_server_status", description: "Get Ollama server telemetry (VRAM, Disk, Ngrok)" },
+	{ name: "delete_model", description: "Delete a model from disk to free space" },
+] as const;
+
+const MCP_TOOL_NAMES = new Set(MCP_TOOL_CATALOG.map((tool) => tool.name));
+
 export class OllamaTools {
 	constructor(
 		private readonly ollamaService: OllamaService,
@@ -32,8 +44,7 @@ export class OllamaTools {
 					description: "API Key for authentication",
 				},
 			};
-			return {
-				tools: [
+			const availableTools = [
 					{
 						name: "list_models",
 						description: "List installed Ollama models",
@@ -138,8 +149,11 @@ export class OllamaTools {
 							required: requireApiKey ? ["model", "apiKey"] : ["model"],
 						},
 					},
-				],
-			};
+					];
+
+				return {
+					tools: availableTools.filter((tool) => this.authService.isMcpToolEnabled(tool.name)),
+				};
 		});
 
 		// 2. Call Tools
@@ -147,6 +161,14 @@ export class OllamaTools {
 			const params = request.params as { name: string; arguments?: Record<string, unknown> };
 			const { name, arguments: args } = params;
 			const ip = "MCP-Client";
+
+			if (!MCP_TOOL_NAMES.has(name as any)) {
+				throw new Error(`Tool ${name} not found`);
+			}
+
+			if (!this.authService.isMcpToolEnabled(name)) {
+				throw new Error(`Tool ${name} is disabled by administrator`);
+			}
 
 			// Global Auth Check (solo cuando MCP auth esta activa)
 			if (this.authService.isMcpAuthEnabled() && !this.authService.validate(args?.apiKey as string)) {
