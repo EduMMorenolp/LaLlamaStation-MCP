@@ -1,4 +1,4 @@
-import { BarChart2, Check, Clock, Copy, Cpu, Database, Loader, Power, RefreshCw, Zap } from "lucide-react";
+import { BarChart2, Check, Clock, Copy, Cpu, Database, Loader, Lock, Power, RefreshCw, ShieldAlert, Unlock, Zap } from "lucide-react";
 import type React from "react";
 import { useCallback, useState } from "react";
 import { api } from "../services/api.service";
@@ -16,9 +16,15 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status, onOllamaControl })
 	const [ngrokRunning, setNgrokRunning] = useState<boolean | null>(null);
 	const [ngrokUrl, setNgrokUrl] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
+	const [ollamaAuthEnabled, setOllamaAuthEnabled] = useState<boolean | null>(null);
+	const [mcpAuthEnabled, setMcpAuthEnabled] = useState<boolean | null>(null);
+	const [ollamaAuthLoading, setOllamaAuthLoading] = useState(false);
+	const [mcpAuthLoading, setMcpAuthLoading] = useState(false);
 
 	const ngrokActive = ngrokRunning ?? status?.ngrokInfo?.active === true;
 	const displayUrl = ngrokUrl ?? status?.ngrokInfo?.url ?? null;
+	const isOllamaAuthEnabled = ollamaAuthEnabled ?? status?.auth?.ollamaAuthEnabled ?? true;
+	const isMcpAuthEnabled = mcpAuthEnabled ?? status?.auth?.mcpAuthEnabled ?? true;
 
 	const toggleNgrok = useCallback(async () => {
 		setNgrokLoading(true);
@@ -66,6 +72,47 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status, onOllamaControl })
 			setOllamaLoading(false);
 		}
 	};
+
+	const toggleAuth = useCallback(async (target: "ollama" | "mcp") => {
+		if (target === "ollama") {
+			setOllamaAuthLoading(true);
+			try {
+				const nextEnabled = !isOllamaAuthEnabled;
+				const res = await api.post("/api/auth/ollama", { enabled: nextEnabled });
+				setOllamaAuthEnabled(Boolean(res.data?.ollamaAuthEnabled));
+				if (typeof res.data?.mcpAuthEnabled === "boolean") {
+					setMcpAuthEnabled(res.data.mcpAuthEnabled);
+				}
+			} catch (e: unknown) {
+				const msg =
+					e instanceof Error
+						? e.message
+						: (e as any)?.response?.data?.error || "Error actualizando seguridad Ollama";
+				alert(msg);
+			} finally {
+				setOllamaAuthLoading(false);
+			}
+			return;
+		}
+
+		setMcpAuthLoading(true);
+		try {
+			const nextEnabled = !isMcpAuthEnabled;
+			const res = await api.post("/api/auth/mcp", { enabled: nextEnabled });
+			setMcpAuthEnabled(Boolean(res.data?.mcpAuthEnabled));
+			if (typeof res.data?.ollamaAuthEnabled === "boolean") {
+				setOllamaAuthEnabled(res.data.ollamaAuthEnabled);
+			}
+		} catch (e: unknown) {
+			const msg =
+				e instanceof Error
+					? e.message
+					: (e as any)?.response?.data?.error || "Error actualizando seguridad MCP";
+			alert(msg);
+		} finally {
+			setMcpAuthLoading(false);
+		}
+	}, [isMcpAuthEnabled, isOllamaAuthEnabled]);
 
 	if (!status)
 		return (
@@ -304,6 +351,90 @@ export const Telemetry: React.FC<TelemetryProps> = ({ status, onOllamaControl })
 					</div>
 					<p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
 						requests procesados
+					</p>
+				</div>
+
+				{/* API Key - Ollama */}
+				<div
+					className="kpi-card"
+					style={{ borderColor: isOllamaAuthEnabled ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.25)" }}
+				>
+					<span className="kpi-label">API Key Ollama</span>
+					<div className="flex-between" style={{ marginBottom: "8px" }}>
+						<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+							{isOllamaAuthEnabled ? (
+								<Lock size={16} color="var(--success)" />
+							) : (
+								<Unlock size={16} color="var(--warning)" />
+							)}
+							<span
+								className="kpi-value"
+								style={{ fontSize: "18px", color: isOllamaAuthEnabled ? "var(--success)" : "var(--warning)" }}
+							>
+								{isOllamaAuthEnabled ? "PROTEGIDO" : "ABIERTO"}
+							</span>
+						</div>
+						<button
+							onClick={() => toggleAuth("ollama")}
+							disabled={ollamaAuthLoading}
+							style={{
+								background: isOllamaAuthEnabled ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)",
+								border: `1px solid ${isOllamaAuthEnabled ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)"}`,
+								borderRadius: "8px",
+								padding: "5px 10px",
+								cursor: "pointer",
+								color: isOllamaAuthEnabled ? "var(--error)" : "var(--success)",
+								fontSize: "11px",
+								fontWeight: 700,
+							}}
+						>
+							{ollamaAuthLoading ? <Loader size={12} className="animate-spin" /> : isOllamaAuthEnabled ? "DISABLE" : "ENABLE"}
+						</button>
+					</div>
+					<p style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+						Controla si /v1 y /api piden x-api-key.
+					</p>
+				</div>
+
+				{/* API Key - MCP */}
+				<div
+					className="kpi-card"
+					style={{ borderColor: isMcpAuthEnabled ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.25)" }}
+				>
+					<span className="kpi-label">API Key MCP</span>
+					<div className="flex-between" style={{ marginBottom: "8px" }}>
+						<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+							{isMcpAuthEnabled ? (
+								<ShieldAlert size={16} color="var(--success)" />
+							) : (
+								<Unlock size={16} color="var(--warning)" />
+							)}
+							<span
+								className="kpi-value"
+								style={{ fontSize: "18px", color: isMcpAuthEnabled ? "var(--success)" : "var(--warning)" }}
+							>
+								{isMcpAuthEnabled ? "PROTEGIDO" : "ABIERTO"}
+							</span>
+						</div>
+						<button
+							onClick={() => toggleAuth("mcp")}
+							disabled={mcpAuthLoading}
+							style={{
+								background: isMcpAuthEnabled ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)",
+								border: `1px solid ${isMcpAuthEnabled ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)"}`,
+								borderRadius: "8px",
+								padding: "5px 10px",
+								cursor: "pointer",
+								color: isMcpAuthEnabled ? "var(--error)" : "var(--success)",
+								fontSize: "11px",
+								fontWeight: 700,
+							}}
+						>
+							{mcpAuthLoading ? <Loader size={12} className="animate-spin" /> : isMcpAuthEnabled ? "DISABLE" : "ENABLE"}
+						</button>
+					</div>
+					<p style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+						Controla si /sse, /messages y tools MCP exigen apiKey.
 					</p>
 				</div>
 			</div>

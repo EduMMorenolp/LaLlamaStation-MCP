@@ -25,6 +25,13 @@ export class OllamaTools {
 	register(server: Server) {
 		// 1. List Tools
 		server.setRequestHandler(ListToolsRequestSchema, async () => {
+			const requireApiKey = this.authService.isMcpAuthEnabled();
+			const authProps = {
+				apiKey: {
+					type: "string",
+					description: "API Key for authentication",
+				},
+			};
 			return {
 				tools: [
 					{
@@ -33,12 +40,9 @@ export class OllamaTools {
 						inputSchema: {
 							type: "object",
 							properties: {
-								apiKey: {
-									type: "string",
-									description: "API Key for authentication",
-								},
+								...authProps,
 							},
-							required: ["apiKey"],
+							required: requireApiKey ? ["apiKey"] : [],
 						},
 					},
 					{
@@ -51,12 +55,9 @@ export class OllamaTools {
 									type: "string",
 									description: "Name of the model to pull (e.g., llama3)",
 								},
-								apiKey: {
-									type: "string",
-									description: "API Key for authentication",
-								},
+								...authProps,
 							},
-							required: ["model", "apiKey"],
+							required: requireApiKey ? ["model", "apiKey"] : ["model"],
 						},
 					},
 					{
@@ -67,12 +68,12 @@ export class OllamaTools {
 							properties: {
 								model: { type: "string" },
 								prompt: { type: "string" },
-								apiKey: { type: "string" },
+								...authProps,
 								temperature: { type: "number", minimum: 0, maximum: 2 },
 								num_ctx: { type: "number", minimum: 128 },
 								keep_alive: { type: "string" },
 							},
-							required: ["model", "prompt", "apiKey"],
+							required: requireApiKey ? ["model", "prompt", "apiKey"] : ["model", "prompt"],
 						},
 					},
 					{
@@ -92,13 +93,15 @@ export class OllamaTools {
 										},
 									},
 								},
-								apiKey: { type: "string" },
+								...authProps,
 								temperature: { type: "number", minimum: 0, maximum: 2 },
 								num_ctx: { type: "number", minimum: 128 },
 								session_id: { type: "string" },
 								keep_alive: { type: "string" },
 							},
-							required: ["model", "messages", "apiKey"],
+							required: requireApiKey
+								? ["model", "messages", "apiKey"]
+								: ["model", "messages"],
 						},
 					},
 					{
@@ -107,9 +110,9 @@ export class OllamaTools {
 						inputSchema: {
 							type: "object",
 							properties: {
-								apiKey: { type: "string" },
+								...authProps,
 							},
-							required: ["apiKey"],
+							required: requireApiKey ? ["apiKey"] : [],
 						},
 					},
 					{
@@ -118,9 +121,9 @@ export class OllamaTools {
 						inputSchema: {
 							type: "object",
 							properties: {
-								apiKey: { type: "string" },
+								...authProps,
 							},
-							required: ["apiKey"],
+							required: requireApiKey ? ["apiKey"] : [],
 						},
 					},
 					{
@@ -130,9 +133,9 @@ export class OllamaTools {
 							type: "object",
 							properties: {
 								model: { type: "string" },
-								apiKey: { type: "string" },
+								...authProps,
 							},
-							required: ["model", "apiKey"],
+							required: requireApiKey ? ["model", "apiKey"] : ["model"],
 						},
 					},
 				],
@@ -145,8 +148,8 @@ export class OllamaTools {
 			const { name, arguments: args } = params;
 			const ip = "MCP-Client";
 
-			// Global Auth Check
-			if (!this.authService.validate(args?.apiKey as string)) {
+			// Global Auth Check (solo cuando MCP auth esta activa)
+			if (this.authService.isMcpAuthEnabled() && !this.authService.validate(args?.apiKey as string)) {
 				this.ollamaService.logRequest(ip, `Tool: ${name}`, "Unauthorized");
 				this.ollamaService.reportFailedAuth(ip);
 				throw new Error("Invalid API Key");

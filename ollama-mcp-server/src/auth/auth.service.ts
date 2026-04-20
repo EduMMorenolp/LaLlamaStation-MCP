@@ -1,5 +1,7 @@
 export class AuthService {
 	private readonly apiKey: string;
+	private ollamaAuthEnabled = true;
+	private mcpAuthEnabled = true;
 
 	constructor() {
 		const key = process.env.API_KEY;
@@ -14,6 +16,29 @@ export class AuthService {
 	validate(key: string | undefined): boolean {
 		if (!key) return false;
 		return key === this.apiKey;
+	}
+
+	isOllamaAuthEnabled(): boolean {
+		return this.ollamaAuthEnabled;
+	}
+
+	isMcpAuthEnabled(): boolean {
+		return this.mcpAuthEnabled;
+	}
+
+	setOllamaAuthEnabled(enabled: boolean): void {
+		this.ollamaAuthEnabled = enabled;
+	}
+
+	setMcpAuthEnabled(enabled: boolean): void {
+		this.mcpAuthEnabled = enabled;
+	}
+
+	getSettings() {
+		return {
+			ollamaAuthEnabled: this.ollamaAuthEnabled,
+			mcpAuthEnabled: this.mcpAuthEnabled,
+		};
 	}
 
 	getApiKey(): string {

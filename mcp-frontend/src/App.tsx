@@ -3,6 +3,7 @@ import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { AiEngineTuner } from "./components/AiEngineTuner";
 import { ChatPlayground } from "./components/ChatPlayground";
+import { ConnectionPanel } from "./components/ConnectionPanel";
 import { HardwareSentinel } from "./components/HardwareSentinel";
 import { IpLogs } from "./components/IpLogs";
 import { ModelList } from "./components/ModelList";
@@ -254,6 +255,45 @@ const App: React.FC = () => {
 		}
 	};
 
+	const handleUpdateApiKey = async (nextKey: string, remember: boolean) => {
+		const trimmed = nextKey.trim();
+		if (!trimmed) {
+			throw new Error("La API Key no puede estar vacia");
+		}
+
+		const previousKey = apiKey;
+		setApiClientKey(trimmed);
+
+		try {
+			const [statusRes, modelsRes] = await Promise.all([api.get("/api/status/fast"), api.get("/api/models")]);
+			setStatus(statusRes.data);
+			setModels(modelsRes.data.models || []);
+			setApiKey(trimmed);
+			setApiKeyInput(trimmed);
+			setRememberKey(remember);
+			if (remember) {
+				persistApiKey(trimmed);
+			} else {
+				removePersistedApiKey();
+			}
+		} catch (err: any) {
+			setApiClientKey(previousKey);
+			throw new Error(err?.response?.data?.error || err?.message || "No se pudo validar la API Key");
+		}
+	};
+
+	const handleToggleMcpAuth = async (enabled: boolean) => {
+		const res = await api.post("/api/auth/mcp", { enabled });
+		setStatus((prev) => ({
+			...(prev || {}),
+			auth: {
+				...(prev?.auth || {}),
+				ollamaAuthEnabled: res.data?.ollamaAuthEnabled,
+				mcpAuthEnabled: res.data?.mcpAuthEnabled,
+			},
+		}));
+	};
+
 	const [activeTab, setActiveTab] = useState("dashboard");
 
 	const [showKey, setShowKey] = useState(false);
@@ -461,6 +501,8 @@ const App: React.FC = () => {
 				return { title: "AI ENGINE TUNER", sub: "Consumo energético, contador de tokens y ahorro vs cloud" };
 			case "performance":
 				return { title: "PERFORMANCE METRICS", sub: "TTFT, Throughput y estadísticas de inferencia" };
+			case "coneccion":
+				return { title: "CONECCION", sub: "Configura API Key local y puente MCP" };
 			default:
 				return { title: activeTab.toUpperCase(), sub: "" };
 		}
@@ -729,6 +771,16 @@ const App: React.FC = () => {
 						<PerformanceMetrics />
 					</div>
 				);
+			case "coneccion":
+				return (
+					<ConnectionPanel
+						status={status}
+						apiKeyValue={apiKey}
+						rememberKey={rememberKey}
+						onSaveApiKey={handleUpdateApiKey}
+						onToggleMcpAuth={handleToggleMcpAuth}
+					/>
+				);
 			default:
 				return null;
 		}
@@ -800,6 +852,9 @@ const App: React.FC = () => {
 							</button>
 							<button className="cmd-pill" onClick={() => setActiveTab("performance")}>
 								<Activity size={14} /> Performance
+							</button>
+							<button className="cmd-pill" onClick={() => setActiveTab("coneccion")}>
+								<Shield size={14} /> Coneccion
 							</button>
 						</div>
 					</div>

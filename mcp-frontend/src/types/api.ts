@@ -11,6 +11,10 @@ export interface StatusResponse {
 	vramUsedMb?: number;
 	models?: LoadedModel[];
 	recentLogs?: AccessLogEntry[];
+	auth?: {
+		ollamaAuthEnabled?: boolean;
+		mcpAuthEnabled?: boolean;
+	};
 	[key: string]: any;
 }
 

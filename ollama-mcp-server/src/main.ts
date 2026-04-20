@@ -69,6 +69,10 @@ const securityMiddleware = (req: Request, res: Response, next: Function) => {
 app.use(securityMiddleware);
 
 const authMiddleware = (req: Request, res: Response, next: Function) => {
+	if (!appModule.authService.isOllamaAuthEnabled()) {
+		return next();
+	}
+
 	const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
 	const apiKey = req.headers["x-api-key"] || req.headers.authorization?.toString().replace("Bearer ", "");
 
@@ -89,6 +93,11 @@ const authMiddleware = (req: Request, res: Response, next: Function) => {
 		res.status(401).json({ error: "Unauthorized: Invalid API Key" });
 	}
 };
+
+const withAuthConfig = <T extends Record<string, unknown>>(payload: T) => ({
+	...payload,
+	auth: appModule.authService.getSettings(),
+});
 
 // --- Rutas de Compatibilidad OpenAI ---
 
@@ -285,7 +294,7 @@ app.post("/v1/chat/completions", authMiddleware, async (req, res) => {
 app.get("/api/status/fast", authMiddleware, async (_req, res) => {
 	try {
 		const status = await appModule.ollamaService.getFastStatus();
-		res.json(status);
+		res.json(withAuthConfig(status));
 	} catch (error: any) {
 		res.status(500).json({ error: error.message });
 	}
@@ -295,7 +304,7 @@ app.get("/api/status/fast", authMiddleware, async (_req, res) => {
 app.get("/api/status/full", authMiddleware, async (_req, res) => {
 	try {
 		const status = await appModule.ollamaService.getServerStatus();
-		res.json(status);
+		res.json(withAuthConfig(status));
 	} catch (error: any) {
 		res.status(500).json({ error: error.message });
 	}
@@ -343,10 +352,34 @@ app.get("/api/metrics/performance", authMiddleware, (_req, res) => {
 app.get("/api/status", authMiddleware, async (_req, res) => {
 	try {
 		const status = await appModule.ollamaService.getServerStatus();
-		res.json(status);
+		res.json(withAuthConfig(status));
 	} catch (error: any) {
 		res.status(500).json({ error: error.message });
 	}
+});
+
+// --- Auth Settings (toggle API Key enforcement) ---
+
+app.get("/api/auth/settings", authMiddleware, (_req, res) => {
+	res.json(appModule.authService.getSettings());
+});
+
+app.post("/api/auth/ollama", authMiddleware, (req, res) => {
+	const { enabled } = req.body;
+	if (typeof enabled !== "boolean") {
+		return res.status(400).json({ error: "enabled debe ser boolean" });
+	}
+	appModule.authService.setOllamaAuthEnabled(enabled);
+	res.json(appModule.authService.getSettings());
+});
+
+app.post("/api/auth/mcp", authMiddleware, (req, res) => {
+	const { enabled } = req.body;
+	if (typeof enabled !== "boolean") {
+		return res.status(400).json({ error: "enabled debe ser boolean" });
+	}
+	appModule.authService.setMcpAuthEnabled(enabled);
+	res.json(appModule.authService.getSettings());
 });
 
 app.post("/api/unload", authMiddleware, async (_req, res) => {
@@ -615,7 +648,7 @@ app.get("/sse", async (req: Request, res: Response) => {
 	const apiKey = req.headers["x-api-key"] || req.headers.authorization?.toString().replace("Bearer ", "");
 	const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
 
-	if (!appModule.authService.validate(apiKey as string)) {
+	if (appModule.authService.isMcpAuthEnabled() && !appModule.authService.validate(apiKey as string)) {
 		console.warn(`[SSE-AUTH-FAIL] Unauthorized MCP connection attempt from ${ip}`);
 		appModule.ollamaService.logRequest(ip, "GET /sse", "Unauthorized");
 		appModule.ollamaService.reportFailedAuth(ip);
@@ -632,7 +665,7 @@ app.get("/sse", async (req: Request, res: Response) => {
 app.post("/messages", async (req: Request, res: Response) => {
 	const apiKey = req.headers["x-api-key"] || req.headers.authorization?.toString().replace("Bearer ", "");
 
-	if (!appModule.authService.validate(apiKey as string)) {
+	if (appModule.authService.isMcpAuthEnabled() && !appModule.authService.validate(apiKey as string)) {
 		return res.status(401).json({ error: "Unauthorized: Invalid API Key" });
 	}
 
