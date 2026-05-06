@@ -367,32 +367,7 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 							<code style={{ fontFamily: "var(--font-mono)", color: "var(--text-main)" }}>
 								llama3.2:3b
 							</code>{" "}
-							en el buscador y presiona <strong>＋</strong>.
-						</p>
-					</div>
-					<div
-						style={{
-							padding: "14px",
-							background: "rgba(255,255,255,0.02)",
-							borderRadius: "8px",
-							border: "1px solid var(--border-light)",
-						}}
-					>
-						<p
-							style={{
-								fontSize: "10px",
-								fontWeight: 800,
-								color: "var(--accent)",
-								marginBottom: "6px",
-								letterSpacing: "1px",
-							}}
-						>
-							BÚSQUEDA EN LIBRERÍA
-						</p>
-						<p style={{ fontSize: "11px", color: "var(--text-dim)", lineHeight: "1.5" }}>
-							Escribe{" "}
-							<code style={{ fontFamily: "var(--font-mono)", color: "var(--text-main)" }}>vision</code> y
-							presiona <strong>Enter</strong> para buscar en ollama.com.
+							en el buscador y presiona el <strong>Buscador</strong>.
 						</p>
 					</div>
 				</div>
@@ -421,19 +396,6 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 						<Sparkles size={22} style={{ color: "var(--accent)" }} />
 						Descubrir Modelos
 					</h2>
-					<span
-						className="badge"
-						style={{
-							background: "rgba(79, 140, 255, 0.1)",
-							color: "var(--accent)",
-							padding: "4px 12px",
-							borderRadius: "6px",
-							fontSize: "11px",
-							fontWeight: 800,
-						}}
-					>
-						OLLAMA LIBRARY
-					</span>
 				</div>
 
 				<div className="model-search-bar">
