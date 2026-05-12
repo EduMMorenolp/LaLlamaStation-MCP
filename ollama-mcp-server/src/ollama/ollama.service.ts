@@ -273,8 +273,12 @@ export class OllamaService {
 	}
 
 	async listModels(): Promise<OllamaModel[]> {
-		const response = await this.axiosClient.get(`${this.baseUrl}/api/tags`);
-		return response.data.models;
+		try {
+			const response = await this.axiosClient.get(`${this.baseUrl}/api/tags`, { timeout: 2000 });
+			return response.data.models || [];
+		} catch {
+			return []; // Devolver vacío silenciosamente si el motor está apagado
+		}
 	}
 
 	async generate(
@@ -562,7 +566,7 @@ export class OllamaService {
 				total: (blocks * bsize) / 1024 ** 3,
 			};
 		} catch (e) {
-			console.error("Error checking disk space:", e);
+			// Silenciar error en windows local si Ollama no está montado
 		}
 
 		let loadedModels = [];
@@ -570,7 +574,7 @@ export class OllamaService {
 			const psResponse = await this.axiosClient.get(`${this.baseUrl}/api/ps`);
 			loadedModels = psResponse.data.models || [];
 		} catch (e) {
-			console.error("Error fetching loaded models:", e);
+			// Silenciar error de red si ollama está offline
 		}
 
 		let ngrokInfo = { url: null as string | null, latency: 0, active: false };
