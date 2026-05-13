@@ -20,11 +20,11 @@ services:
       - mcp-network
     restart: always
 
-  mcp-server:
+  backend:
     build:
-      context: ./ollama-mcp-server
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: mcp-server-app
+    container_name: backend
     volumes:
       - ollama_data:/root/.ollama:ro
       - /var/run/docker.sock:/var/run/docker.sock
@@ -55,31 +55,42 @@ services:
     image: ngrok/ngrok:latest
     container_name: mcp-ngrok-tunnel
     depends_on:
-      - mcp-server
+      - backend
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     command:
       - http
-      - mcp-server:${APP_PORT:-3000}
+      - backend:${APP_PORT:-3000}
     networks:
       - mcp-network
     restart: "no"
 
-  mcp-frontend:
+  frontend:
     build:
-      context: ./mcp-frontend
+      context: ./frontend
       dockerfile: Dockerfile
-    container_name: mcp-frontend-app
+    container_name: frontend
     ports:
       - "8080:80"
     environment:
       # inside docker the backend is reachable by service name
-      - VITE_API_URL=http://mcp-server:${APP_PORT:-3000}
-      - VITE_SOCKET_URL=http://mcp-server:${APP_PORT:-3000}
+      - VITE_API_URL=http://backend:${APP_PORT:-3000}
+      - VITE_SOCKET_URL=http://backend:${APP_PORT:-3000}
     networks:
       - mcp-network
     depends_on:
-      - mcp-server
+      - backend
+    restart: always
+
+  mcp-brain:
+    build:
+      context: ./mcp-brain
+      dockerfile: Dockerfile
+    container_name: brain
+    volumes:
+      - brain_data:/root/.brain
+    networks:
+      - mcp-network
     restart: always
 
 networks:
@@ -88,3 +99,4 @@ networks:
 
 volumes:
   ollama_data:
+  brain_data:

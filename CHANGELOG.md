@@ -7,6 +7,48 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ## [Unreleased]
 
+### 📋 Revision completa del proyecto y actualizacion de documentacion (2026-05-12)
+
+#### Añadido
+- **Informe de estado del proyecto** generado con analisis detallado de:
+  - Arquitectura general (5 servicios Docker)
+  - Backend: 25 endpoints REST, 7 MCP Tools, ~2400 lineas TypeScript
+  - Frontend: React 19 + Vite 7, 10 componentes, diseno glassmorphism
+  - Infraestructura Docker: analisis de problemas y areas de mejora
+  - Documentacion existente con estado de cada archivo
+
+#### Corregido
+- **README.md desactualizado**: Actualizada estructura de directorios (`.agents/` → `.opencode/agents/`, `mcp-frontend/` → `frontend/`, `ollama-mcp-server/` → `backend/`)
+- **Version badge**: Actualizado de 0.3.0 a 0.4.0
+- **Referencias eliminadas**: Directorios que ya no existen (`obsidian-vault/`, `AGENTS.md`, `DESIGN.md`)
+
+#### Documentacion
+- **README.md**: Reescrito completamente con estructura real del proyecto, lista completa de 7 MCP Tools, tabla de endpoints API, y tecnologias actualizadas
+- **CHANGELOG.md**: Documentada esta revision
+
+#### Notas de la Revision
+- Problemas detectados en `docker-compose.yml`:
+  1. Servicio `ngrok` y `frontend` dependen de `mcp-server` (deberia ser `backend`)
+  2. `VITE_API_URL` y `VITE_SOCKET_URL` apuntan a `mcp-server` (deberia ser `backend`)  
+  3. `mcp-brain` no tiene Dockerfile
+- Backend: `memory.tools.ts` registra handlers en mismo schema que `ollama.tools.ts` (conflicto potencial)
+- Frontend: `vite.config.ts` minimalista sin proxy de API
+
+### Corregido
+
+- **docker-compose.yml**: Corregidas 4 referencias a `mcp-server` (servicio inexistente) -> `backend`
+  - `ngrok.depends_on`: `mcp-server` -> `backend`
+  - `frontend.depends_on`: `mcp-server` -> `backend`
+  - `VITE_API_URL` y `VITE_SOCKET_URL`: `mcp-server` -> `backend`
+  - comando ngrok: `mcp-server` -> `backend`
+  - Agregado volumen `brain_data` faltante en la seccion `volumes:`
+- **mcp-brain Dockerfile**: Creado `mcp-brain/Dockerfile` (anteriormente faltaba)
+- **frontend/.env y .env.example**: URLs corregidas de `localhost:3000` a `backend:3000` para entorno Docker
+- **Conflicto MCP Tools**: Refactorizado registro de handlers en `app.module.ts` para combinar `ollama.tools.ts` (7 tools) y `memory.tools.ts` (14 tools) en un unico punto de registro, evitando sobreescritura
+- **vite.config.ts**: Agregada configuracion de proxy para `/api`, `/v1`, `/sse` y `/socket.io` hacia `localhost:3000`
+- **Instalacion de dependencias**: `pnpm install` ejecutado en la raiz del proyecto
+
+
 ### 🤖 Agentes especializados por dominio (AÑADIDO - 2026-05-12)
 
 #### Añadido

@@ -1,139 +1,56 @@
 {
-  "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "lallamastation": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "LaLlamaStation Proxy",
-      "options": {
-        "baseURL": "http://localhost:3000/v1"
-      },
-      "models": {
-        "llama3.2": {
-          "name": "llama3.2",
-          "reasoning": false,
-          "tools": true
-        },
-        "deepseek-r1": {
-          "name": "deepseek-r1",
-          "reasoning": true,
-          "tools": true
-        },
-        "qwen2.5-coder:7b": {
-          "name": "qwen2.5-coder:7b",
-          "reasoning": true,
-          "tools": true
-        }
-      }
-    }
-  },
-  "agent": {
-    "backend-dev": {
-      "description": "Especialista en backend Express + TypeScript: rutas API, auth, MCP tools, Dockerode, telemetría.",
-      "mode": "subagent",
-      "permission": {
-        "edit": "allow",
-        "bash": {
-          "*": "ask",
-          "cd ollama-mcp-server && npm run build": "allow",
-          "docker exec *": "allow",
-          "curl *": "allow"
-        }
-      }
-    },
-    "docker-ops": {
-      "description": "Especialista en infraestructura Docker: compose, Dockerfiles, GPU passthrough, ngrok.",
-      "mode": "subagent",
-      "permission": {
-        "edit": "allow",
-        "bash": {
-          "*": "ask",
-          "docker *": "allow",
-          "docker compose *": "allow"
-        }
-      }
-    },
-    "documentation": {
-      "description": "Especialista en documentación: CHANGELOG, README, diseño técnico, bóveda Obsidian.",
-      "mode": "subagent",
-      "permission": {
-        "edit": "allow"
-      }
-    },
-    "frontend-dev": {
-      "description": "Especialista en React 19 + Vite 7: componentes, glassmorphism, Socket.IO, build.",
-      "mode": "subagent",
-      "permission": {
-        "edit": "allow",
-        "bash": {
-          "*": "ask",
-          "cd mcp-frontend && npm run build": "allow",
-          "cd mcp-frontend && npm run lint": "allow"
-        }
-      }
-    },
-    "ollama-ops": {
-      "description": "Especialista en integración Ollama: modelos, GPU, streaming SSE, proxy OpenAI, métricas.",
-      "mode": "subagent",
-      "permission": {
-        "bash": {
-          "*": "ask",
-          "docker exec *": "allow",
-          "curl *": "allow"
-        }
-      }
-    },
-    "qa-verification": {
-      "description": "Especialista en control de calidad: Biome lint, TypeScript builds, verificación post-cambio.",
-      "mode": "subagent",
-      "permission": {
-        "bash": {
-          "*": "ask",
-          "npx biome *": "allow",
-          "cd ollama-mcp-server && npm run build": "allow",
-          "cd mcp-frontend && npm run build": "allow",
-          "cd mcp-frontend && npm run lint": "allow"
-        }
-      }
-    },
-    "add-mcp-tool": {
-      "description": "Especialista en exponer nuevas MCP Tools: registro, schemas, implementación y testing.",
-      "mode": "subagent",
-      "permission": {
-        "edit": "allow",
-        "bash": {
-          "*": "ask",
-          "cd ollama-mcp-server && npm run build": "allow"
-        }
-      }
-    },
-    "debug-docker-ngrok": {
-      "description": "Especialista en diagnóstico de conectividad Docker: ngrok, bind de puertos, redes entre contenedores.",
-      "mode": "subagent",
-      "permission": {
-        "edit": "ask",
-        "bash": {
-          "*": "ask",
-          "docker *": "allow",
-          "docker compose *": "allow",
-          "curl *": "allow",
-          "netstat *": "allow"
-        }
-      }
-    },
-    "orchestrator": {
-      "description": "Orquestador principal: descompone tareas de alto nivel y las asigna a agentes especializados.",
-      "mode": "primary",
-      "permission": {
-        "edit": "deny",
-        "bash": "deny",
-        "webfetch": "deny",
-        "websearch": "deny",
-        "lsp": "deny",
-        "skill": "deny",
-        "task": {
-          "*": "allow"
-        }
-      }
-    }
-  }
+	"$schema": "https://opencode.ai/config.json",
+	"default_agent": "orchestrator",
+	"provider": {
+		"lallamastation": {
+			"npm": "@ai-sdk/openai-compatible",
+			"name": "LaLlamaStation Proxy",
+			"options": {
+				"baseURL": "http://localhost:3000/v1"
+			},
+			"models": {
+				"llama3.2": {
+					"name": "llama3.2",
+					"reasoning": false,
+					"tools": true
+				},
+				"deepseek-r1": {
+					"name": "deepseek-r1",
+					"reasoning": true,
+					"tools": true
+				},
+				"qwen2.5-coder:7b": {
+					"name": "qwen2.5-coder:7b",
+					"reasoning": true,
+					"tools": true
+				}
+			}
+		}
+	},
+	"agent": {
+		"orchestrator": {
+			"mode": "primary"
+		},
+		"backend-dev": {
+			"mode": "subagent"
+		},
+		"frontend-dev": {
+			"mode": "subagent"
+		},
+		"docker-ops": {
+			"mode": "subagent"
+		},
+		"documentation": {
+			"mode": "subagent"
+		},
+		"qa-verification": {
+			"mode": "subagent"
+		},
+		"add-mcp-tool": {
+			"mode": "subagent"
+		},
+		"agent-creator": {
+			"mode": "subagent"
+		}
+	}
 }
