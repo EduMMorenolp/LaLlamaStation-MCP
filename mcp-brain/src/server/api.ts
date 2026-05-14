@@ -226,7 +226,7 @@ export function startApiServer(dbService: DatabaseService) {
 		const sessionId = req.query.sessionId as string;
 		const transport = sessionId ? sseTransports.get(sessionId) : null;
 		if (transport) {
-			await transport.handlePostMessage(req, res);
+			await transport.handlePostMessage(req, res, req.body);
 		} else {
 			res.status(400).send("No active SSE session");
 		}
