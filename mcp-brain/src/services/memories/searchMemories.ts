@@ -45,7 +45,7 @@ DIRECTIVA DE DELEGACIÓN: Detén la búsqueda actual. Evalúa cambiar de fase SD
 
 	if (mode === "lexical") {
 		const rows = await db.all(
-			`SELECT m.id, m.project, m.type, m.title, m.content, m.tags, m.phase, m.createdAt, m.updatedAt 
+			`SELECT m.id, m.project, m.type, m.title, m.content, m.tags, m.phase, m.agent, m.createdAt, m.updatedAt 
              FROM memories_fts f 
              JOIN memories m ON f.id = m.id 
              WHERE f.memories_fts MATCH ? AND m.project = ? 
@@ -66,7 +66,7 @@ DIRECTIVA DE DELEGACIÓN: Detén la búsqueda actual. Evalúa cambiar de fase SD
 
 		if (queryVector.length > 0) {
 			const allRows = await db.all(
-				`SELECT id, project, type, title, content, tags, vector, phase, createdAt, updatedAt 
+				`SELECT id, project, type, title, content, tags, vector, phase, agent, createdAt, updatedAt 
                  FROM memories WHERE project = ? AND vector IS NOT NULL`,
 				[project]
 			);
@@ -81,6 +81,7 @@ DIRECTIVA DE DELEGACIÓN: Detén la búsqueda actual. Evalúa cambiar de fase SD
 					tags: string;
 					vector: string;
 					phase: string | null;
+					agent: string | null;
 					createdAt: number;
 					updatedAt: number;
 				}) => {

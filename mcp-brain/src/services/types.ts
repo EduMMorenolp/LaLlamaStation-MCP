@@ -7,6 +7,7 @@ export interface Memory {
 	tags: string;
 	sessionId?: string;
 	phase?: string;
+	agent?: string;
 	createdAt: number;
 	updatedAt: number;
 	score?: number; // solo para resultados semánticos

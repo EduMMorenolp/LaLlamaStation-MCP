@@ -13,6 +13,7 @@ export async function createMemoriesTable(db: Database<sqlite3.Database, sqlite3
 			sessionId TEXT,
 			vector TEXT,
 			phase TEXT,
+			agent TEXT,
 			createdAt INTEGER NOT NULL,
 			updatedAt INTEGER NOT NULL,
 			FOREIGN KEY (sessionId) REFERENCES sessions (id)
@@ -24,13 +25,14 @@ export async function createMemoriesTable(db: Database<sqlite3.Database, sqlite3
 			title,
 			content,
 			tags,
-			phase
+			phase,
+			agent
 		);
 
 		-- Triggers to keep FTS in sync
 		CREATE TRIGGER IF NOT EXISTS memories_ai AFTER INSERT ON memories BEGIN
-			INSERT INTO memories_fts(rowid, id, title, content, tags, phase) 
-			VALUES (new.rowid, new.id, new.title, new.content, new.tags, new.phase);
+			INSERT INTO memories_fts(rowid, id, title, content, tags, phase, agent) 
+			VALUES (new.rowid, new.id, new.title, new.content, new.tags, new.phase, new.agent);
 		END;
 
 		CREATE TRIGGER IF NOT EXISTS memories_au AFTER UPDATE ON memories BEGIN
@@ -38,7 +40,8 @@ export async function createMemoriesTable(db: Database<sqlite3.Database, sqlite3
 				title = new.title, 
 				content = new.content, 
 				tags = new.tags,
-				phase = new.phase
+				phase = new.phase,
+				agent = new.agent
 			WHERE id = new.id;
 		END;
 
@@ -58,5 +61,11 @@ export async function createMemoriesTable(db: Database<sqlite3.Database, sqlite3
 	const hasPhase = columns.some((col: { name: string }) => col.name === "phase");
 	if (!hasPhase) {
 		await db.exec("ALTER TABLE memories ADD COLUMN phase TEXT;");
+	}
+
+	// Safely add agent to existing database
+	const hasAgent = columns.some((col: { name: string }) => col.name === "agent");
+	if (!hasAgent) {
+		await db.exec("ALTER TABLE memories ADD COLUMN agent TEXT;");
 	}
 }

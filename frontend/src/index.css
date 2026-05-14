@@ -920,3 +920,56 @@ body {
 		transform: translateY(0);
 	}
 }
+
+/* ─── Button Reset for Converted Div→Button Elements ────────────────────
+ * Los siguientes elementos eran originalmente <div> con onClick y se
+ * convirtieron a <button> por accesibilidad (Biome a11y rules).
+ * Estos resets eliminan los estilos por defecto del navegador para que
+ * se vean idénticos a como se veían como <div>.                     */
+button.expert-item-wrap {
+	background: none;
+	border: none;
+	font-family: inherit;
+	font-size: inherit;
+	color: inherit;
+	cursor: pointer;
+	width: 100%;
+	text-align: left;
+	display: flex;
+	align-items: center;
+	padding: 8px 12px;
+	border-radius: var(--radius-md);
+	transition: var(--transition);
+}
+
+button.suggested-card {
+	background: rgba(255, 255, 255, 0.03);
+	border: 1px solid var(--border);
+	font-family: inherit;
+	font-size: inherit;
+	color: inherit;
+	cursor: pointer;
+	width: 100%;
+	text-align: left;
+	border-radius: var(--radius-md);
+	padding: 16px;
+	transition: var(--transition);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+button.modal-overlay {
+	background: none;
+	border: none;
+	font-family: inherit;
+	font-size: inherit;
+	color: inherit;
+	cursor: pointer;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}

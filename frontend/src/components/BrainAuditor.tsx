@@ -11,6 +11,7 @@ interface Memory {
 	content: string;
 	tags: string;
 	phase?: string;
+	agent?: string;
 	createdAt: number;
 	score?: number;
 }
@@ -165,6 +166,14 @@ export const BrainAuditor: React.FC<BrainAuditorProps> = ({ project }) => {
 											style={{ background: "rgba(168, 85, 247, 0.15)", color: "#c084fc" }}
 										>
 											Fase: {mem.phase}
+										</span>
+									)}
+									{mem.agent && (
+										<span
+											className="badge"
+											style={{ background: "rgba(16, 185, 129, 0.15)", color: "var(--success)" }}
+										>
+											🤖 {mem.agent}
 										</span>
 									)}
 									<h4 style={{ fontSize: "15px", fontWeight: 600 }}>{mem.title}</h4>

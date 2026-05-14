@@ -7,7 +7,7 @@ export async function getCoreDirectives(dbService: DatabaseService, project: str
 	const criticalRule = `
 
 > [!IMPORTANT]
-> **OBLIGACIÓN COGNITIVA CRÍTICA (MEMORIA AUTÓNOMA):** Cada vez que utilices tus herramientas para modificar, crear o refactorizar código en este proyecto, TIENES LA OBLIGACIÓN ESTRICTA Y OBLIGATORIA de ejecutar en ese mismo turno la herramienta \`mem_save\`, documentando el resumen exacto de las decisiones técnicas y cambios realizados antes de emitir tu respuesta final al usuario. Omitir este guardado es inaceptable.`;
+> **OBLIGACIÓN COGNITIVA CRÍTICA (MEMORIA AUTÓNOMA):** Cada vez que utilices tus herramientas para modificar, crear o refactorizar código en este proyecto, TIENES LA OBLIGACIÓN ESTRICTA Y OBLIGATORIA de ejecutar en ese mismo turno la herramienta \`mem_save\`, documentando el resumen exacto de las decisiones técnicas y cambios realizados antes de emitir tu respuesta final al usuario. SIEMPRE debes incluir tu identidad en el parámetro \`agent\` (ej. 'Cursor / Claude 3.5 Sonnet', 'Antigravity / Gemini 2.5 Flash', 'OpenCode AI', 'RooCode / Cline'). Omitir este guardado es inaceptable.`;
 
 	if (row?.content) {
 		if (!row.content.includes("OBLIGACIÓN COGNITIVA CRÍTICA")) {

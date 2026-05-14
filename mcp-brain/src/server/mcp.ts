@@ -50,6 +50,8 @@ IF judgment_required IS TRUE:
 					name: "mem_save",
 					description: `Save an important observation to persistent memory. Call this PROACTIVELY after completing significant work — don't wait to be asked.
 
+ALWAYS provide your identity in the 'agent' field (e.g., 'Cursor / Claude 3.5 Sonnet', 'Antigravity / Gemini 2.5 Flash', 'OpenCode AI', 'RooCode / Cline').
+
 WHEN to save (call this after each of these):
 - Architectural decisions or tradeoffs
 - Bug fixes (what was wrong, why, how you fixed it)
@@ -74,6 +76,11 @@ TITLE should be short and searchable, like: "JWT auth middleware", "Fixed N+1 qu
 							content: { type: "string" },
 							tags: { type: "string" },
 							topic_key: { type: "string" },
+							agent: {
+								type: "string",
+								description:
+									"Name of the AI Model or IDE making this change (e.g. Cursor, Claude Code, RooCode, Antigravity, OpenCode AI)",
+							},
 						},
 						required: ["project", "type", "title", "content"],
 					},
@@ -293,6 +300,7 @@ PARAMS:
 		try {
 			switch (name) {
 				case "mem_save": {
+					const agentName = (args?.agent as string) || "Agente Autónomo MCP";
 					const res = await memories.saveMemory(
 						dbService,
 						args?.project as string,
@@ -301,7 +309,9 @@ PARAMS:
 						args?.content as string,
 						args?.tags as string,
 						undefined,
-						args?.topic_key as string
+						args?.topic_key as string,
+						undefined,
+						agentName
 					);
 					return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
 				}
