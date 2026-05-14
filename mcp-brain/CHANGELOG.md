@@ -4,6 +4,24 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.0.0] - 2026-05-14
+
+### Added
+- **Capa 1 — Auditoría Transparente (Server-Side)**: Nueva tabla `mcp_audit_log` en SQLite que registra automáticamente CADA llamada a herramienta MCP. El agente NO puede optar por no participar — ocurre a nivel de servidor.
+- **Capa 2 — Auto-generación de Memorias de Sesión**: Cada conexión y tool call genera entradas de auditoría automáticas.
+- **Capa 3 — Compliance Reminder**: Las herramientas de solo lectura (`mem_search`, `mem_context`, `mem_timeline`, etc.) ahora verifican si el agente ha llamado a `mem_save` recientemente. Si no, incluyen un recordatorio normativo en la respuesta.
+- **Capa 4 — Descripciones Imperativas**: El campo `agent` se inyecta automáticamente como obligatorio en TODAS las herramientas MCP, forzando a los agentes a identificarse.
+- **Capa 5 — Nueva herramienta `mem_my_compliance`**: Los agentes pueden auto-auditarse consultando su score de compliance, último `mem_save`, y estadísticas de actividad.
+- **Capa 6 — `BRAIN-AGENT-CONFIG.md`**: Guía de configuración para miembros del equipo con reglas obligatorias de compliance.
+- **Nuevos servicios de auditoría**: `src/services/audit/` con `logToolCall()`, `getAgentCompliance()`, `getRecentToolCalls()`.
+- **Nuevo schema SQLite**: `src/database/schemas/audit.ts` con tabla `mcp_audit_log` e índices por agente, timestamp, tool y proyecto.
+
+### Changed
+- **`src/server/mcp.ts`**: Refactorizado el handler `CallToolRequestSchema` para usar patrón de variable `response` en lugar de `return` directo, permitiendo post-procesamiento de auditoría y compliance.
+- **`src/server/mcp.ts`**: El handler `ListToolsRequestSchema` ahora inyecta el campo `agent` en TODAS las herramientas y agrega `mem_my_compliance` al catálogo.
+- **`src/services/index.ts`**: Exporta el nuevo módulo `audit`.
+- **`src/database/schemas/index.ts`**: Ejecuta `createAuditTable()` durante la inicialización.
+
 ## [1.1.0] - 2026-05-14
 
 ### Added

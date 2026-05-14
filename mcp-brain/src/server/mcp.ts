@@ -2,7 +2,8 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { DatabaseService } from "../database/connection.js";
-import { analysis, memories, sessions } from "../services/index.js";
+import { analysis, audit, memories, sessions } from "../services/index.js";
+import type { AgentCompliance } from "../services/audit/getAgentCompliance.js";
 
 let currentProject: string | null = null;
 
@@ -44,8 +45,11 @@ IF judgment_required IS TRUE:
 	);
 
 	mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
-		return {
-			tools: [
+		const tools: Array<{
+			name: string;
+			description: string;
+			inputSchema: { type: string; properties: Record<string, unknown>; required?: string[] };
+		}> = [
 				{
 					name: "mem_save",
 					description: `Save an important observation to persistent memory. Call this PROACTIVELY after completing significant work — don't wait to be asked.
@@ -291,12 +295,49 @@ PARAMS:
 						required: ["judgment_id", "relation"],
 					},
 				},
-			],
-		};
+		];
+
+		// --- CAPA 4: Inject agent identity field to all tools for audit compliance ---
+		for (const tool of tools) {
+			if (!tool.inputSchema.properties.agent) {
+				tool.inputSchema.properties.agent = {
+					type: "string",
+					description:
+						"YOUR IDENTITY — REQUIRED for audit tracking. Example: 'OpenCode AI', 'Cursor', 'Claude Code', 'Antigravity Gemini'.",
+				};
+			}
+		}
+
+		// --- CAPA 5: Add compliance self-audit tool ---
+		tools.push({
+			name: "mem_my_compliance",
+			description: `Check your own compliance status with the shared brain audit system.
+
+All tool calls are automatically tracked. This tool reports your personal stats.
+
+Returns: compliance score, last mem_save, total saves vs. total calls, and whether you should register changes.
+
+Use this before read-only operations to verify you're in good standing.`,
+			inputSchema: {
+				type: "object",
+				properties: {
+					agent: {
+						type: "string",
+						description: "Your identity (optional — defaults to auto-detected agent)",
+					},
+				},
+			},
+		});
+
+		return { tools };
 	});
 
 	mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
+		const startTime = Date.now();
 		const { name, arguments: args } = request.params;
+		const agentIdentity = extractAgentIdentity(args);
+		let response: { content: Array<{ type: string; text: string }>; isError?: boolean } | undefined;
+
 		try {
 			switch (name) {
 				case "mem_save": {
@@ -313,7 +354,8 @@ PARAMS:
 						undefined,
 						agentName
 					);
-					return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+					response = { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+					break;
 				}
 				case "mem_save_prompt": {
 					const memory = await memories.saveMemory(
@@ -325,7 +367,8 @@ PARAMS:
 						"prompt",
 						args?.sessionId as string
 					);
-					return { content: [{ type: "text", text: `Prompt saved successfully. ID: ${memory.memory.id}` }] };
+					response = { content: [{ type: "text", text: `Prompt saved successfully. ID: ${memory.memory.id}` }] };
+					break;
 				}
 				case "mem_capture_passive": {
 					const content = args?.content as string;
@@ -337,7 +380,10 @@ PARAMS:
 							.filter((l: string) => l.trim().startsWith("-") || /^\d+\./.test(l.trim()));
 						learnings.push(...lines);
 					}
-					if (learnings.length === 0) return { content: [{ type: "text", text: "No key learnings found." }] };
+					if (learnings.length === 0) {
+						response = { content: [{ type: "text", text: "No key learnings found." }] };
+						break;
+					}
 
 					for (const l of learnings) {
 						await memories.saveMemory(
@@ -350,7 +396,8 @@ PARAMS:
 							args?.sessionId as string
 						);
 					}
-					return { content: [{ type: "text", text: `Captured ${learnings.length} learnings.` }] };
+					response = { content: [{ type: "text", text: `Captured ${learnings.length} learnings.` }] };
+					break;
 				}
 				case "mem_suggest_topic_key": {
 					const title = args?.title as string;
@@ -359,7 +406,8 @@ PARAMS:
 						.toLowerCase()
 						.replace(/[^a-z0-9]+/g, "-")
 						.replace(/(^-|-$)+/g, "");
-					return { content: [{ type: "text", text: `${type}/${slug}` }] };
+					response = { content: [{ type: "text", text: `${type}/${slug}` }] };
+					break;
 				}
 				case "mem_update": {
 					const success = await memories.updateMemory(
@@ -370,11 +418,13 @@ PARAMS:
 						args?.tags as string,
 						args?.topic_key as string
 					);
-					return { content: [{ type: "text", text: success ? "Memory updated." : "Memory not found." }] };
+					response = { content: [{ type: "text", text: success ? "Memory updated." : "Memory not found." }] };
+					break;
 				}
 				case "mem_delete": {
 					const success = await memories.deleteMemory(dbService, args?.id as string);
-					return { content: [{ type: "text", text: success ? "Memory deleted." : "Memory not found." }] };
+					response = { content: [{ type: "text", text: success ? "Memory deleted." : "Memory not found." }] };
+					break;
 				}
 				case "mem_search": {
 					const mems = await memories.searchMemories(
@@ -384,7 +434,8 @@ PARAMS:
 						(args?.mode as "lexical" | "semantic" | "hybrid" | undefined) || "hybrid",
 						(args?.limit as number) || 10
 					);
-					return { content: [{ type: "text", text: JSON.stringify(mems, null, 2) }] };
+					response = { content: [{ type: "text", text: JSON.stringify(mems, null, 2) }] };
+					break;
 				}
 				case "mem_context": {
 					const mems = await memories.getContext(
@@ -392,31 +443,36 @@ PARAMS:
 						args?.project as string,
 						(args?.limit as number) || 20
 					);
-					return { content: [{ type: "text", text: JSON.stringify(mems, null, 2) }] };
+					response = { content: [{ type: "text", text: JSON.stringify(mems, null, 2) }] };
+					break;
 				}
 				case "mem_get_observation": {
 					const memory = await memories.getMemory(dbService, args?.id as string);
-					return {
+					response = {
 						content: [{ type: "text", text: memory ? JSON.stringify(memory, null, 2) : "Not found" }],
 					};
+					break;
 				}
 				case "mem_current_project": {
 					if (args?.project) {
 						currentProject = args.project as string;
-						return { content: [{ type: "text", text: `Active project set to: ${currentProject}` }] };
+						response = { content: [{ type: "text", text: `Active project set to: ${currentProject}` }] };
+					} else {
+						response = {
+							content: [
+								{
+									type: "text",
+									text: currentProject ? `Active project: ${currentProject}` : "No active project set.",
+								},
+							],
+						};
 					}
-					return {
-						content: [
-							{
-								type: "text",
-								text: currentProject ? `Active project: ${currentProject}` : "No active project set.",
-							},
-						],
-					};
+					break;
 				}
 				case "mem_session_start": {
 					const id = await sessions.startSession(dbService, args?.project as string, args?.name as string);
-					return { content: [{ type: "text", text: `Session started. ID: ${id}` }] };
+					response = { content: [{ type: "text", text: `Session started. ID: ${id}` }] };
+					break;
 				}
 				case "mem_session_end": {
 					const success = await sessions.endSession(
@@ -424,15 +480,17 @@ PARAMS:
 						args?.sessionId as string,
 						args?.summary as string
 					);
-					return {
+					response = {
 						content: [
 							{ type: "text", text: success ? "Session ended and summarized." : "Session not found." },
 						],
 					};
+					break;
 				}
 				case "mem_session_summary": {
 					const summary = await sessions.getSessionSummary(dbService, args?.sessionId as string);
-					return { content: [{ type: "text", text: JSON.stringify(summary, null, 2) }] };
+					response = { content: [{ type: "text", text: JSON.stringify(summary, null, 2) }] };
+					break;
 				}
 				case "mem_timeline": {
 					const timeline = await memories.getTimeline(
@@ -440,7 +498,8 @@ PARAMS:
 						args?.project as string,
 						(args?.limit as number) || 20
 					);
-					return { content: [{ type: "text", text: JSON.stringify(timeline, null, 2) }] };
+					response = { content: [{ type: "text", text: JSON.stringify(timeline, null, 2) }] };
+					break;
 				}
 				case "mem_suggest_tags": {
 					try {
@@ -449,9 +508,9 @@ PARAMS:
 							args?.title as string,
 							args?.content as string
 						);
-						return { content: [{ type: "text", text: tags.join(", ") }] };
+						response = { content: [{ type: "text", text: tags.join(", ") }] };
 					} catch {
-						return {
+						response = {
 							content: [
 								{
 									type: "text",
@@ -460,6 +519,7 @@ PARAMS:
 							],
 						};
 					}
+					break;
 				}
 				case "mem_judge": {
 					const success = await analysis.judge(
@@ -468,11 +528,12 @@ PARAMS:
 						args?.relation as string,
 						args?.reason as string
 					);
-					return {
+					response = {
 						content: [
 							{ type: "text", text: success ? "Judgment recorded." : "Failed to record judgment." },
 						],
 					};
+					break;
 				}
 				case "mem_compare": {
 					try {
@@ -482,36 +543,140 @@ PARAMS:
 							args?.memoryId1 as string,
 							args?.memoryId2 as string
 						);
-						return { content: [{ type: "text", text: JSON.stringify(comparison, null, 2) }] };
+						response = { content: [{ type: "text", text: JSON.stringify(comparison, null, 2) }] };
 					} catch (e: unknown) {
 						const message = e instanceof Error ? e.message : String(e);
 						if (message.includes("not found")) {
-							return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
+							response = { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
+						} else {
+							response = {
+								content: [
+									{
+										type: "text",
+										text: "OLLAMA_UNAVAILABLE: Por favor, usa mem_get_observation para leer ambas memorias en tu contexto y compáralas tú mismo utilizando tus propias capacidades de razonamiento.",
+									},
+								],
+							};
 						}
-						return {
-							content: [
-								{
-									type: "text",
-									text: "OLLAMA_UNAVAILABLE: Por favor, usa mem_get_observation para leer ambas memorias en tu contexto y compáralas tú mismo utilizando tus propias capacidades de razonamiento.",
-								},
-							],
-						};
 					}
+					break;
 				}
 				case "mem_stats": {
 					const stats = await memories.getStats(dbService, args?.project as string);
-					return { content: [{ type: "text", text: JSON.stringify(stats, null, 2) }] };
+					response = { content: [{ type: "text", text: JSON.stringify(stats, null, 2) }] };
+					break;
+				}
+				case "mem_my_compliance": {
+					const targetAgent = (args?.agent as string) || agentIdentity;
+					const compliance = await audit.getAgentCompliance(dbService, targetAgent, 24);
+					response = { content: [{ type: "text", text: JSON.stringify(compliance, null, 2) }] };
+					break;
 				}
 				default:
-					return { content: [{ type: "text", text: `Tool ${name} implemented but handler missing.` }] };
+					response = { content: [{ type: "text", text: `Tool ${name} implemented but handler missing.` }] };
 			}
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : String(error);
-			return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
+			response = { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
 		}
+
+		// --- CAPA 1: AUDIT LOG — automático, inevitable, transparente para el agente ---
+		if (response) {
+			const durationMs = Date.now() - startTime;
+			const resultStatus = response.isError ? "error" : "success";
+			const resultText = response.content?.[0]?.text || "";
+
+			// Fire-and-forget: no bloqueamos la respuesta del agente
+			audit
+				.logToolCall(dbService, {
+					toolName: name,
+					agentIdentity,
+					args,
+					resultStatus,
+					resultPreview: resultText,
+					durationMs,
+					project: (args?.project as string) || "",
+				})
+				.catch((err: unknown) => console.error("[Audit] Error logging tool call:", err));
+
+			// --- CAPA 3: COMPLIANCE REMINDER — solo herramientas de solo lectura ---
+			if (resultStatus === "success" && isReadOnlyTool(name)) {
+				try {
+					const compliance = await audit.getAgentCompliance(dbService, agentIdentity, 24);
+					if (compliance.needsReminder) {
+						const reminder = buildComplianceReminder(compliance);
+						response.content[0].text += "\n\n" + reminder;
+					}
+				} catch (err) {
+					console.error("[Audit] Error checking compliance:", err);
+				}
+			}
+		}
+
+		return response;
 	});
 
 	return mcpServer;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers de auditoría y compliance
+// ---------------------------------------------------------------------------
+
+const READ_ONLY_TOOLS = new Set([
+	"mem_search",
+	"mem_context",
+	"mem_timeline",
+	"mem_stats",
+	"mem_get_observation",
+	"mem_current_project",
+	"mem_my_compliance",
+	"mem_suggest_tags",
+	"mem_suggest_topic_key",
+	"mem_compare",
+]);
+
+function isReadOnlyTool(name: string): boolean {
+	return READ_ONLY_TOOLS.has(name);
+}
+
+/**
+ * Extrae la identidad del agente desde los argumentos de la tool.
+ * Muchas tools tienen un campo `agent` opcional. Si no está presente,
+ * usamos un fallback para identificar la sesión.
+ */
+function extractAgentIdentity(args: Record<string, unknown> | undefined): string {
+	if (!args) return "unknown-agent";
+	return (args.agent as string) || (args.caller as string) || "unknown-agent";
+}
+
+/**
+ * Construye un mensaje de recordatorio de compliance para incluir
+ * en la respuesta de una tool de solo lectura.
+ */
+function buildComplianceReminder(compliance: AgentCompliance): string {
+	const lines: string[] = [];
+	lines.push("╔══════════════════════════════════════════════════════╗");
+	lines.push("║     🔍 COMPLIANCE REMINDER — Shared Brain Audit     ║");
+	lines.push("╚══════════════════════════════════════════════════════╝");
+	lines.push("");
+	lines.push(`Agent: ${compliance.agentIdentity}`);
+	lines.push(`Score: ${compliance.complianceScore}% (${compliance.totalSaves} saves / ${compliance.totalCalls} calls)`);
+
+	if (compliance.lastSaveTimestamp) {
+		lines.push(`Last mem_save: ${new Date(compliance.lastSaveTimestamp).toLocaleString()} (${compliance.hoursSinceLastSave}h ago)`);
+	} else {
+		lines.push("Last mem_save: NEVER");
+	}
+
+	lines.push("");
+	lines.push("⚠️  You have NOT registered changes via mem_save recently.");
+	lines.push("    Team policy requires ALL agents to log their work.");
+	lines.push("");
+	lines.push("📋 Next step: Call mem_save with your recent changes.");
+	lines.push("📊 To check your compliance at any time: mem_my_compliance");
+	lines.push("────────────────────────────────────────────────────────");
+	return lines.join("\n");
 }
 
 export async function startMcpServer(dbService: DatabaseService) {
