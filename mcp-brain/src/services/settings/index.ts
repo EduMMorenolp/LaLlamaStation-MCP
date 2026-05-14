@@ -9,7 +9,7 @@ export async function getCoreDirectives(dbService: DatabaseService, project: str
 > [!IMPORTANT]
 > **OBLIGACIÓN COGNITIVA CRÍTICA (MEMORIA AUTÓNOMA):** Cada vez que utilices tus herramientas para modificar, crear o refactorizar código en este proyecto, TIENES LA OBLIGACIÓN ESTRICTA Y OBLIGATORIA de ejecutar en ese mismo turno la herramienta \`mem_save\`, documentando el resumen exacto de las decisiones técnicas y cambios realizados antes de emitir tu respuesta final al usuario. Omitir este guardado es inaceptable.`;
 
-	if (row && row.content) {
+	if (row?.content) {
 		if (!row.content.includes("OBLIGACIÓN COGNITIVA CRÍTICA")) {
 			return row.content + criticalRule;
 		}
@@ -23,7 +23,11 @@ export async function getCoreDirectives(dbService: DatabaseService, project: str
 3. **Transparencia:** Registra los aprendizajes clave en la memoria pasiva para evitar redundancia.${criticalRule}`;
 }
 
-export async function updateCoreDirectives(dbService: DatabaseService, project: string, content: string): Promise<boolean> {
+export async function updateCoreDirectives(
+	dbService: DatabaseService,
+	project: string,
+	content: string
+): Promise<boolean> {
 	const db = dbService.getDb();
 	const now = Date.now();
 	await dbService.enqueueWrite(async () => {
@@ -36,7 +40,11 @@ export async function updateCoreDirectives(dbService: DatabaseService, project: 
 	return true;
 }
 
-export async function getGlobalSetting(dbService: DatabaseService, key: string, defaultValue: string = ""): Promise<string> {
+export async function getGlobalSetting(
+	dbService: DatabaseService,
+	key: string,
+	defaultValue: string = ""
+): Promise<string> {
 	const db = dbService.getDb();
 	const row = await db.get(`SELECT value FROM global_settings WHERE key = ?`, [key]);
 	return row ? row.value : defaultValue;

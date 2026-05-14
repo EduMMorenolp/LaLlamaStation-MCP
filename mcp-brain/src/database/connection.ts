@@ -1,13 +1,17 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { type Database, open } from "sqlite";
 import sqlite3 from "sqlite3";
 import { applySchemas } from "./schemas/index.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 export class DatabaseService {
 	private db!: Database<sqlite3.Database, sqlite3.Statement>;
 	private isWriting = false;
-	private writeQueue: (() => Promise<any>)[] = [];
+	private writeQueue: Array<() => Promise<unknown>> = [];
 
 	public async enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
 		return new Promise((resolve, reject) => {
@@ -35,7 +39,7 @@ export class DatabaseService {
 	}
 
 	public async initialize(): Promise<void> {
-		const dbDir = path.resolve(process.cwd(), "data");
+		const dbDir = path.resolve(__dirname, "../../../data");
 		if (!fs.existsSync(dbDir)) {
 			fs.mkdirSync(dbDir, { recursive: true });
 		}

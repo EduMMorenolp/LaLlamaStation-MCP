@@ -16,7 +16,10 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 	const [syncing, setSyncing] = useState(false);
 	const [syncMsg, setSyncMsg] = useState("");
 	const [consolidating, setConsolidating] = useState(false);
-	const [consolidationRes, setConsolidationRes] = useState<{ consolidatedGroups?: number; deletedMemories?: number } | null>(null);
+	const [consolidationRes, setConsolidationRes] = useState<{
+		consolidatedGroups?: number;
+		deletedMemories?: number;
+	} | null>(null);
 	const [successMsg, setSuccessMsg] = useState("");
 
 	const fetchSettings = useCallback(async () => {
@@ -94,7 +97,16 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 	};
 
 	return (
-		<div className="card-glass" style={{ padding: "24px", minHeight: "calc(100vh - 200px)", display: "flex", flexDirection: "column", gap: "28px" }}>
+		<div
+			className="card-glass"
+			style={{
+				padding: "24px",
+				minHeight: "calc(100vh - 200px)",
+				display: "flex",
+				flexDirection: "column",
+				gap: "28px",
+			}}
+		>
 			<div className="flex-between">
 				<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
 					<Cpu size={20} style={{ color: "var(--accent)" }} />
@@ -105,33 +117,74 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 						</p>
 					</div>
 				</div>
-				<button onClick={handleSave} className="btn-send" disabled={saving || loading} style={{ width: "auto", padding: "0 20px" }}>
+				<button
+					onClick={handleSave}
+					className="btn-send"
+					disabled={saving || loading}
+					style={{ width: "auto", padding: "0 20px" }}
+				>
 					{saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
 					<span>{saving ? "Guardando..." : "Guardar Ajustes"}</span>
 				</button>
 			</div>
 
 			{successMsg && (
-				<div style={{ padding: "12px 16px", background: "rgba(34, 197, 94, 0.15)", color: "var(--success)", borderRadius: "8px", fontSize: "13px" }}>
+				<div
+					style={{
+						padding: "12px 16px",
+						background: "rgba(34, 197, 94, 0.15)",
+						color: "var(--success)",
+						borderRadius: "8px",
+						fontSize: "13px",
+					}}
+				>
 					{successMsg}
 				</div>
 			)}
 
 			<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
 				{/* Umbral de Delegación */}
-				<div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
-					<div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", color: "var(--accent)" }}>
+				<div
+					style={{
+						background: "rgba(0,0,0,0.2)",
+						border: "1px solid var(--border)",
+						borderRadius: "12px",
+						padding: "20px",
+					}}
+				>
+					<div
+						style={{
+							display: "flex",
+							alignItems: "center",
+							gap: "8px",
+							marginBottom: "12px",
+							color: "var(--accent)",
+						}}
+					>
 						<ShieldAlert size={18} />
-						<h4 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-main)" }}>Gatillos de Delegación (Threshold)</h4>
+						<h4 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-main)" }}>
+							Gatillos de Delegación (Threshold)
+						</h4>
 					</div>
 					<p style={{ fontSize: "12px", color: "var(--text-dim)", marginBottom: "16px", lineHeight: 1.5 }}>
-						Número máximo de búsquedas idénticas permitidas en un lapso de 5 minutos antes de forzar al agente a detenerse o cambiar de fase SDD.
+						Número máximo de búsquedas idénticas permitidas en un lapso de 5 minutos antes de forzar al
+						agente a detenerse o cambiar de fase SDD.
 					</p>
 					<select
 						value={threshold}
 						onChange={(e) => setThreshold(e.target.value)}
 						className="input-field"
-						style={{ width: "100%", background: "var(--bg-input)", border: "1px solid var(--border)", color: "white", padding: "10px 14px", borderRadius: "8px", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "13px" }}
+						style={{
+							width: "100%",
+							background: "var(--bg-input)",
+							border: "1px solid var(--border)",
+							color: "white",
+							padding: "10px 14px",
+							borderRadius: "8px",
+							cursor: "pointer",
+							fontFamily: "var(--font-mono)",
+							fontSize: "13px",
+						}}
 					>
 						{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
 							<option key={num} value={num}>
@@ -142,19 +195,47 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 				</div>
 
 				{/* Modelo de Consolidación */}
-				<div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
-					<div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", color: "var(--accent)" }}>
+				<div
+					style={{
+						background: "rgba(0,0,0,0.2)",
+						border: "1px solid var(--border)",
+						borderRadius: "12px",
+						padding: "20px",
+					}}
+				>
+					<div
+						style={{
+							display: "flex",
+							alignItems: "center",
+							gap: "8px",
+							marginBottom: "12px",
+							color: "var(--accent)",
+						}}
+					>
 						<Activity size={18} />
-						<h4 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-main)" }}>Modelo de Consolidación</h4>
+						<h4 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-main)" }}>
+							Modelo de Consolidación
+						</h4>
 					</div>
 					<p style={{ fontSize: "12px", color: "var(--text-dim)", marginBottom: "16px", lineHeight: 1.5 }}>
-						Modelo de IA utilizado por Ollama para ejecutar la agrupación y resumen de aprendizajes redundantes en background.
+						Modelo de IA utilizado por Ollama para ejecutar la agrupación y resumen de aprendizajes
+						redundantes en background.
 					</p>
 					<select
 						value={model}
 						onChange={(e) => setModel(e.target.value)}
 						className="input-field"
-						style={{ width: "100%", background: "var(--bg-input)", border: "1px solid var(--border)", color: "white", padding: "10px 14px", borderRadius: "8px", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: "13px" }}
+						style={{
+							width: "100%",
+							background: "var(--bg-input)",
+							border: "1px solid var(--border)",
+							color: "white",
+							padding: "10px 14px",
+							borderRadius: "8px",
+							cursor: "pointer",
+							fontFamily: "var(--font-mono)",
+							fontSize: "13px",
+						}}
 					>
 						{modelsList.map((m) => (
 							<option key={m} value={m}>
@@ -166,16 +247,31 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 			</div>
 
 			{/* Auto Sincronización de IDEs */}
-			<div style={{ background: "rgba(0,0,0,0.2)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
+			<div
+				style={{
+					background: "rgba(0,0,0,0.2)",
+					border: "1px solid var(--border)",
+					borderRadius: "12px",
+					padding: "20px",
+				}}
+			>
 				<div className="flex-between" style={{ flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
 					<div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--accent)" }}>
 						<Cpu size={18} />
-						<h4 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-main)" }}>⚡ Auto-Sincronización de Agentes IA (MCP Installer)</h4>
+						<h4 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-main)" }}>
+							⚡ Auto-Sincronización de Agentes IA (MCP Installer)
+						</h4>
 					</div>
 					<button
 						onClick={() => handleSync("cursor")}
 						className="btn-send"
-						style={{ width: "auto", padding: "0 16px", background: "rgba(255,255,255,0.08)", color: "white", border: "1px solid rgba(255,255,255,0.15)" }}
+						style={{
+							width: "auto",
+							padding: "0 16px",
+							background: "rgba(255,255,255,0.08)",
+							color: "white",
+							border: "1px solid rgba(255,255,255,0.15)",
+						}}
 						title="Copia el bloque JSON listo para pegar en cualquier cliente MCP"
 					>
 						<Copy size={14} />
@@ -183,29 +279,62 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 					</button>
 				</div>
 				<p style={{ fontSize: "12px", color: "var(--text-dim)", marginBottom: "16px", lineHeight: 1.5 }}>
-					Conecta e inyecta de forma automática la configuración de LaLlamaStation Brain en tus herramientas de desarrollo favoritas.
+					Conecta e inyecta de forma automática la configuración de LaLlamaStation Brain en tus herramientas
+					de desarrollo favoritas.
 				</p>
 
 				{syncMsg && (
-					<div style={{ padding: "10px 14px", background: syncMsg.startsWith("Error") ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)", color: syncMsg.startsWith("Error") ? "var(--error)" : "var(--success)", borderRadius: "8px", marginBottom: "16px", fontSize: "12px", fontFamily: "var(--font-mono)" }}>
+					<div
+						style={{
+							padding: "10px 14px",
+							background: syncMsg.startsWith("Error") ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)",
+							color: syncMsg.startsWith("Error") ? "var(--error)" : "var(--success)",
+							borderRadius: "8px",
+							marginBottom: "16px",
+							fontSize: "12px",
+							fontFamily: "var(--font-mono)",
+						}}
+					>
 						{syncMsg}
 					</div>
 				)}
 
-				<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px" }}>
+				<div
+					style={{
+						display: "grid",
+						gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+						gap: "12px",
+					}}
+				>
 					{/* OpenCode */}
 					<div style={{ display: "flex", gap: "6px" }}>
 						<button
 							onClick={() => handleSync("opencode")}
 							disabled={syncing}
 							className="btn-send"
-							style={{ flex: 1, padding: "12px", fontSize: "12px", background: "rgba(79,140,255,0.15)", color: "var(--accent)", border: "1px solid var(--accent)" }}
+							style={{
+								flex: 1,
+								padding: "12px",
+								fontSize: "12px",
+								background: "rgba(79,140,255,0.15)",
+								color: "var(--accent)",
+								border: "1px solid var(--accent)",
+							}}
 						>
 							🚀 Inyectar en OpenCode AI
 						</button>
 						<button
 							className="btn-icon"
-							style={{ width: "42px", height: "42px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}
+							style={{
+								width: "42px",
+								height: "42px",
+								background: "rgba(255,255,255,0.05)",
+								border: "1px solid var(--border)",
+								borderRadius: "8px",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
 							title="Ruta manual: opencode.json en la raíz del workspace"
 						>
 							<Info size={16} style={{ color: "var(--text-muted)" }} />
@@ -218,13 +347,29 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 							onClick={() => handleSync("antigravity")}
 							disabled={syncing}
 							className="btn-send"
-							style={{ flex: 1, padding: "12px", fontSize: "12px", background: "rgba(168,85,247,0.15)", color: "#c084fc", border: "1px solid #c084fc" }}
+							style={{
+								flex: 1,
+								padding: "12px",
+								fontSize: "12px",
+								background: "rgba(168,85,247,0.15)",
+								color: "#c084fc",
+								border: "1px solid #c084fc",
+							}}
 						>
 							🌌 Inyectar en Antigravity AI
 						</button>
 						<button
 							className="btn-icon"
-							style={{ width: "42px", height: "42px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}
+							style={{
+								width: "42px",
+								height: "42px",
+								background: "rgba(255,255,255,0.05)",
+								border: "1px solid var(--border)",
+								borderRadius: "8px",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
 							title="Ruta manual: C:\Users\tu_usuario\.gemini\antigravity\mcp_config.json"
 						>
 							<Info size={16} style={{ color: "var(--text-muted)" }} />
@@ -237,13 +382,29 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 							onClick={() => handleSync("roocode")}
 							disabled={syncing}
 							className="btn-send"
-							style={{ flex: 1, padding: "12px", fontSize: "12px", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid #f87171" }}
+							style={{
+								flex: 1,
+								padding: "12px",
+								fontSize: "12px",
+								background: "rgba(239,68,68,0.15)",
+								color: "#f87171",
+								border: "1px solid #f87171",
+							}}
 						>
 							🦊 Inyectar en RooCode (VS Code)
 						</button>
 						<button
 							className="btn-icon"
-							style={{ width: "42px", height: "42px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}
+							style={{
+								width: "42px",
+								height: "42px",
+								background: "rgba(255,255,255,0.05)",
+								border: "1px solid var(--border)",
+								borderRadius: "8px",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
 							title="Ruta manual en VS Code: %APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\claude_desktop_config.json"
 						>
 							<Info size={16} style={{ color: "var(--text-muted)" }} />
@@ -256,13 +417,29 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 							onClick={() => handleSync("claudedesktop")}
 							disabled={syncing}
 							className="btn-send"
-							style={{ flex: 1, padding: "12px", fontSize: "12px", background: "rgba(249,115,22,0.15)", color: "#fb923c", border: "1px solid #fb923c" }}
+							style={{
+								flex: 1,
+								padding: "12px",
+								fontSize: "12px",
+								background: "rgba(249,115,22,0.15)",
+								color: "#fb923c",
+								border: "1px solid #fb923c",
+							}}
 						>
 							🟧 Inyectar en Claude Desktop
 						</button>
 						<button
 							className="btn-icon"
-							style={{ width: "42px", height: "42px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}
+							style={{
+								width: "42px",
+								height: "42px",
+								background: "rgba(255,255,255,0.05)",
+								border: "1px solid var(--border)",
+								borderRadius: "8px",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
 							title="Ruta manual: %APPDATA%\Claude\claude_desktop_config.json"
 						>
 							<Info size={16} style={{ color: "var(--text-muted)" }} />
@@ -275,13 +452,28 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 							onClick={() => handleSync("cursor")}
 							disabled={syncing}
 							className="btn-send"
-							style={{ flex: 1, padding: "12px", fontSize: "12px", background: "rgba(255,255,255,0.05)", color: "var(--text-main)" }}
+							style={{
+								flex: 1,
+								padding: "12px",
+								fontSize: "12px",
+								background: "rgba(255,255,255,0.05)",
+								color: "var(--text-main)",
+							}}
 						>
 							⚡ Copiar para Cursor IDE
 						</button>
 						<button
 							className="btn-icon"
-							style={{ width: "42px", height: "42px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}
+							style={{
+								width: "42px",
+								height: "42px",
+								background: "rgba(255,255,255,0.05)",
+								border: "1px solid var(--border)",
+								borderRadius: "8px",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
 							title="En Cursor IDE: Settings > Features > MCP > + Add New MCP Server"
 						>
 							<Info size={16} style={{ color: "var(--text-muted)" }} />
@@ -294,13 +486,28 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 							onClick={() => handleSync("windsurf")}
 							disabled={syncing}
 							className="btn-send"
-							style={{ flex: 1, padding: "12px", fontSize: "12px", background: "rgba(255,255,255,0.05)", color: "var(--text-main)" }}
+							style={{
+								flex: 1,
+								padding: "12px",
+								fontSize: "12px",
+								background: "rgba(255,255,255,0.05)",
+								color: "var(--text-main)",
+							}}
 						>
 							⚡ Copiar para Windsurf
 						</button>
 						<button
 							className="btn-icon"
-							style={{ width: "42px", height: "42px", background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}
+							style={{
+								width: "42px",
+								height: "42px",
+								background: "rgba(255,255,255,0.05)",
+								border: "1px solid var(--border)",
+								borderRadius: "8px",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
 							title="En Windsurf IDE: %USERPROFILE%\.codeium\windsurf\mcp_config.json"
 						>
 							<Info size={16} style={{ color: "var(--text-muted)" }} />
@@ -310,14 +517,23 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 			</div>
 
 			{/* Consolidación Manual */}
-			<div style={{ background: "rgba(79, 140, 255, 0.05)", border: "1px solid rgba(79, 140, 255, 0.2)", borderRadius: "12px", padding: "20px", marginTop: "auto" }}>
+			<div
+				style={{
+					background: "rgba(79, 140, 255, 0.05)",
+					border: "1px solid rgba(79, 140, 255, 0.2)",
+					borderRadius: "12px",
+					padding: "20px",
+					marginTop: "auto",
+				}}
+			>
 				<div className="flex-between" style={{ flexWrap: "wrap", gap: "16px" }}>
 					<div>
 						<h4 style={{ fontSize: "15px", fontWeight: 600, color: "var(--accent)", marginBottom: "4px" }}>
 							Mantenimiento Proactivo: Consolidación Manual
 						</h4>
 						<p style={{ fontSize: "12px", color: "var(--text-dim)" }}>
-							Analiza memorias redundantes del proyecto <b>{project}</b> y fusionalas en Key Learnings limpios.
+							Analiza memorias redundantes del proyecto <b>{project}</b> y fusionalas en Key Learnings
+							limpios.
 						</p>
 					</div>
 					<button
@@ -332,9 +548,24 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 				</div>
 
 				{consolidationRes && (
-					<div style={{ marginTop: "16px", padding: "12px", background: "rgba(0,0,0,0.3)", borderRadius: "8px", fontSize: "13px", display: "flex", gap: "16px", borderLeft: "3px solid var(--accent)" }}>
-						<div>Grupos Consolidados: <b>{consolidationRes.consolidatedGroups || 0}</b></div>
-						<div>Memorias Antiguas Eliminadas: <b>{consolidationRes.deletedMemories || 0}</b></div>
+					<div
+						style={{
+							marginTop: "16px",
+							padding: "12px",
+							background: "rgba(0,0,0,0.3)",
+							borderRadius: "8px",
+							fontSize: "13px",
+							display: "flex",
+							gap: "16px",
+							borderLeft: "3px solid var(--accent)",
+						}}
+					>
+						<div>
+							Grupos Consolidados: <b>{consolidationRes.consolidatedGroups || 0}</b>
+						</div>
+						<div>
+							Memorias Antiguas Eliminadas: <b>{consolidationRes.deletedMemories || 0}</b>
+						</div>
 					</div>
 				)}
 			</div>

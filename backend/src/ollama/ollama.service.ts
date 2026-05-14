@@ -12,12 +12,40 @@ export interface OllamaModel {
 	format: string;
 }
 
+interface RequestLogEntry {
+	ip: string;
+	action: string;
+	status: string;
+	timestamp: string;
+}
+
+interface SessionMessage {
+	role: string;
+	content: string;
+	[key: string]: unknown;
+}
+
+interface GpuMetrics {
+	vram: { total: number; used: number; free: number; available: boolean };
+	powerDraw: number | null;
+	temperature: number | null;
+	fanSpeed: number | null;
+	gpuUtil: number | null;
+}
+
+interface ChatResponse {
+	message: { role: string; content: string };
+	prompt_eval_count: number;
+	eval_count: number;
+	total_duration: number;
+}
+
 export class OllamaService {
 	private readonly baseUrl: string;
-	private readonly requestLogs: any[] = [];
+	private readonly requestLogs: RequestLogEntry[] = [];
 	private readonly blacklist: Set<string> = new Set();
 	private readonly failedAttempts: Map<string, number> = new Map();
-	private readonly sessionCache: Map<string, any[]> = new Map();
+	private readonly sessionCache: Map<string, SessionMessage[]> = new Map();
 	private readonly modelDeletePending: Set<string> = new Set();
 	private io?: SocketServer;
 	private readonly pullStates: Map<string, { percent: number; status: string; lastUpdate: number }> = new Map();
@@ -27,14 +55,14 @@ export class OllamaService {
 	private readonly axiosClient: AxiosInstance;
 	private activeRequests: number = 0;
 	private readonly maxConcurrentRequests: number = 3;
-	private readonly requestQueue: Array<() => Promise<any>> = [];
+	private readonly requestQueue: Array<() => Promise<void>> = [];
 	private totalRequests: number = 0;
 	private lastChatTime: number = Date.now();
 	private autoUnloadMinutes: number = 0;
 	private globalNumCtx: number = 4096;
 
 	// --- GPU Metrics Cache (async, non-blocking) ---
-	private cachedGpuMetrics: any = {
+	private cachedGpuMetrics: GpuMetrics = {
 		vram: { total: 0, used: 0, free: 0, available: false },
 		powerDraw: null,
 		temperature: null,
@@ -152,7 +180,7 @@ export class OllamaService {
 			const cmd =
 				"nvidia-smi --query-gpu=memory.total,memory.used,memory.free,power.draw,temperature.gpu,fan.speed,utilization.gpu --format=csv,noheader,nounits";
 			const timeoutHandle = setTimeout(() => {}, 2000);
-			exec(cmd, (err: any, stdout: string) => {
+			exec(cmd, (err: Error | null, stdout: string) => {
 				clearTimeout(timeoutHandle);
 				if (err) return;
 				try {
@@ -305,7 +333,7 @@ export class OllamaService {
 	async generate(
 		model: string,
 		prompt: string,
-		options: any = {},
+		options: Record<string, unknown> = {},
 		keep_alive: string | number = "5m"
 	): Promise<string> {
 		const response = await this.axiosClient.post(`${this.baseUrl}/api/generate`, {
@@ -333,11 +361,11 @@ export class OllamaService {
 
 	async chat(
 		model: string,
-		messages: any[],
-		options: any = {},
+		messages: SessionMessage[],
+		options: Record<string, unknown> = {},
 		keep_alive: string | number = "5m",
 		sessionId?: string
-	): Promise<any> {
+	): Promise<ChatResponse> {
 		// Enqueue the chat request to limit GPU concurrency
 		return this.enqueueRequest(async () => {
 			let finalMessages = messages;
@@ -382,11 +410,11 @@ export class OllamaService {
 
 	async chatStream(
 		model: string,
-		messages: any[],
-		options: any = {},
+		messages: SessionMessage[],
+		options: Record<string, unknown> = {},
 		keep_alive: string | number = "5m",
 		sessionId?: string
-	): Promise<any> {
+	): Promise<{ data: import("stream").Readable }> {
 		// Enqueue streaming request to limit GPU concurrency
 		return this.enqueueRequest(async () => {
 			let finalMessages = messages;
@@ -477,9 +505,10 @@ export class OllamaService {
 					}
 				} catch (_e) {}
 			});
-		} catch (e: any) {
+		} catch (e: unknown) {
+			const message = e instanceof Error ? e.message : String(e);
 			if (this.io)
-				this.io.emit("security-alert", { type: "error", message: `Fallo al descargar ${model}: ${e.message}` });
+				this.io.emit("security-alert", { type: "error", message: `Fallo al descargar ${model}: ${message}` });
 			throw e;
 		}
 	}
@@ -579,7 +608,7 @@ export class OllamaService {
 		}
 	}
 
-	async getServerStatus(): Promise<any> {
+	async getServerStatus(): Promise<Record<string, unknown>> {
 		let diskSpace = { free: 0, total: 0 };
 		try {
 			const stats = fs.statfsSync("/root/.ollama");
@@ -611,9 +640,10 @@ export class OllamaService {
 			if (tunnel) {
 				ngrokInfo = { url: tunnel.public_url, latency: 0, active: true };
 			}
-		} catch (e: any) {
-			if (e?.code !== "ENOTFOUND" && e?.code !== "ECONNREFUSED" && e?.code !== "ETIMEDOUT") {
-				console.warn("[ngrok] Error inesperado:", e?.message || e?.code);
+		} catch (e: unknown) {
+			const err = e as { code?: string; message?: string };
+			if (err?.code !== "ENOTFOUND" && err?.code !== "ECONNREFUSED" && err?.code !== "ETIMEDOUT") {
+				console.warn("[ngrok] Error inesperado:", err?.message || err?.code);
 			}
 		}
 
@@ -650,7 +680,7 @@ export class OllamaService {
 		};
 	}
 
-	async getFastStatus(): Promise<any> {
+	async getFastStatus(): Promise<Record<string, unknown>> {
 		let diskSpace = { free: 0, total: 0 };
 		try {
 			const stats = fs.statfsSync("/root/.ollama");

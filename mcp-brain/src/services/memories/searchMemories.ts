@@ -1,7 +1,7 @@
 import type { DatabaseService } from "../../database/connection.js";
-import type { Memory } from "../types.js";
-import { embed, cosineSimilarity } from "../llm/index.js";
+import { cosineSimilarity, embed } from "../llm/index.js";
 import { getGlobalSetting } from "../settings/index.js";
+import type { Memory } from "../types.js";
 
 const searchHistory = new Map<string, number[]>();
 
@@ -71,11 +71,24 @@ DIRECTIVA DE DELEGACIÓN: Detén la búsqueda actual. Evalúa cambiar de fase SD
 				[project]
 			);
 
-			const semanticResults = allRows.map((row: any) => {
-				const vec: number[] = JSON.parse(row.vector);
-				const score = cosineSimilarity(queryVector, vec);
-				return { ...row, vector: undefined, score } as Memory;
-			});
+			const semanticResults = allRows.map(
+				(row: {
+					id: string;
+					project: string;
+					type: string;
+					title: string;
+					content: string;
+					tags: string;
+					vector: string;
+					phase: string | null;
+					createdAt: number;
+					updatedAt: number;
+				}) => {
+					const vec: number[] = JSON.parse(row.vector);
+					const score = cosineSimilarity(queryVector, vec);
+					return { ...row, vector: undefined, score } as Memory;
+				}
+			);
 
 			semanticResults.sort((a, b) => (b.score || 0) - (a.score || 0));
 			results = semanticResults.slice(0, limit);

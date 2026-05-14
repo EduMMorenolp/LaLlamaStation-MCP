@@ -1,10 +1,10 @@
-import cors from "cors";
-import express from "express";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import cors from "cors";
+import express from "express";
 import type { DatabaseService } from "../database/connection.js";
-import { memories, settings, analysis } from "../services/index.js";
+import { analysis, memories, settings } from "../services/index.js";
 
 const PORT = process.env.BRAIN_PORT || 3001;
 
@@ -30,14 +30,14 @@ export function startApiServer(dbService: DatabaseService) {
 				},
 			};
 
-			const updateMcpFile = (filePath: string, serverKey: string, configObj: any) => {
+			const updateMcpFile = (filePath: string, serverKey: string, configObj: Record<string, unknown>) => {
 				const dir = path.dirname(filePath);
 				if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-				let data: any = { mcpServers: {} };
+				let data: { mcpServers?: Record<string, unknown> } = { mcpServers: {} };
 				if (fs.existsSync(filePath)) {
 					try {
 						data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-					} catch (e) {
+					} catch {
 						data = { mcpServers: {} };
 					}
 				}
@@ -57,20 +57,31 @@ export function startApiServer(dbService: DatabaseService) {
 						enabled: true,
 					};
 					fs.writeFileSync(openCodePath, JSON.stringify(configData, null, 2), "utf8");
-					return res.json({ success: true, message: "¡Configuración de OpenCode AI sincronizada con éxito!" });
+					return res.json({
+						success: true,
+						message: "¡Configuración de OpenCode AI sincronizada con éxito!",
+					});
 				} else {
-					return res.status(404).json({ error: "No se encontró el archivo opencode.json en la raíz del proyecto." });
+					return res
+						.status(404)
+						.json({ error: "No se encontró el archivo opencode.json en la raíz del proyecto." });
 				}
 			} else if (target === "antigravity") {
 				const agPath = path.join(os.homedir(), ".gemini/antigravity/mcp_config.json");
 				updateMcpFile(agPath, "lallamastation-brain", mcpConfigBlock);
-				return res.json({ success: true, message: "¡Motor Antigravity AI supercargado y sincronizado con éxito!" });
+				return res.json({
+					success: true,
+					message: "¡Motor Antigravity AI supercargado y sincronizado con éxito!",
+				});
 			} else if (target === "claudedesktop") {
 				const cdPath = path.join(os.homedir(), "AppData/Roaming/Claude/claude_desktop_config.json");
 				updateMcpFile(cdPath, "lallamastation-brain", mcpConfigBlock);
 				return res.json({ success: true, message: "¡Claude Desktop sincronizado con éxito!" });
 			} else if (target === "roocode") {
-				const rooPath = path.join(os.homedir(), "AppData/Roaming/Code/User/globalStorage/saoudrizwan.claude-dev/settings/claude_desktop_config.json");
+				const rooPath = path.join(
+					os.homedir(),
+					"AppData/Roaming/Code/User/globalStorage/saoudrizwan.claude-dev/settings/claude_desktop_config.json"
+				);
 				updateMcpFile(rooPath, "lallamastation-brain", mcpConfigBlock);
 				return res.json({ success: true, message: "¡RooCode / Cline sincronizado con éxito en VS Code!" });
 			} else if (target === "cursor" || target === "claudecode" || target === "windsurf") {
@@ -82,8 +93,8 @@ export function startApiServer(dbService: DatabaseService) {
 			} else {
 				return res.status(400).json({ error: "Destino no soportado." });
 			}
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
@@ -92,8 +103,8 @@ export function startApiServer(dbService: DatabaseService) {
 		try {
 			const stats = await memories.getStats(dbService, project);
 			res.json(stats);
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
@@ -107,8 +118,8 @@ export function startApiServer(dbService: DatabaseService) {
 					? await memories.getContext(dbService, project, 50)
 					: await memories.searchMemories(dbService, q, project, mode, 50);
 			res.json(results);
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
@@ -117,13 +128,13 @@ export function startApiServer(dbService: DatabaseService) {
 			const success = await memories.deleteMemory(dbService, req.params.id);
 			if (success) res.json({ message: "Memory deleted" });
 			else res.status(404).json({ error: "Memory not found" });
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
 	// Projects
-	app.get("/api/projects", async (req, res) => {
+	app.get("/api/projects", async (_req, res) => {
 		try {
 			const db = dbService.getDb();
 			const rows = await db.all(`
@@ -131,10 +142,12 @@ export function startApiServer(dbService: DatabaseService) {
 				UNION 
 				SELECT DISTINCT project FROM core_directives
 			`);
-			const projects = Array.from(new Set(["lallamastation", ...rows.map((r: any) => r.project)]));
+			const projects = Array.from(
+				new Set(["lallamastation", ...rows.map((r: { project: string }) => r.project)])
+			);
 			res.json(projects);
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
@@ -144,8 +157,8 @@ export function startApiServer(dbService: DatabaseService) {
 		try {
 			const content = await settings.getCoreDirectives(dbService, project);
 			res.json({ project, content });
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
@@ -154,8 +167,8 @@ export function startApiServer(dbService: DatabaseService) {
 		try {
 			await settings.updateCoreDirectives(dbService, project, content || "");
 			res.json({ success: true });
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
@@ -164,8 +177,8 @@ export function startApiServer(dbService: DatabaseService) {
 		try {
 			const value = await settings.getGlobalSetting(dbService, req.params.key);
 			res.json({ key: req.params.key, value });
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
@@ -174,8 +187,8 @@ export function startApiServer(dbService: DatabaseService) {
 		try {
 			await settings.updateGlobalSetting(dbService, key, value);
 			res.json({ success: true });
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
@@ -185,8 +198,8 @@ export function startApiServer(dbService: DatabaseService) {
 		try {
 			const result = await analysis.consolidateMemories(dbService, project);
 			res.json(result);
-		} catch (e: any) {
-			res.status(500).json({ error: e.message });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
 		}
 	});
 
@@ -194,7 +207,7 @@ export function startApiServer(dbService: DatabaseService) {
 		console.error(`[Brain UI API] Dashboard API listening on port ${PORT}`);
 	});
 
-	serverInstance.on("error", (err: any) => {
+	serverInstance.on("error", (err: Error) => {
 		if (err.code === "EADDRINUSE") {
 			console.error(`[Brain UI API] Warning: Port ${PORT} already in use. Running in Stdio-only mode.`);
 		} else {

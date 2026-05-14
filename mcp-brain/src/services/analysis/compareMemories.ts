@@ -1,8 +1,19 @@
 import type { DatabaseService } from "../../database/connection.js";
-import { getMemory } from "../memories/index.js";
 import { generate } from "../llm/index.js";
+import { getMemory } from "../memories/index.js";
 
-export async function compareMemories(dbService: DatabaseService, model: string, memAId: string, memBId: string): Promise<any> {
+interface CompareMemoriesResult {
+	analysis: string;
+	memA: string;
+	memB: string;
+}
+
+export async function compareMemories(
+	dbService: DatabaseService,
+	model: string,
+	memAId: string,
+	memBId: string
+): Promise<CompareMemoriesResult> {
 	const memA = await getMemory(dbService, memAId);
 	const memB = await getMemory(dbService, memBId);
 

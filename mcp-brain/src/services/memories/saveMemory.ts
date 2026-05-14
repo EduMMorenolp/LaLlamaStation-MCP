@@ -1,8 +1,14 @@
 import type { DatabaseService } from "../../database/connection.js";
+import { cosineSimilarity, embed } from "../llm/index.js";
 import type { Memory } from "../types.js";
-import { embed, cosineSimilarity } from "../llm/index.js";
-import { updateMemory } from "./updateMemory.js";
 import { getMemory } from "./getMemory.js";
+import { updateMemory } from "./updateMemory.js";
+
+interface MemoryCandidate {
+	judgment_id: string;
+	score: number;
+	memory: Record<string, unknown>;
+}
 
 export async function saveMemory(
 	dbService: DatabaseService,
@@ -14,7 +20,7 @@ export async function saveMemory(
 	sessionId?: string,
 	topicKey?: string,
 	phase?: string
-): Promise<{ memory: Memory; judgment_required: boolean; candidates?: any[] }> {
+): Promise<{ memory: Memory; judgment_required: boolean; candidates?: MemoryCandidate[] }> {
 	const db = dbService.getDb();
 
 	if (topicKey) {
@@ -25,7 +31,10 @@ export async function saveMemory(
 		if (existing) {
 			await updateMemory(dbService, existing.id, title, content, tags, topicKey);
 			const memory = await getMemory(dbService, existing.id);
-			return { memory: memory!, judgment_required: false };
+			if (!memory) {
+				throw new Error("Memory not found after create/update");
+			}
+			return { memory, judgment_required: false };
 		}
 	}
 
@@ -48,12 +57,25 @@ export async function saveMemory(
 		await db.run(
 			`INSERT INTO memories (id, project, type, title, content, tags, sessionId, vector, topic_key, phase, createdAt, updatedAt)
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			[id, project, type, title, content, tags || "", sessionId || null, vectorJson, topicKey || null, phase || null, now, now]
+			[
+				id,
+				project,
+				type,
+				title,
+				content,
+				tags || "",
+				sessionId || null,
+				vectorJson,
+				topicKey || null,
+				phase || null,
+				now,
+				now,
+			]
 		);
 	});
 
 	let judgment_required = false;
-	let candidates: any[] = [];
+	const candidates: MemoryCandidate[] = [];
 
 	if (queryVector.length > 0 && type !== "prompt") {
 		const allRows = await db.all(
@@ -74,6 +96,17 @@ export async function saveMemory(
 		}
 	}
 
-	const memory = { id, project, type, title, content, tags: tags || "", sessionId, phase, createdAt: now, updatedAt: now };
+	const memory = {
+		id,
+		project,
+		type,
+		title,
+		content,
+		tags: tags || "",
+		sessionId,
+		phase,
+		createdAt: now,
+		updatedAt: now,
+	};
 	return { memory, judgment_required, candidates };
 }

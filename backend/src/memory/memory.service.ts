@@ -1,6 +1,43 @@
 import type { OllamaService } from "../ollama/ollama.service.js";
 import type { DatabaseService } from "./database.service.js";
 
+interface MemoryRowWithVector {
+	id: string;
+	project: string;
+	type: string;
+	title: string;
+	content: string;
+	tags: string;
+	vector: string;
+	createdAt: number;
+	updatedAt: number;
+}
+
+interface MemoryStats {
+	total: number;
+	types: { type: string; count: number }[];
+}
+
+interface ConflictJudgment {
+	conflict?: boolean;
+	reason?: string;
+	error?: string;
+}
+
+interface SessionSummary {
+	session: unknown;
+	memories_count: number;
+	memories: unknown[];
+	error?: string;
+}
+
+interface MemoryComparison {
+	analysis: string;
+	memA: string;
+	memB: string;
+	error?: string;
+}
+
 export interface Memory {
 	id: string;
 	project: string;
@@ -154,7 +191,7 @@ export class MemoryService {
 				[project]
 			);
 
-			const results = allRows.map((row: any) => {
+			const results = allRows.map((row: MemoryRowWithVector) => {
 				const vec: number[] = JSON.parse(row.vector);
 				const score = this.cosineSimilarity(queryVector, vec);
 				return { ...row, vector: undefined, score } as Memory;
@@ -176,7 +213,7 @@ export class MemoryService {
 		);
 	}
 
-	async getStats(project: string): Promise<any> {
+	async getStats(project: string): Promise<MemoryStats> {
 		const db = this.dbService.getDb();
 		const count = await db.get(`SELECT COUNT(*) as total FROM memories WHERE project = ?`, [project]);
 		const types = await db.all(`SELECT type, COUNT(*) as count FROM memories WHERE project = ? GROUP BY type`, [
@@ -236,7 +273,7 @@ export class MemoryService {
 		}
 	}
 
-	async judgeConflicts(model: string, project: string, memoryId: string): Promise<any> {
+	async judgeConflicts(model: string, project: string, memoryId: string): Promise<ConflictJudgment> {
 		const target = await this.getMemory(memoryId);
 		if (!target) return { error: "Memory not found" };
 
@@ -260,7 +297,7 @@ Does the target memory contradict the existing ones? Respond with YES or NO, fol
 		}
 	}
 
-	async getSessionSummary(sessionId: string): Promise<any> {
+	async getSessionSummary(sessionId: string): Promise<SessionSummary> {
 		const db = this.dbService.getDb();
 		const session = await db.get(`SELECT * FROM sessions WHERE id = ?`, [sessionId]);
 		if (!session) return { error: "Session not found" };
@@ -268,7 +305,7 @@ Does the target memory contradict the existing ones? Respond with YES or NO, fol
 		return { session, memories_count: memories.length, memories };
 	}
 
-	async compareMemories(model: string, memAId: string, memBId: string): Promise<any> {
+	async compareMemories(model: string, memAId: string, memBId: string): Promise<MemoryComparison> {
 		const memA = await this.getMemory(memAId);
 		const memB = await this.getMemory(memBId);
 

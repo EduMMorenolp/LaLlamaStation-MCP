@@ -9,7 +9,9 @@ export const validateEnv = () => {
 
 	if (missing.length > 0) {
 		console.error(`\n${red}❌ [FATAL] Faltan variables de entorno requeridas en el Cerebro:${reset}`);
-		missing.forEach((key) => console.error(`   ${yellow}- ${key}${reset}`));
+		missing.forEach((key) => {
+			console.error(`   ${yellow}- ${key}${reset}`);
+		});
 		console.error(
 			`\n${cyan}Por favor, define estas variables en tu archivo .env o en el docker-compose.yml${reset}\n`
 		);

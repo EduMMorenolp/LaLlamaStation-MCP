@@ -236,8 +236,9 @@ const App: React.FC = () => {
 			setLoading(true);
 			await api.delete(`/api/models/${name}`);
 			fetchData();
-		} catch (err: any) {
-			alert(`Error al eliminar el modelo: ${err.message}`);
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : "Error desconocido";
+			alert(`Error al eliminar el modelo: ${message}`);
 		} finally {
 			setLoading(false);
 		}
@@ -247,9 +248,10 @@ const App: React.FC = () => {
 		try {
 			setPullProgress({ model, percent: 0, status: "pulling" });
 			await api.post("/api/pull", { model });
-		} catch (e: any) {
+		} catch (e: unknown) {
 			setPullProgress(null);
-			alert(e.response?.data?.error || "Error al iniciar descarga");
+			const errorMsg = e instanceof Error ? e.message : (e as { response?: { data?: { error?: string } } }).response?.data?.error || "Error al iniciar descarga";
+			alert(errorMsg);
 		}
 	};
 
@@ -274,9 +276,10 @@ const App: React.FC = () => {
 			} else {
 				removePersistedApiKey();
 			}
-		} catch (err: any) {
+		} catch (err: unknown) {
 			setApiClientKey(previousKey);
-			throw new Error(err?.response?.data?.error || err?.message || "No se pudo validar la API Key");
+			const errObj = err as { response?: { data?: { error?: string } }; message?: string };
+			throw new Error(errObj?.response?.data?.error || errObj?.message || "No se pudo validar la API Key");
 		}
 	};
 
@@ -338,12 +341,13 @@ const App: React.FC = () => {
 			} else {
 				removePersistedApiKey();
 			}
-		} catch (err: any) {
+		} catch (err: unknown) {
 			clearApiKey();
 			setIsAuthorized(false);
+			const errObj = err as { response?: { status?: number } };
 			let errorMsg = "Error de conexión con el servidor MCP";
-			if (err.response?.status === 401) errorMsg = "Acceso denegado: PIN incorrecto o inválido";
-			if (err.response?.status === 403)
+			if (errObj.response?.status === 401) errorMsg = "Acceso denegado: PIN incorrecto o inválido";
+			if (errObj.response?.status === 403)
 				errorMsg = "Acceso denegado: IP bloqueada temporalmente temporalmente por seguridad";
 			setAuthError(errorMsg);
 		} finally {
@@ -538,9 +542,9 @@ const App: React.FC = () => {
 									</p>
 								) : (
 									<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-										{(status?.recentLogs || []).slice(0, 8).map((log: any, i: number) => (
+										{(status?.recentLogs || []).slice(0, 8).map((log: AccessLogEntry) => (
 											<div
-												key={`log-${i}-${log.ip}-${log.timestamp}`}
+												key={`log-${log.timestamp}-${log.ip}`}
 												style={{
 													display: "flex",
 													alignItems: "center",
@@ -627,9 +631,9 @@ const App: React.FC = () => {
 											No hay modelos instalados
 										</p>
 									) : (
-										(models || []).slice(0, 5).map((m: any, i: number) => (
+										(models || []).slice(0, 5).map((m: OllamaModel) => (
 											<div
-												key={m?.name || `model-${i}`}
+												key={m?.name || `model-${m.name}`}
 												style={{
 													display: "flex",
 													justifyContent: "space-between",
@@ -698,6 +702,7 @@ const App: React.FC = () => {
 													{ip}
 												</span>
 												<button
+													type="button"
 													onClick={() => handleUnban(ip)}
 													style={{
 														fontSize: "10px",
@@ -797,8 +802,11 @@ const App: React.FC = () => {
 						</div>
 						<div className="experts-list">
 							<div
+								role="button"
+								tabIndex={0}
 								className={`expert-item-wrap ${activeTab === "dashboard" ? "active" : ""}`}
 								onClick={() => setActiveTab("dashboard")}
+								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setActiveTab("dashboard"); }}
 							>
 								<div className="expert-avatar">
 									<Activity size={16} />
@@ -810,8 +818,11 @@ const App: React.FC = () => {
 							</div>
 
 							<div
+								role="button"
+								tabIndex={0}
 								className={`expert-item-wrap ${activeTab === "playground" ? "active" : ""}`}
 								onClick={() => setActiveTab("playground")}
+								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setActiveTab("playground"); }}
 							>
 								<div className="expert-avatar">
 									<Terminal size={16} />
@@ -823,11 +834,15 @@ const App: React.FC = () => {
 							</div>
 
 							<div
+								role="button"
+								tabIndex={0}
 								className={`expert-item-wrap ${activeTab === "cerebro" ? "active" : ""}`}
 								onClick={() => setActiveTab("cerebro")}
+								onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setActiveTab("cerebro"); }}
 							>
 								<div className="expert-avatar" style={{ color: "var(--accent)" }}>
 									<svg
+										aria-label="Cerebro"
 										xmlns="http://www.w3.org/2000/svg"
 										width="16"
 										height="16"
@@ -857,19 +872,19 @@ const App: React.FC = () => {
 							<span className="section-title">Opciones Rapidas</span>
 						</div>
 						<div className="commands-grid">
-							<button className="cmd-pill" onClick={() => setActiveTab("models")}>
+							<button type="button" className="cmd-pill" onClick={() => setActiveTab("models")}>
 								<Layers size={14} /> Modelos
 							</button>
-							<button className="cmd-pill" onClick={() => setActiveTab("coneccion")}>
+							<button type="button" className="cmd-pill" onClick={() => setActiveTab("coneccion")}>
 								<Cable size={14} /> Coneccion
 							</button>
-							<button className="cmd-pill" onClick={() => setActiveTab("security")}>
+							<button type="button" className="cmd-pill" onClick={() => setActiveTab("security")}>
 								<Shield size={14} /> Seguridad
 							</button>
-							<button className="cmd-pill" onClick={() => setActiveTab("hardware")}>
+							<button type="button" className="cmd-pill" onClick={() => setActiveTab("hardware")}>
 								<Cpu size={14} /> HW Sentinel
 							</button>
-							<button className="cmd-pill" onClick={() => setActiveTab("engine")}>
+							<button type="button" className="cmd-pill" onClick={() => setActiveTab("engine")}>
 								<Zap size={14} /> Engine Tuner
 							</button>
 						</div>
@@ -880,7 +895,7 @@ const App: React.FC = () => {
 							<span className="section-title">Mantenimiento</span>
 						</div>
 						<div className="experts-list">
-							<div className="expert-item-wrap" onClick={handleCleanWorkspace}>
+							<div role="button" tabIndex={0} className="expert-item-wrap" onClick={handleCleanWorkspace} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleCleanWorkspace(); }}>
 								<div className="expert-avatar" style={{ color: "var(--text-muted)" }}>
 									<RefreshCw size={16} />
 								</div>
@@ -940,7 +955,7 @@ const App: React.FC = () => {
 					</div>
 
 					<div className="flex-between gap-md">
-						<button onClick={fetchData} className="btn-icon" title="Refrescar Estado">
+						<button type="button" onClick={fetchData} className="btn-icon" title="Refrescar Estado">
 							<RefreshCw size={20} className={loading ? "animate-spin" : ""} />
 						</button>
 					</div>

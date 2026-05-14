@@ -2,7 +2,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { DatabaseService } from "../database/connection.js";
-import { memories, sessions, analysis } from "../services/index.js";
+import { analysis, memories, sessions } from "../services/index.js";
 
 export async function startMcpServer(dbService: DatabaseService) {
 	const mcpServer = new Server(
@@ -37,8 +37,8 @@ IF judgment_required IS TRUE:
 
   HEURISTIC — when to ask the user vs. resolve autonomously:
   ASK the user when confidence is below 0.7, OR the relation is supersedes/conflicts_with AND type is architecture/policy/decision.
-  RESOLVE silently when confidence >= 0.7 AND relation is not supersedes/conflicts_with.`
-		} as any
+  RESOLVE silently when confidence >= 0.7 AND relation is not supersedes/conflicts_with.`,
+		} as { capabilities: { tools: Record<string, unknown> }; instructions: string }
 	);
 
 	let currentProject: string | null = null;
@@ -80,7 +80,8 @@ TITLE should be short and searchable, like: "JWT auth middleware", "Fixed N+1 qu
 				},
 				{
 					name: "mem_save_prompt",
-					description: "Save a user prompt to persistent memory. Use this to record what the user asked — their intent, questions, and requests — so future sessions have context about the user's goals.",
+					description:
+						"Save a user prompt to persistent memory. Use this to record what the user asked — their intent, questions, and requests — so future sessions have context about the user's goals.",
 					inputSchema: {
 						type: "object",
 						properties: {
@@ -106,7 +107,8 @@ TITLE should be short and searchable, like: "JWT auth middleware", "Fixed N+1 qu
 				},
 				{
 					name: "mem_suggest_topic_key",
-					description: "Suggest a stable topic_key for memory upserts. Use this before mem_save when you want evolving topics (like architecture decisions) to update a single observation over time.",
+					description:
+						"Suggest a stable topic_key for memory upserts. Use this before mem_save when you want evolving topics (like architecture decisions) to update a single observation over time.",
 					inputSchema: {
 						type: "object",
 						properties: {
@@ -320,11 +322,13 @@ PARAMS:
 					const learnings: string[] = [];
 					const matches = content.match(/## Key Learnings:[\s\S]*?(?=\n## |$)/i);
 					if (matches) {
-						const lines = matches[0].split('\n').filter((l: string) => l.trim().startsWith('-') || /^\d+\./.test(l.trim()));
+						const lines = matches[0]
+							.split("\n")
+							.filter((l: string) => l.trim().startsWith("-") || /^\d+\./.test(l.trim()));
 						learnings.push(...lines);
 					}
 					if (learnings.length === 0) return { content: [{ type: "text", text: "No key learnings found." }] };
-					
+
 					for (const l of learnings) {
 						await memories.saveMemory(
 							dbService,
@@ -341,7 +345,10 @@ PARAMS:
 				case "mem_suggest_topic_key": {
 					const title = args?.title as string;
 					const type = (args?.type as string) || "general";
-					const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+					const slug = title
+						.toLowerCase()
+						.replace(/[^a-z0-9]+/g, "-")
+						.replace(/(^-|-$)+/g, "");
 					return { content: [{ type: "text", text: `${type}/${slug}` }] };
 				}
 				case "mem_update": {
@@ -364,7 +371,7 @@ PARAMS:
 						dbService,
 						args?.query as string,
 						args?.project as string,
-						(args?.mode as any) || "hybrid",
+						(args?.mode as string) || "hybrid",
 						(args?.limit as number) || 10
 					);
 					return { content: [{ type: "text", text: JSON.stringify(mems, null, 2) }] };
@@ -402,7 +409,11 @@ PARAMS:
 					return { content: [{ type: "text", text: `Session started. ID: ${id}` }] };
 				}
 				case "mem_session_end": {
-					const success = await sessions.endSession(dbService, args?.sessionId as string, args?.summary as string);
+					const success = await sessions.endSession(
+						dbService,
+						args?.sessionId as string,
+						args?.summary as string
+					);
 					return {
 						content: [
 							{ type: "text", text: success ? "Session ended and summarized." : "Session not found." },
@@ -429,8 +440,15 @@ PARAMS:
 							args?.content as string
 						);
 						return { content: [{ type: "text", text: tags.join(", ") }] };
-					} catch (e) {
-						return { content: [{ type: "text", text: "OLLAMA_UNAVAILABLE: Por favor, genera las etiquetas tú mismo basándote en tu propia comprensión del texto y luego invoca la herramienta de guardado nuevamente con esas etiquetas." }] };
+					} catch {
+						return {
+							content: [
+								{
+									type: "text",
+									text: "OLLAMA_UNAVAILABLE: Por favor, genera las etiquetas tú mismo basándote en tu propia comprensión del texto y luego invoca la herramienta de guardado nuevamente con esas etiquetas.",
+								},
+							],
+						};
 					}
 				}
 				case "mem_judge": {
@@ -440,7 +458,11 @@ PARAMS:
 						args?.relation as string,
 						args?.reason as string
 					);
-					return { content: [{ type: "text", text: success ? "Judgment recorded." : "Failed to record judgment." }] };
+					return {
+						content: [
+							{ type: "text", text: success ? "Judgment recorded." : "Failed to record judgment." },
+						],
+					};
 				}
 				case "mem_compare": {
 					try {
@@ -451,11 +473,19 @@ PARAMS:
 							args?.memoryId2 as string
 						);
 						return { content: [{ type: "text", text: JSON.stringify(comparison, null, 2) }] };
-					} catch (e: any) {
-						if (e.message && e.message.includes("not found")) {
-							return { content: [{ type: "text", text: `Error: ${e.message}` }], isError: true };
+					} catch (e: unknown) {
+						const message = e instanceof Error ? e.message : String(e);
+						if (message.includes("not found")) {
+							return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
 						}
-						return { content: [{ type: "text", text: "OLLAMA_UNAVAILABLE: Por favor, usa mem_get_observation para leer ambas memorias en tu contexto y compáralas tú mismo utilizando tus propias capacidades de razonamiento." }] };
+						return {
+							content: [
+								{
+									type: "text",
+									text: "OLLAMA_UNAVAILABLE: Por favor, usa mem_get_observation para leer ambas memorias en tu contexto y compáralas tú mismo utilizando tus propias capacidades de razonamiento.",
+								},
+							],
+						};
 					}
 				}
 				case "mem_stats": {
@@ -465,8 +495,9 @@ PARAMS:
 				default:
 					return { content: [{ type: "text", text: `Tool ${name} implemented but handler missing.` }] };
 			}
-		} catch (error: any) {
-			return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error);
+			return { content: [{ type: "text", text: `Error: ${message}` }], isError: true };
 		}
 	});
 

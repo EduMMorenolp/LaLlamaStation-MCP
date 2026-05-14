@@ -44,7 +44,10 @@ export const BrainDirectives: React.FC<BrainDirectivesProps> = ({ project }) => 
 	};
 
 	return (
-		<div className="card-glass" style={{ padding: "24px", minHeight: "calc(100vh - 200px)", display: "flex", flexDirection: "column" }}>
+		<div
+			className="card-glass"
+			style={{ padding: "24px", minHeight: "calc(100vh - 200px)", display: "flex", flexDirection: "column" }}
+		>
 			<div className="flex-between" style={{ marginBottom: "20px" }}>
 				<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
 					<BookOpen size={20} style={{ color: "var(--accent)" }} />
@@ -55,14 +58,28 @@ export const BrainDirectives: React.FC<BrainDirectivesProps> = ({ project }) => 
 						</p>
 					</div>
 				</div>
-				<button onClick={handleSave} className="btn-send" disabled={saving || loading} style={{ width: "auto", padding: "0 20px" }}>
+				<button
+					onClick={handleSave}
+					className="btn-send"
+					disabled={saving || loading}
+					style={{ width: "auto", padding: "0 20px" }}
+				>
 					{saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
 					<span>{saving ? "Guardando..." : "Guardar Directivas"}</span>
 				</button>
 			</div>
 
 			{successMsg && (
-				<div style={{ padding: "12px 16px", background: "rgba(34, 197, 94, 0.15)", color: "var(--success)", borderRadius: "8px", marginBottom: "16px", fontSize: "13px" }}>
+				<div
+					style={{
+						padding: "12px 16px",
+						background: "rgba(34, 197, 94, 0.15)",
+						color: "var(--success)",
+						borderRadius: "8px",
+						marginBottom: "16px",
+						fontSize: "13px",
+					}}
+				>
 					{successMsg}
 				</div>
 			)}

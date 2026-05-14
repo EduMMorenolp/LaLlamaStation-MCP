@@ -57,10 +57,7 @@
 		"lallamastation-brain": {
 			"type": "local",
 			"command": "npx",
-			"args": [
-				"tsx",
-				"d:/Proyectos/LaLlamaStation MCP/mcp-brain/src/index.ts"
-			],
+			"args": ["tsx", "d:/Proyectos/LaLlamaStation MCP/mcp-brain/src/index.ts"],
 			"env": {
 				"OLLAMA_API_URL": "http://127.0.0.1:11434",
 				"BRAIN_PORT": "3666"

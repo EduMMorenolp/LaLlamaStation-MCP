@@ -1,15 +1,14 @@
 import type { DatabaseService } from "../database/connection.js";
-import { getGlobalSetting } from "../services/settings/index.js";
 import { consolidateMemories } from "../services/analysis/consolidation.js";
 
-let cronTimer: NodeJS.Timeout | null = null;
+let _cronTimer: NodeJS.Timeout | null = null;
 
 export async function startCronJobs(dbService: DatabaseService) {
 	// Simple polling interval to check if consolidation should run.
 	// For simplicity without external cron libraries, we check every hour.
 	const checkInterval = 60 * 60 * 1000; // 1 hour
 
-	cronTimer = setInterval(async () => {
+	_cronTimer = setInterval(async () => {
 		try {
 			// In a real multi-project setup, we'd iterate active projects.
 			// Here we run for the default project.
@@ -18,8 +17,9 @@ export async function startCronJobs(dbService: DatabaseService) {
 			if (res.consolidatedGroups > 0) {
 				console.error(`[Cron] Consolidated ${res.consolidatedGroups} topic groups.`);
 			}
-		} catch (e: any) {
-			console.error("[Cron] Error running consolidation:", e.message);
+		} catch (e: unknown) {
+			const message = e instanceof Error ? e.message : String(e);
+			console.error("[Cron] Error running consolidation:", message);
 		}
 	}, checkInterval);
 }

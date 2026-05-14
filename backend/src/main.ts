@@ -12,7 +12,9 @@ const validateEnv = () => {
 
 	if (missing.length > 0) {
 		console.error(`\n${red}❌ [FATAL] Faltan variables de entorno requeridas en el Backend:${reset}`);
-		missing.forEach((key) => console.error(`   ${yellow}- ${key}${reset}`));
+		missing.forEach((key) => {
+			console.error(`   ${yellow}- ${key}${reset}`);
+		});
 		console.error(
 			`\n${cyan}Por favor, define estas variables en tu archivo .env o en el docker-compose.yml${reset}\n`
 		);
@@ -82,7 +84,7 @@ await appModule.bootstrap(server, io);
 await appModule.ollamaService.checkConnection();
 
 // --- Middleware de Seguridad Avanzada (Fase 2) ---
-const securityMiddleware = (req: Request, res: Response, next: Function) => {
+const securityMiddleware = (req: Request, res: Response, next: (err?: unknown) => void) => {
 	const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
 
 	if (appModule.ollamaService.isBlacklisted(ip)) {
@@ -93,7 +95,7 @@ const securityMiddleware = (req: Request, res: Response, next: Function) => {
 
 app.use(securityMiddleware);
 
-const authMiddleware = (req: Request, res: Response, next: Function) => {
+const authMiddleware = (req: Request, res: Response, next: (err?: unknown) => void) => {
 	if (!appModule.authService.isOllamaAuthEnabled()) {
 		return next();
 	}
@@ -139,8 +141,9 @@ app.get("/v1/models", authMiddleware, async (_req, res) => {
 				owned_by: "ollama",
 			})),
 		});
-	} catch (error: any) {
-		res.status(500).json({ error: error.message });
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -149,8 +152,9 @@ app.get("/api/models", authMiddleware, async (_req, res) => {
 	try {
 		const models = await appModule.ollamaService.listModels();
 		res.json({ models });
-	} catch (error: any) {
-		res.status(500).json({ error: error.message });
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -271,13 +275,14 @@ app.post("/v1/chat/completions", authMiddleware, async (req, res) => {
 					res.end();
 				});
 
-				streamResponse.data.on("error", (err: any) => {
+				streamResponse.data.on("error", (err: Error) => {
 					console.error("[stream-error]", err);
 					res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
 					res.end();
 				});
-			} catch (err: any) {
-				res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+			} catch (err: unknown) {
+				const message = err instanceof Error ? err.message : String(err);
+				res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
 				res.end();
 			}
 		} else {
@@ -310,8 +315,9 @@ app.post("/v1/chat/completions", authMiddleware, async (req, res) => {
 				},
 			});
 		}
-	} catch (error: any) {
-		res.status(500).json({ error: error.message });
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -330,8 +336,9 @@ app.get("/api/status/fast", authMiddleware, async (_req, res) => {
 			brainRunning = false;
 		}
 		res.json(withAuthConfig({ ...status, brainRunning }));
-	} catch (error: any) {
-		res.status(500).json({ error: error.message });
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -348,8 +355,9 @@ app.get("/api/status/full", authMiddleware, async (_req, res) => {
 			brainRunning = false;
 		}
 		res.json(withAuthConfig({ ...status, brainRunning }));
-	} catch (error: any) {
-		res.status(500).json({ error: error.message });
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -366,8 +374,9 @@ app.get("/api/status", authMiddleware, async (_req, res) => {
 			brainRunning = false;
 		}
 		res.json(withAuthConfig({ ...status, brainRunning }));
-	} catch (error: any) {
-		res.status(500).json({ error: error.message });
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -436,8 +445,9 @@ app.post("/api/unload", authMiddleware, async (_req, res) => {
 	try {
 		await appModule.ollamaService.unloadModels();
 		res.json({ message: "VRAM freed successfully" });
-	} catch (error: any) {
-		res.status(500).json({ error: error.message });
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -464,8 +474,9 @@ app.post("/api/pull", authMiddleware, async (req, res) => {
 			console.error(`Error pulling model ${model}:`, err);
 		});
 		res.json({ message: `Pulling model ${model} started` });
-	} catch (err: any) {
-		res.status(500).json({ error: err.message });
+	} catch (err: unknown) {
+		const message = err instanceof Error ? err.message : String(err);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -473,8 +484,9 @@ app.post("/api/clean", authMiddleware, async (_req, res) => {
 	try {
 		const result = await appModule.ollamaService.cleanWorkspace();
 		res.json({ message: "Workspace cleaned", freed: result.freed });
-	} catch (error: any) {
-		res.status(500).json({ error: error.message });
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -482,8 +494,9 @@ app.delete("/api/models/:name", authMiddleware, async (req, res) => {
 	try {
 		await appModule.ollamaService.deleteModel(req.params.name);
 		res.json({ message: `Model ${req.params.name} deleted` });
-	} catch (error: any) {
-		res.status(500).json({ error: error.message });
+	} catch (error: unknown) {
+		const message = error instanceof Error ? error.message : String(error);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -602,8 +615,9 @@ app.get("/api/ngrok/status", authMiddleware, async (_req, res) => {
 			}
 		}
 		res.json({ running, url });
-	} catch (e: any) {
-		res.json({ running: false, url: null, error: e.message });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : String(e);
+		res.json({ running: false, url: null, error: message });
 	}
 });
 
@@ -665,8 +679,9 @@ app.post("/api/ngrok/start", authMiddleware, async (_req, res) => {
 		await container.start();
 		console.log("[ngrok] Tunel iniciado manualmente desde el Dashboard");
 		res.json({ message: "Ngrok iniciado", running: true });
-	} catch (e: any) {
-		res.status(500).json({ error: e.message });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : String(e);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -679,8 +694,9 @@ app.post("/api/ngrok/stop", authMiddleware, async (_req, res) => {
 		await container.stop();
 		console.log("[ngrok] Tunel detenido manualmente desde el Dashboard");
 		res.json({ message: "Ngrok detenido", running: false });
-	} catch (e: any) {
-		res.status(500).json({ error: e.message });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : String(e);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -701,8 +717,9 @@ app.post("/api/ollama/start", authMiddleware, async (_req, res) => {
 		if (!container) return res.status(404).json({ error: "Contenedor Ollama no encontrado." });
 		await container.start();
 		res.json({ message: "Motor Ollama iniciado" });
-	} catch (e: any) {
-		res.status(500).json({ error: e.message });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : String(e);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -712,8 +729,9 @@ app.post("/api/ollama/stop", authMiddleware, async (_req, res) => {
 		if (!container) return res.status(404).json({ error: "Contenedor Ollama no encontrado." });
 		await container.stop();
 		res.json({ message: "Motor Ollama detenido" });
-	} catch (e: any) {
-		res.status(500).json({ error: e.message });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : String(e);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -723,8 +741,9 @@ app.post("/api/ollama/restart", authMiddleware, async (_req, res) => {
 		if (!container) return res.status(404).json({ error: "Contenedor Ollama no encontrado." });
 		await container.restart();
 		res.json({ message: "Motor Ollama reiniciado" });
-	} catch (e: any) {
-		res.status(500).json({ error: e.message });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : String(e);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -735,8 +754,9 @@ app.post("/api/brain/start", authMiddleware, async (_req, res) => {
 		if (!container) return res.status(404).json({ error: "Contenedor mcp-brain no encontrado." });
 		await container.start();
 		res.json({ message: "Cerebro MCP iniciado", running: true });
-	} catch (e: any) {
-		res.status(500).json({ error: e.message });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : String(e);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -746,8 +766,9 @@ app.post("/api/brain/stop", authMiddleware, async (_req, res) => {
 		if (!container) return res.status(404).json({ error: "Contenedor mcp-brain no encontrado." });
 		await container.stop();
 		res.json({ message: "Cerebro MCP detenido", running: false });
-	} catch (e: any) {
-		res.status(500).json({ error: e.message });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : String(e);
+		res.status(500).json({ error: message });
 	}
 });
 
@@ -767,7 +788,14 @@ app.get("/api/search-models", authMiddleware, async (req, res) => {
 			headers: { "User-Agent": "Mozilla/5.0 (compatible; LaLlamaStation-MCP/1.0)" },
 		});
 		const $ = cheerio.load(response.data);
-		const models: any[] = [];
+		interface ScrapedModel {
+			name: string;
+			title: string;
+			desc: string;
+			pulls: string;
+			tags: string[];
+		}
+		const models: ScrapedModel[] = [];
 
 		// Parsear tarjetas de modelos de ollama.com/library
 		$('a[href^="/library/"]').each((_, el) => {
@@ -791,8 +819,9 @@ app.get("/api/search-models", authMiddleware, async (req, res) => {
 		});
 
 		res.json({ models: models.slice(0, 24), query: q, source: url });
-	} catch (e: any) {
-		res.status(500).json({ error: `Error scraping ollama.com: ${e.message}`, models: [] });
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : String(e);
+		res.status(500).json({ error: `Error scraping ollama.com: ${message}`, models: [] });
 	}
 });
 

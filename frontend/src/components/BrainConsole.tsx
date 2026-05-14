@@ -1,4 +1,4 @@
-import { Activity, Brain, Database, BookOpen, Settings } from "lucide-react";
+import { Activity, BookOpen, Brain, Database, Settings } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { brainApi } from "../services/api.service";
@@ -44,8 +44,11 @@ export const BrainConsole: React.FC = () => {
 
 	const handleAddProject = () => {
 		const name = window.prompt("Ingresa el nombre del nuevo proyecto:");
-		if (name && name.trim()) {
-			const cleanName = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+		if (name?.trim()) {
+			const cleanName = name
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, "-");
 			setProjectsList((prev) => Array.from(new Set([...prev, cleanName])));
 			setProject(cleanName);
 		}
@@ -54,7 +57,9 @@ export const BrainConsole: React.FC = () => {
 	return (
 		<div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
 			{/* Navegación de Pestañas */}
-			<div style={{ display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}>
+			<div
+				style={{ display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}
+			>
 				<button
 					onClick={() => setActiveTab("auditor")}
 					type="button"
@@ -157,7 +162,9 @@ export const BrainConsole: React.FC = () => {
 							>
 								Total Recuerdos
 							</h3>
-							<div style={{ fontSize: "28px", fontWeight: 700, letterSpacing: "-1px" }}>{stats.total}</div>
+							<div style={{ fontSize: "28px", fontWeight: 700, letterSpacing: "-1px" }}>
+								{stats.total}
+							</div>
 						</div>
 					</div>
 
@@ -242,7 +249,13 @@ export const BrainConsole: React.FC = () => {
 						<div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 							<div>
 								<div className="flex-between" style={{ alignItems: "center", marginBottom: "4px" }}>
-									<span style={{ fontSize: "10px", color: "var(--text-dim)", textTransform: "uppercase" }}>
+									<span
+										style={{
+											fontSize: "10px",
+											color: "var(--text-dim)",
+											textTransform: "uppercase",
+										}}
+									>
 										Proyecto Target
 									</span>
 									<button

@@ -1,6 +1,6 @@
 import type { DatabaseService } from "../../database/connection.js";
-import { getMemory } from "./getMemory.js";
 import { embed } from "../llm/index.js";
+import { getMemory } from "./getMemory.js";
 
 export async function updateMemory(
 	dbService: DatabaseService,
@@ -18,7 +18,7 @@ export async function updateMemory(
 	const newTitle = title || memory.title;
 	const newContent = content || memory.content;
 	const newTags = tags || memory.tags;
-	const newTopicKey = topicKey !== undefined ? topicKey : (memory as any).topic_key;
+	const newTopicKey = topicKey !== undefined ? topicKey : (memory as { topic_key?: string }).topic_key;
 	const newPhase = phase !== undefined ? phase : memory.phase;
 	const now = Date.now();
 
@@ -39,15 +39,10 @@ export async function updateMemory(
 				[newTitle, newContent, newTags, vectorJson, newTopicKey, newPhase, now, id]
 			);
 		} else {
-			await db.run(`UPDATE memories SET title = ?, content = ?, tags = ?, topic_key = ?, phase = ?, updatedAt = ? WHERE id = ?`, [
-				newTitle,
-				newContent,
-				newTags,
-				newTopicKey,
-				newPhase,
-				now,
-				id,
-			]);
+			await db.run(
+				`UPDATE memories SET title = ?, content = ?, tags = ?, topic_key = ?, phase = ?, updatedAt = ? WHERE id = ?`,
+				[newTitle, newContent, newTags, newTopicKey, newPhase, now, id]
+			);
 		}
 	});
 	return true;

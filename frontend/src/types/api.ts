@@ -16,7 +16,7 @@ export interface StatusResponse {
 		ollamaAuthEnabled?: boolean;
 		mcpAuthEnabled?: boolean;
 	};
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
 export interface AccessLogEntry {
@@ -32,31 +32,30 @@ export interface OllamaModel {
 	modified_at: string;
 	size: number;
 	digest: string;
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
 export interface LoadedModel {
 	name?: string | unknown;
 	size_vram?: number;
 	percentage?: number;
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
-export type PullProgressData = Record<string, any>;
+export type PullProgressData = Record<string, unknown>;
 
 export interface ChatMessage {
 	role: "user" | "assistant";
 	content: string;
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
-export interface EngineStats extends Record<string, any> {
+export interface EngineStats extends Record<string, unknown> {
 	totalTokensSession?: number;
 	totalTimeSession?: number;
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
-// Para casos donde se necesita tipado estricto
 export interface VramInfo {
 	total: number;
 	used: number;
@@ -69,5 +68,5 @@ export interface ChatCompletionOptions {
 	num_ctx?: number;
 	top_p?: number;
 	top_k?: number;
-	[key: string]: any;
+	[key: string]: unknown;
 }

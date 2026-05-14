@@ -1,9 +1,9 @@
 import "dotenv/config";
-import { validateEnv } from "./env.js";
 import { DatabaseService } from "./database/connection.js";
-import { startMcpServer } from "./server/mcp.js";
+import { validateEnv } from "./env.js";
 import { startApiServer } from "./server/api.js";
 import { startCronJobs } from "./server/cron.js";
+import { startMcpServer } from "./server/mcp.js";
 
 async function bootstrap() {
 	// 1. Validar Entorno

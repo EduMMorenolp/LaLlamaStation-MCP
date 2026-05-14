@@ -4,11 +4,6 @@ import { z } from "zod";
 import type { AuthService } from "../auth/auth.service.js";
 import type { OllamaService } from "./ollama.service.js";
 
-type ChatMessage = {
-	role: "user" | "assistant" | "system";
-	content: string;
-};
-
 const InferenceOptionsSchema = z.object({
 	temperature: z.number().min(0).max(2).optional(),
 	num_ctx: z.number().min(128).max(131072).optional(),
@@ -27,6 +22,12 @@ export const MCP_TOOL_CATALOG = [
 ] as const;
 
 export const MCP_TOOL_NAMES = new Set(MCP_TOOL_CATALOG.map((tool) => tool.name));
+
+interface ChatMessage {
+	role: string;
+	content: string;
+	[key: string]: unknown;
+}
 
 export class OllamaTools {
 	constructor(
@@ -172,12 +173,12 @@ export class OllamaTools {
 			};
 		};
 
-		const callToolHandler = async (request: any) => {
-			const params = request.params as { name: string; arguments?: Record<string, unknown> };
+		const callToolHandler = async (request: { params: { name: string; arguments?: Record<string, unknown> } }) => {
+			const params = request.params;
 			const { name, arguments: args } = params;
 			const ip = "MCP-Client";
 
-			if (!MCP_TOOL_NAMES.has(name as any)) {
+			if (!(MCP_TOOL_NAMES as Set<string>).has(name)) {
 				throw new Error(`Tool ${name} not found`);
 			}
 
@@ -237,7 +238,7 @@ export class OllamaTools {
 						});
 						const chatResponse = await ollamaService.chat(
 							args?.model as string,
-							args?.messages as any[],
+							(args?.messages as ChatMessage[]) || [],
 							options,
 							args?.keep_alive as string | number,
 							args?.session_id as string

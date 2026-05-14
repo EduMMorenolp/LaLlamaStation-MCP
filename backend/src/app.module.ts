@@ -14,9 +14,7 @@ export class AppModule {
 
 	constructor() {
 		this.authService = new AuthService();
-		this.authService.setKnownMcpTools([
-			...MCP_TOOL_CATALOG.map((tool) => tool.name),
-		]);
+		this.authService.setKnownMcpTools([...MCP_TOOL_CATALOG.map((tool) => tool.name)]);
 		this.ollamaService = new OllamaService();
 		this.sessionManager = new SessionManager();
 		this.ollamaTools = new OllamaTools(this.ollamaService, this.authService);
@@ -38,7 +36,7 @@ export class AppModule {
 			const params = request.params as { name: string; arguments?: Record<string, unknown> };
 			const { name } = params;
 
-			if (MCP_TOOL_NAMES.has(name as any)) {
+			if ((MCP_TOOL_NAMES as Set<string>).has(name)) {
 				return ollamaHandlers.callToolHandler(request);
 			}
 

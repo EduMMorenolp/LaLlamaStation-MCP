@@ -25,19 +25,22 @@ export const BrainAuditor: React.FC<BrainAuditorProps> = ({ project }) => {
 	const [mode, setMode] = useState<"lexical" | "semantic" | "hybrid">("hybrid");
 	const [loading, setLoading] = useState(false);
 
-	const fetchMemories = useCallback(async (searchQuery = query) => {
-		setLoading(true);
-		try {
-			const res = await brainApi.get(
-				`/api/memory/search?q=${encodeURIComponent(searchQuery)}&project=${project}&mode=${mode}`
-			);
-			setMemories(res.data);
-		} catch (error) {
-			console.error("Error fetching brain memories", error);
-		} finally {
-			setLoading(false);
-		}
-	}, [project, mode, query]);
+	const fetchMemories = useCallback(
+		async (searchQuery = query) => {
+			setLoading(true);
+			try {
+				const res = await brainApi.get(
+					`/api/memory/search?q=${encodeURIComponent(searchQuery)}&project=${project}&mode=${mode}`
+				);
+				setMemories(res.data);
+			} catch (error) {
+				console.error("Error fetching brain memories", error);
+			} finally {
+				setLoading(false);
+			}
+		},
+		[project, mode, query]
+	);
 
 	useEffect(() => {
 		fetchMemories("");
@@ -205,7 +208,10 @@ export const BrainAuditor: React.FC<BrainAuditorProps> = ({ project }) => {
 								{mem.content}
 							</p>
 
-							<div className="flex-between" style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+							<div
+								className="flex-between"
+								style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}
+							>
 								<div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
 									{mem.tags
 										.split(",")

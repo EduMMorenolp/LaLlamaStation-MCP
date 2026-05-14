@@ -1,7 +1,7 @@
 import axios from "axios";
 import { config } from "../config.js";
 
-export async function generate(model: string, prompt: string, options: any = {}): Promise<string> {
+export async function generate(model: string, prompt: string, options: Record<string, unknown> = {}): Promise<string> {
 	try {
 		const response = await axios.post(`${config.ollamaUrl}/api/generate`, {
 			model,

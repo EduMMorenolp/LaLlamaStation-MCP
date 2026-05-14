@@ -1,7 +1,7 @@
 import type { DatabaseService } from "../../database/connection.js";
 import { generate } from "../llm/generate.js";
-import { saveMemory } from "../memories/saveMemory.js";
 import { deleteMemory } from "../memories/deleteMemory.js";
+import { saveMemory } from "../memories/saveMemory.js";
 import { getGlobalSetting } from "../settings/index.js";
 
 export async function consolidateMemories(
@@ -17,8 +17,16 @@ export async function consolidateMemories(
 		[project]
 	);
 
+	interface MemoryRecord {
+		id: string;
+		title: string;
+		content: string;
+		tags: string;
+		topic_key: string;
+	}
+
 	// Group by topic_key or primary tag
-	const groups: { [key: string]: any[] } = {};
+	const groups: Record<string, MemoryRecord[]> = {};
 	for (const mem of allMemories) {
 		let key = mem.topic_key;
 		if (!key && mem.tags) {
@@ -49,7 +57,17 @@ Devuelve únicamente el contenido consolidado en formato Markdown, listo para se
 				if (summary && summary.trim().length > 50) {
 					// Save new consolidated memory
 					const title = `[Consolidado] Aprendizajes sobre ${topic}`;
-					await saveMemory(dbService, project, "learning", title, summary.trim(), topic, undefined, topic, "review");
+					await saveMemory(
+						dbService,
+						project,
+						"learning",
+						title,
+						summary.trim(),
+						topic,
+						undefined,
+						topic,
+						"review"
+					);
 
 					// Delete old memories
 					for (const m of mems) {

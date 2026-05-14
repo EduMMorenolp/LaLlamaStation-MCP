@@ -18,6 +18,7 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import type { OllamaModel } from "../types/api";
 
 interface Message {
 	id: string;
@@ -32,8 +33,8 @@ interface Message {
 }
 
 interface ChatPlaygroundProps {
-	models: any[];
-	onSendMessage: (model: string, message: string, options: any) => Promise<any>;
+	models: OllamaModel[];
+	onSendMessage: (model: string, message: string, options: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }
 
 interface AttachmentFile {
@@ -85,6 +86,7 @@ function CopyButton({ text }: { text: string }) {
 	};
 	return (
 		<button
+			type="button"
 			onClick={handleCopy}
 			style={{
 				background: "transparent",
@@ -285,13 +287,14 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 				setTotalTokensSession((prev) => prev + inputTok + outputTok);
 				setTotalTimeSession((prev) => prev + latencyMs);
 			}
-		} catch (err: any) {
+		} catch (err: unknown) {
+			const errorMessage = err instanceof Error ? err.message : "Sin respuesta del servidor";
 			setHistory((prev) => [
 				...prev,
 				{
 					id: Math.random().toString(36).slice(2),
 					role: "assistant",
-					content: `Error: ${err.message || "Sin respuesta del servidor"}`,
+					content: `Error: ${errorMessage}`,
 					model: selectedModel,
 					timestamp: Date.now(),
 					latencyMs: Date.now() - start,
@@ -638,6 +641,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 				<div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
 					{history.length > 0 && (
 						<button
+							type="button"
 							className="btn-icon"
 							onClick={clearChat}
 							title="Limpiar chat"
@@ -647,6 +651,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 						</button>
 					)}
 					<button
+						type="button"
 						className="btn-icon"
 						onClick={() => setShowSettings(!showSettings)}
 						style={{ color: showSettings ? "var(--accent)" : "var(--text-muted)" }}
@@ -673,6 +678,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 				>
 					<div>
 						<label
+							htmlFor="chat-model-select"
 							style={{
 								fontSize: "10px",
 								color: "var(--text-muted)",
@@ -686,6 +692,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 							Modelo Activo
 						</label>
 						<select
+							id="chat-model-select"
 							value={selectedModel}
 							onChange={(e) => setSelectedModel(e.target.value)}
 							className="model-selector-dropdown"
@@ -704,6 +711,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 					</div>
 					<div>
 						<label
+							htmlFor="chat-temp"
 							style={{
 								fontSize: "10px",
 								color: "var(--text-muted)",
@@ -717,6 +725,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 							Temperatura ({temperature})
 						</label>
 						<input
+							id="chat-temp"
 							type="range"
 							min={0}
 							max={2}
@@ -740,6 +749,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 					</div>
 					<div>
 						<label
+							htmlFor="chat-ctx"
 							style={{
 								fontSize: "10px",
 								color: "var(--text-muted)",
@@ -756,6 +766,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 							Contexto ({numCtx >= 1000 ? `${(numCtx / 1024).toFixed(0)}K` : numCtx})
 						</label>
 						<select
+							id="chat-ctx"
 							value={numCtx}
 							onChange={(e) => setNumCtx(Number(e.target.value))}
 							className="model-selector-dropdown"
@@ -821,6 +832,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 						>
 							{suggestions.map((s) => (
 								<button
+									type="button"
 									key={s}
 									onClick={() => setMessage(s)}
 									style={{
@@ -837,6 +849,8 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 									}}
 									onMouseOver={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
 									onMouseOut={(e) => (e.currentTarget.style.borderColor = "var(--border-light)")}
+									onFocus={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+									onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-light)")}
 								>
 									{s}
 								</button>
@@ -992,6 +1006,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 									</span>
 								)}
 								<button
+									type="button"
 									onClick={() => removeAttachment(file.id)}
 									style={{
 										background: "transparent",
@@ -1035,6 +1050,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 						disabled={loading || models.length === 0}
 					/>
 					<button
+						type="button"
 						onClick={handlePickFiles}
 						disabled={loading || models.length === 0 || attachments.length >= MAX_ATTACHMENTS}
 						title={

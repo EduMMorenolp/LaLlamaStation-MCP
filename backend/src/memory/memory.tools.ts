@@ -264,11 +264,11 @@ export class MemoryTools {
 			};
 		};
 
-		const callToolHandler = async (request: any) => {
+		const callToolHandler = async (request: { params: { name: string; arguments?: Record<string, unknown> } }) => {
 			const params = request.params as { name: string; arguments?: Record<string, unknown> };
 			const { name, arguments: args } = params;
 
-			if (!MEMORY_TOOL_NAMES.has(name as any)) {
+			if (!(MEMORY_TOOL_NAMES as Set<string>).has(name)) {
 				throw new Error(`Tool ${name} not found`);
 			}
 
@@ -309,7 +309,7 @@ export class MemoryTools {
 						const memories = await memoryService.searchMemories(
 							args?.query as string,
 							args?.project as string,
-							(args?.mode as any) || "hybrid",
+							(args?.mode as "lexical" | "semantic" | "hybrid") || "hybrid",
 							(args?.limit as number) || 10
 						);
 						return { content: [{ type: "text", text: JSON.stringify(memories, null, 2) }] };
@@ -405,8 +405,13 @@ export class MemoryTools {
 					default:
 						return { content: [{ type: "text", text: `Tool ${name} implemented but handler missing.` }] };
 				}
-			} catch (error: any) {
-				return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+			} catch (error: unknown) {
+				return {
+					content: [
+						{ type: "text", text: `Error: ${error instanceof Error ? error.message : String(error)}` },
+					],
+					isError: true,
+				};
 			}
 		};
 

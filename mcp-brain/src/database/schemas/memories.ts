@@ -1,5 +1,5 @@
-import { Database } from "sqlite";
-import sqlite3 from "sqlite3";
+import type { Database } from "sqlite";
+import type sqlite3 from "sqlite3";
 
 export async function createMemoriesTable(db: Database<sqlite3.Database, sqlite3.Statement>) {
 	await db.exec(`
@@ -49,13 +49,13 @@ export async function createMemoriesTable(db: Database<sqlite3.Database, sqlite3
 
 	// Safely add topic_key to existing database
 	const columns = await db.all("PRAGMA table_info(memories)");
-	const hasTopicKey = columns.some((col: any) => col.name === "topic_key");
+	const hasTopicKey = columns.some((col: { name: string }) => col.name === "topic_key");
 	if (!hasTopicKey) {
 		await db.exec("ALTER TABLE memories ADD COLUMN topic_key TEXT;");
 	}
 
 	// Safely add phase to existing database
-	const hasPhase = columns.some((col: any) => col.name === "phase");
+	const hasPhase = columns.some((col: { name: string }) => col.name === "phase");
 	if (!hasPhase) {
 		await db.exec("ALTER TABLE memories ADD COLUMN phase TEXT;");
 	}

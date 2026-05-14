@@ -1,5 +1,5 @@
-import { Database } from "sqlite";
-import sqlite3 from "sqlite3";
+import type { Database } from "sqlite";
+import type sqlite3 from "sqlite3";
 
 export async function createRelationsTable(db: Database<sqlite3.Database, sqlite3.Statement>) {
 	await db.exec(`
