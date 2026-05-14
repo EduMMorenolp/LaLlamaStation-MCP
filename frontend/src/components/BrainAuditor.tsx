@@ -168,14 +168,6 @@ export const BrainAuditor: React.FC<BrainAuditorProps> = ({ project }) => {
 											Fase: {mem.phase}
 										</span>
 									)}
-									{mem.agent && (
-										<span
-											className="badge"
-											style={{ background: "rgba(16, 185, 129, 0.15)", color: "var(--success)" }}
-										>
-											🤖 {mem.agent}
-										</span>
-									)}
 									<h4 style={{ fontSize: "15px", fontWeight: 600 }}>{mem.title}</h4>
 								</div>
 								<div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
@@ -220,7 +212,7 @@ export const BrainAuditor: React.FC<BrainAuditorProps> = ({ project }) => {
 
 							<div
 								className="flex-between"
-								style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}
+								style={{ borderTop: "1px solid var(--border)", paddingTop: "12px", alignItems: "center" }}
 							>
 								<div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
 									{mem.tags
@@ -245,15 +237,35 @@ export const BrainAuditor: React.FC<BrainAuditorProps> = ({ project }) => {
 											</span>
 										))}
 								</div>
-								<span
-									style={{
-										fontSize: "11px",
-										color: "var(--text-muted)",
-										fontFamily: "var(--font-mono)",
-									}}
-								>
-									{new Date(mem.createdAt).toLocaleString()}
-								</span>
+								<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+									{mem.agent && (
+										<span
+											style={{
+												fontSize: "11px",
+												color: "var(--accent)",
+												background: "rgba(79, 140, 255, 0.1)",
+												padding: "2px 8px",
+												borderRadius: "4px",
+												display: "flex",
+												alignItems: "center",
+												gap: "4px",
+												fontWeight: 600,
+												border: "1px solid rgba(79, 140, 255, 0.2)",
+											}}
+										>
+											🤖 {mem.agent}
+										</span>
+									)}
+									<span
+										style={{
+											fontSize: "11px",
+											color: "var(--text-muted)",
+											fontFamily: "var(--font-mono)",
+										}}
+									>
+										{new Date(mem.createdAt).toLocaleString()}
+									</span>
+								</div>
 							</div>
 						</div>
 					))

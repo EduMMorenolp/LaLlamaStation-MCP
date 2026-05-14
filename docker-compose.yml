@@ -99,10 +99,15 @@ services:
       - OLLAMA_API_URL=http://ollama:11434
       # - API_KEY=${API_KEY:-super-secret-mcp-key} # Descomenta si habilitas seguridad en el cerebro
     volumes:
-      # Monta la carpeta local './data' en el contenedor para unificar la base de datos de SQLite entre el Dashboard y los agentes IDE del host
+      # OPCIÓN A (Recomendada - Bind Mount al Host):
+      # Conecta la carpeta local de Windows './data' con '/app/data' dentro de Docker.
+      # Permite que el Dashboard y los agentes del IDE compartan exactamente el mismo archivo SQLite (lallama-memory.db).
       - ./data:/app/data
-      # (Opcional) Monta los esquemas de base de datos para desarrollo local en vivo
-      # - ./mcp-brain/src/database:/app/src/database
+
+      # OPCIÓN B (Aislada - Volumen Virtual de Docker):
+      # Si prefieres que la base de datos viva de forma completamente aislada dentro del motor de Docker
+      # (sin tocar tu disco en Windows), comenta la línea de arriba y descomenta la siguiente:
+      # - brain_data:/app/data
     depends_on:
       - ollama
     networks:
