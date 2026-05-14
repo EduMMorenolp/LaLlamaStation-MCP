@@ -4,6 +4,22 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.1.0] - 2026-05-14
+
+### Added
+- **Transporte SSE (Server-Sent Events)**: Nuevos endpoints `GET /sse` y `POST /messages` para comunicación remota vía HTTP SSE, permitiendo que agentes externos (OpenCode AI, Claude Desktop, etc.) se conecten al servidor MCP sin necesidad de stdio local.
+- **Dual Transport**: El servidor MCP ahora soporta tanto `StdioServerTransport` (procesos locales) como `SSEServerTransport` (conexiones remotas HTTP), gracias a la refactorización de `createMcpServer()` como función independiente.
+- **Endpoint `/mcp`**: Health-check para verificar accesibilidad remota.
+- **Sincronización Multi-IDE mejorada**: Configuración diferenciada por tipo de cliente (`type: "remote"` para OpenCode AI, `type: "url"` para Claude Desktop/Antigravity/RooCode/Windsurf).
+- **Soporte para Windsurf** como target de sincronización MCP.
+- **Variable `HOST_IP`**: Nueva variable de entorno para configurar dinámicamente la URL del endpoint SSE.
+
+### Changed
+- **Sincronización MCP (`POST /api/mcp/sync`)**: Refactorizada para generar configuraciones SSE en lugar de comandos stdio locales.
+
+### Fixed
+- **`transport.handlePostMessage()`**: Ahora incluye `req.body` como tercer argumento para manejo correcto de mensajes MCP entrantes.
+
 ## [1.0.0] - 2026-05-13
 
 ### Added

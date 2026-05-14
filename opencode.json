@@ -54,15 +54,9 @@
 		}
 	},
 	"mcp": {
-		"lallamastation-brain": {
-			"type": "local",
-			"command": "npx",
-			"args": ["tsx", "d:/Proyectos/LaLlamaStation MCP/mcp-brain/src/index.ts"],
-			"env": {
-				"OLLAMA_API_URL": "http://127.0.0.1:11434",
-				"BRAIN_PORT": "3015"
-			},
-			"enabled": true
-		}
-	}
+    "lallamastation-brain": {
+      "type": "remote",
+      "url": "http://192.168.0.236:3015/sse"
+    }
+  }
 }
