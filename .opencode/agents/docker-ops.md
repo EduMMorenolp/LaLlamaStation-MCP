@@ -17,6 +17,7 @@ permission:
   grep: "allow"
   task: "allow"
   bash: "allow"
+  mcp: "allow"
   todowrite: "allow"
 ---
 
@@ -73,7 +74,13 @@ docker compose stop ngrok
 ## FLUJO DE TRABAJO
 
 1. Implementa los cambios solicitados (docker-compose, Dockerfiles, config)
-2. Al finalizar, invoca `qa-verification` vía `task` con:
+2. **Registra en el cerebro** con `mem_save`:
+   - `project`: `lallamaollama`
+   - `type`: `"architecture"` / `"configuration"` / `"bug-fix"`
+   - `title`: título corto (ej. `"GPU passthrough NVIDIA para mcp-brain"`)
+   - `agent`: `"OpenCode docker-ops"`
+   - `content`: formato `**What** / **Why** / **Where** / **Learned**`
+3. Invoca `qa-verification` vía `task` con:
    - `project`: `docker`
    - `changes`: descripción de lo implementado
    - `commands`: verificación manual de sintaxis YAML

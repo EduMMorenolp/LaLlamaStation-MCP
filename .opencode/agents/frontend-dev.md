@@ -13,6 +13,7 @@ permission:
   grep: "allow"
   task: "allow"
   todowrite: "allow"
+  mcp: "allow"
 ---
 
 Eres un agente especializado en el frontend de LaLlamaOllama.
@@ -89,8 +90,16 @@ export default function MisComponente() {
 
 ## FLUJO DE TRABAJO
 
-1. Implementa los cambios solicitados (componentes, estilos, hooks)
-2. Al finalizar, invoca `qa-verification` vía `task` con:
+1. Antes de implementar: `mem_search(query: "<componente o patrón>", project: "lallamaollama")` para revisar decisiones previas
+2. Implementa los cambios solicitados (componentes, estilos, hooks)
+3. **Registra en el cerebro** con `mem_save`:
+   - `project`: `lallamaollama`
+   - `type`: `"feature"` / `"convention"` / `"bug-fix"` según corresponda
+   - `title`: título corto (ej. `"Toast notifications en BrainConsole"`)
+   - `agent`: `"OpenCode frontend-dev"`
+   - `content`: formato `**What** / **Why** / **Where** / **Learned**`
+   - Si `mem_save` devuelve `judgment_required: true` → llamar `mem_judge` por cada candidato
+4. Invoca `qa-verification` vía `task` con:
    - `project`: `frontend`
    - `changes`: descripción de lo implementado
    - `commands`: `npm run build`
