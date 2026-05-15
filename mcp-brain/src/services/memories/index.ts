@@ -1,4 +1,5 @@
 export * from "./deleteMemory.js";
+export * from "./deleteProject.js";
 export * from "./getContext.js";
 export * from "./getMemory.js";
 export * from "./getStats.js";

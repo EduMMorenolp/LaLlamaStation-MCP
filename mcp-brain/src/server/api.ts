@@ -185,6 +185,24 @@ export function startApiServer(dbService: DatabaseService) {
 		}
 	});
 
+	app.delete("/api/projects/:name", async (req, res) => {
+		const projectName = req.params.name;
+		if (projectName === "lallamasollama") {
+			return res.status(403).json({ error: "No se puede eliminar el proyecto principal." });
+		}
+		try {
+			const result = await memories.deleteProject(dbService, projectName);
+			res.json({
+				success: true,
+				message: `Proyecto "${projectName}" eliminado correctamente.`,
+				deletedMemories: result.deletedMemories,
+				deletedDirectives: result.deletedDirectives,
+			});
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+		}
+	});
+
 	// Directives
 	app.get("/api/directives", async (req, res) => {
 		const project = (req.query.project as string) || "lallamasollama";

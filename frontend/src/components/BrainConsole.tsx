@@ -1,4 +1,4 @@
-import { Activity, BookOpen, Brain, Database, Settings } from "lucide-react";
+import { Activity, BookOpen, Brain, Database, Settings, Trash2 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { brainApi } from "../services/api.service";
@@ -11,11 +11,30 @@ interface BrainStats {
 	types: { type: string; count: number }[];
 }
 
+interface Toast {
+	id: number;
+	message: string;
+	type: "success" | "error" | "info";
+	detail?: string;
+}
+
+let toastCounter = 0;
+
 export const BrainConsole: React.FC = () => {
 	const [stats, setStats] = useState<BrainStats>({ total: 0, types: [] });
 	const [project, setProject] = useState("lallamaollama");
 	const [projectsList, setProjectsList] = useState<string[]>(["lallamaollama"]);
 	const [activeTab, setActiveTab] = useState<"auditor" | "directives" | "settings">("auditor");
+	const [toasts, setToasts] = useState<Toast[]>([]);
+	const [deletingProject, setDeletingProject] = useState(false);
+
+	const addToast = useCallback((message: string, type: Toast["type"], detail?: string) => {
+		const id = ++toastCounter;
+		setToasts((prev) => [...prev, { id, message, type, detail }]);
+		setTimeout(() => {
+			setToasts((prev) => prev.filter((t) => t.id !== id));
+		}, 5000);
+	}, []);
 
 	const fetchStats = useCallback(async () => {
 		try {
@@ -54,8 +73,130 @@ export const BrainConsole: React.FC = () => {
 		}
 	};
 
+	const handleDeleteProject = async () => {
+		if (project === "lallamasollama") {
+			addToast("No se puede eliminar el proyecto principal.", "error");
+			return;
+		}
+		const confirmed = window.confirm(
+			`¿Eliminar el proyecto "${project}" y TODAS sus memorias?\n\nEsta acción es irreversible.`,
+		);
+		if (!confirmed) return;
+
+		setDeletingProject(true);
+		try {
+			const res = await brainApi.delete(`/api/projects/${encodeURIComponent(project)}`);
+			const { deletedMemories, deletedDirectives } = res.data;
+			addToast(
+				`Proyecto "${project}" eliminado`,
+				"success",
+				`${deletedMemories} recuerdos y ${deletedDirectives} directivas borrados.`,
+			);
+			setProjectsList((prev) => prev.filter((p) => p !== project));
+			setProject("lallamasollama");
+			await fetchStats();
+		} catch (error: unknown) {
+			const msg =
+				error instanceof Error
+					? error.message
+					: (error as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+						"Error desconocido";
+			addToast("Error al eliminar proyecto", "error", msg);
+		} finally {
+			setDeletingProject(false);
+		}
+	};
+
+	const toastColors: Record<Toast["type"], { bg: string; border: string; icon: string }> = {
+		success: { bg: "rgba(34, 197, 94, 0.12)", border: "rgba(34, 197, 94, 0.4)", icon: "✓" },
+		error: { bg: "rgba(239, 68, 68, 0.12)", border: "rgba(239, 68, 68, 0.4)", icon: "✕" },
+		info: { bg: "rgba(79, 140, 255, 0.12)", border: "rgba(79, 140, 255, 0.4)", icon: "ℹ" },
+	};
+
 	return (
 		<div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+			{/* Toast Notifications */}
+			<div
+				style={{
+					position: "fixed",
+					bottom: "24px",
+					right: "24px",
+					zIndex: 9999,
+					display: "flex",
+					flexDirection: "column",
+					gap: "10px",
+					pointerEvents: "none",
+				}}
+			>
+				{toasts.map((toast) => {
+					const colors = toastColors[toast.type];
+					return (
+						<div
+							key={toast.id}
+							style={{
+								background: colors.bg,
+								border: `1px solid ${colors.border}`,
+								backdropFilter: "blur(16px)",
+								WebkitBackdropFilter: "blur(16px)",
+								borderRadius: "10px",
+								padding: "12px 16px",
+								minWidth: "280px",
+								maxWidth: "360px",
+								display: "flex",
+								alignItems: "flex-start",
+								gap: "10px",
+								boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+								animation: "toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+								pointerEvents: "auto",
+							}}
+						>
+							<span
+								style={{
+									width: "20px",
+									height: "20px",
+									borderRadius: "50%",
+									background: colors.border,
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									fontSize: "11px",
+									fontWeight: 700,
+									flexShrink: 0,
+									marginTop: "1px",
+								}}
+							>
+								{colors.icon}
+							</span>
+							<div>
+								<div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)" }}>
+									{toast.message}
+								</div>
+								{toast.detail && (
+									<div
+										style={{
+											fontSize: "11px",
+											color: "var(--text-dim)",
+											marginTop: "3px",
+											lineHeight: 1.4,
+										}}
+									>
+										{toast.detail}
+									</div>
+								)}
+							</div>
+						</div>
+					);
+				})}
+			</div>
+
+			{/* Toast animation keyframes */}
+			<style>{`
+				@keyframes toastSlideIn {
+					from { opacity: 0; transform: translateX(20px) scale(0.95); }
+					to   { opacity: 1; transform: translateX(0)    scale(1); }
+				}
+			`}</style>
+
 			{/* Navegación de Pestañas */}
 			<div
 				style={{ display: "flex", gap: "12px", borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}
@@ -296,6 +437,57 @@ export const BrainConsole: React.FC = () => {
 										</option>
 									))}
 								</select>
+
+								{/* Delete Project Button */}
+								{project !== "lallamasollama" && (
+									<button
+										onClick={handleDeleteProject}
+										type="button"
+										disabled={deletingProject}
+										title={`Eliminar proyecto "${project}" y todas sus memorias`}
+										style={{
+											marginTop: "8px",
+											width: "100%",
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "center",
+											gap: "6px",
+											padding: "7px 12px",
+											borderRadius: "6px",
+											fontSize: "11px",
+											fontWeight: 600,
+											border: "1px solid rgba(239, 68, 68, 0.35)",
+											background: deletingProject
+												? "rgba(239, 68, 68, 0.05)"
+												: "rgba(239, 68, 68, 0.08)",
+											color: deletingProject ? "rgba(239,68,68,0.4)" : "rgba(239, 68, 68, 0.85)",
+											cursor: deletingProject ? "not-allowed" : "pointer",
+											transition: "all 0.2s ease",
+										}}
+										onMouseEnter={(e) => {
+											if (!deletingProject) {
+												(e.currentTarget as HTMLButtonElement).style.background =
+													"rgba(239, 68, 68, 0.18)";
+												(e.currentTarget as HTMLButtonElement).style.color = "rgb(239, 68, 68)";
+												(e.currentTarget as HTMLButtonElement).style.borderColor =
+													"rgba(239, 68, 68, 0.6)";
+											}
+										}}
+										onMouseLeave={(e) => {
+											if (!deletingProject) {
+												(e.currentTarget as HTMLButtonElement).style.background =
+													"rgba(239, 68, 68, 0.08)";
+												(e.currentTarget as HTMLButtonElement).style.color =
+													"rgba(239, 68, 68, 0.85)";
+												(e.currentTarget as HTMLButtonElement).style.borderColor =
+													"rgba(239, 68, 68, 0.35)";
+											}
+										}}
+									>
+										<Trash2 size={12} />
+										{deletingProject ? "Eliminando..." : "Eliminar proyecto"}
+									</button>
+								)}
 							</div>
 							<div
 								style={{
