@@ -19,7 +19,7 @@ services:
       - ollama_data:/root/.ollama
     networks:
       - mcp-network
-    restart: always
+    restart: no
 
   backend:
     build:
@@ -33,11 +33,11 @@ services:
       - ollama
     environment:
       - OLLAMA_URL=http://ollama:11434
-      - APP_PORT=${APP_PORT:-3000}
+      - APP_PORT=${APP_PORT:-3016}
       - API_KEY=${API_KEY:-super-secret-mcp-key}
       - NGROK_CONTAINER_NAME=mcp-ngrok-tunnel
     ports:
-      - "${APP_PORT:-3000}:${APP_PORT:-3000}"
+      - "${APP_PORT:-3016}:${APP_PORT:-3016}"
     # habilita acceso a GPU si el host y Docker lo soportan
     deploy:
       resources:
@@ -50,7 +50,7 @@ services:
     # gpus: all
     networks:
       - mcp-network
-    restart: always
+    restart: no
 
   ngrok:
     image: ngrok/ngrok:latest
@@ -61,7 +61,7 @@ services:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     command:
       - http
-      - backend:${APP_PORT:-3000}
+      - backend:${APP_PORT:-3016}
     networks:
       - mcp-network
     restart: "no"
@@ -71,16 +71,16 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:${APP_PORT:-3000}
-        - VITE_SOCKET_URL=http://localhost:${APP_PORT:-3000}
+        - VITE_API_URL=http://localhost:${APP_PORT:-3016}
+        - VITE_SOCKET_URL=http://localhost:${APP_PORT:-3016}
         - VITE_BRAIN_API_URL=http://localhost:${BRAIN_PORT:-3015}
     container_name: frontend
     ports:
       - "8080:80"
     environment:
       # inside docker the backend is reachable by service name
-      - VITE_API_URL=http://localhost:${APP_PORT:-3000}
-      - VITE_SOCKET_URL=http://localhost:${APP_PORT:-3000}
+      - VITE_API_URL=http://localhost:${APP_PORT:-3016}
+      - VITE_SOCKET_URL=http://localhost:${APP_PORT:-3016}
     networks:
       - mcp-network
     depends_on:

@@ -99,6 +99,57 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 		}
 	};
 
+	const syncAgents = [
+		{
+			target: "opencode",
+			label: "🚀 Inyectar en OpenCode AI",
+			bg: "rgba(79,140,255,0.15)",
+			color: "var(--accent)",
+			border: "1px solid var(--accent)",
+			tip: "opencode.json en la raíz del workspace",
+		},
+		{
+			target: "antigravity",
+			label: "🌌 Inyectar en Antigravity AI",
+			bg: "rgba(168,85,247,0.15)",
+			color: "#c084fc",
+			border: "1px solid #c084fc",
+			tip: "~\\.gemini\\antigravity\\mcp_config.json",
+		},
+		{
+			target: "roocode",
+			label: "🦊 Inyectar en RooCode (VS Code)",
+			bg: "rgba(239,68,68,0.15)",
+			color: "#f87171",
+			border: "1px solid #f87171",
+			tip: "%APPDATA%\\Code\\User\\globalStorage\\saoudrizwan.claude-dev\\settings\\claude_desktop_config.json",
+		},
+		{
+			target: "claudedesktop",
+			label: "🟧 Inyectar en Claude Desktop",
+			bg: "rgba(249,115,22,0.15)",
+			color: "#fb923c",
+			border: "1px solid #fb923c",
+			tip: "%APPDATA%\\Claude\\claude_desktop_config.json",
+		},
+		{
+			target: "cursor",
+			label: "⚡ Copiar para Cursor IDE",
+			bg: "rgba(255,255,255,0.05)",
+			color: "var(--text-main)",
+			border: "1px solid var(--border)",
+			tip: "Settings > Features > MCP > + Add New MCP Server",
+		},
+		{
+			target: "windsurf",
+			label: "⚡ Copiar para Windsurf",
+			bg: "rgba(255,255,255,0.05)",
+			color: "var(--text-main)",
+			border: "1px solid var(--border)",
+			tip: "%USERPROFILE%\\.codeium\\windsurf\\mcp_config.json",
+		},
+	];
+
 	return (
 		<div
 			className="card-glass"
@@ -311,225 +362,30 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 						gap: "12px",
 					}}
 				>
-					{/* OpenCode */}
-					<div style={{ display: "flex", gap: "6px" }}>
+					{syncAgents.map(({ target, label, bg, color, border, tip }) => (
 						<button
+							key={target}
 							type="button"
-							onClick={() => handleSync("opencode")}
+							onClick={() => handleSync(target)}
 							disabled={syncing}
 							className="btn-send"
+							data-tooltip={tip}
 							style={{
-								flex: 1,
-								padding: "12px",
-								fontSize: "12px",
-								background: "rgba(79,140,255,0.15)",
-								color: "var(--accent)",
-								border: "1px solid var(--accent)",
-							}}
-						>
-							🚀 Inyectar en OpenCode AI
-						</button>
-						<button
-							type="button"
-							className="btn-icon"
-							style={{
-								width: "42px",
+								padding: "0 16px",
 								height: "42px",
-								background: "rgba(255,255,255,0.05)",
-								border: "1px solid var(--border)",
-								borderRadius: "8px",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-							}}
-							title="Ruta manual: opencode.json en la raíz del workspace"
-						>
-							<Info size={16} style={{ color: "var(--text-muted)" }} />
-						</button>
-					</div>
-
-					{/* Antigravity */}
-					<div style={{ display: "flex", gap: "6px" }}>
-						<button
-							type="button"
-							onClick={() => handleSync("antigravity")}
-							disabled={syncing}
-							className="btn-send"
-							style={{
-								flex: 1,
-								padding: "12px",
 								fontSize: "12px",
-								background: "rgba(168,85,247,0.15)",
-								color: "#c084fc",
-								border: "1px solid #c084fc",
+								background: bg,
+								color,
+								border,
+								justifyContent: "space-between",
+								width: "100%",
+								overflow: "visible",
 							}}
 						>
-							🌌 Inyectar en Antigravity AI
+							<span>{label}</span>
+							<Info size={14} style={{ color: "currentColor", opacity: 0.5, flexShrink: 0 }} />
 						</button>
-						<button
-							type="button"
-							className="btn-icon"
-							style={{
-								width: "42px",
-								height: "42px",
-								background: "rgba(255,255,255,0.05)",
-								border: "1px solid var(--border)",
-								borderRadius: "8px",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-							}}
-							title="Ruta manual: C:\Users\tu_usuario\.gemini\antigravity\mcp_config.json"
-						>
-							<Info size={16} style={{ color: "var(--text-muted)" }} />
-						</button>
-					</div>
-
-					{/* RooCode */}
-					<div style={{ display: "flex", gap: "6px" }}>
-						<button
-							type="button"
-							onClick={() => handleSync("roocode")}
-							disabled={syncing}
-							className="btn-send"
-							style={{
-								flex: 1,
-								padding: "12px",
-								fontSize: "12px",
-								background: "rgba(239,68,68,0.15)",
-								color: "#f87171",
-								border: "1px solid #f87171",
-							}}
-						>
-							🦊 Inyectar en RooCode (VS Code)
-						</button>
-						<button
-							type="button"
-							className="btn-icon"
-							style={{
-								width: "42px",
-								height: "42px",
-								background: "rgba(255,255,255,0.05)",
-								border: "1px solid var(--border)",
-								borderRadius: "8px",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-							}}
-							title="Ruta manual en VS Code: %APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\claude_desktop_config.json"
-						>
-							<Info size={16} style={{ color: "var(--text-muted)" }} />
-						</button>
-					</div>
-
-					{/* Claude Desktop */}
-					<div style={{ display: "flex", gap: "6px" }}>
-						<button
-							type="button"
-							onClick={() => handleSync("claudedesktop")}
-							disabled={syncing}
-							className="btn-send"
-							style={{
-								flex: 1,
-								padding: "12px",
-								fontSize: "12px",
-								background: "rgba(249,115,22,0.15)",
-								color: "#fb923c",
-								border: "1px solid #fb923c",
-							}}
-						>
-							🟧 Inyectar en Claude Desktop
-						</button>
-						<button
-							type="button"
-							className="btn-icon"
-							style={{
-								width: "42px",
-								height: "42px",
-								background: "rgba(255,255,255,0.05)",
-								border: "1px solid var(--border)",
-								borderRadius: "8px",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-							}}
-							title="Ruta manual: %APPDATA%\Claude\claude_desktop_config.json"
-						>
-							<Info size={16} style={{ color: "var(--text-muted)" }} />
-						</button>
-					</div>
-
-					{/* Cursor */}
-					<div style={{ display: "flex", gap: "6px" }}>
-						<button
-							type="button"
-							onClick={() => handleSync("cursor")}
-							disabled={syncing}
-							className="btn-send"
-							style={{
-								flex: 1,
-								padding: "12px",
-								fontSize: "12px",
-								background: "rgba(255,255,255,0.05)",
-								color: "var(--text-main)",
-							}}
-						>
-							⚡ Copiar para Cursor IDE
-						</button>
-						<button
-							type="button"
-							className="btn-icon"
-							style={{
-								width: "42px",
-								height: "42px",
-								background: "rgba(255,255,255,0.05)",
-								border: "1px solid var(--border)",
-								borderRadius: "8px",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-							}}
-							title="En Cursor IDE: Settings > Features > MCP > + Add New MCP Server"
-						>
-							<Info size={16} style={{ color: "var(--text-muted)" }} />
-						</button>
-					</div>
-
-					{/* Windsurf */}
-					<div style={{ display: "flex", gap: "6px" }}>
-						<button
-							type="button"
-							onClick={() => handleSync("windsurf")}
-							disabled={syncing}
-							className="btn-send"
-							style={{
-								flex: 1,
-								padding: "12px",
-								fontSize: "12px",
-								background: "rgba(255,255,255,0.05)",
-								color: "var(--text-main)",
-							}}
-						>
-							⚡ Copiar para Windsurf
-						</button>
-						<button
-							type="button"
-							className="btn-icon"
-							style={{
-								width: "42px",
-								height: "42px",
-								background: "rgba(255,255,255,0.05)",
-								border: "1px solid var(--border)",
-								borderRadius: "8px",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-							}}
-							title="En Windsurf IDE: %USERPROFILE%\.codeium\windsurf\mcp_config.json"
-						>
-							<Info size={16} style={{ color: "var(--text-muted)" }} />
-						</button>
-					</div>
+					))}
 				</div>
 			</div>
 

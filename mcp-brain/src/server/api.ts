@@ -3,8 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import cors from "cors";
 import express from "express";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import type { DatabaseService } from "../database/connection.js";
 import { analysis, memories, settings } from "../services/index.js";
+import { createMcpServer } from "./mcp.js";
 
 const PORT = process.env.BRAIN_PORT || 3015;
 
@@ -13,21 +15,26 @@ export function startApiServer(dbService: DatabaseService) {
 	app.use(cors());
 	app.use(express.json());
 
-	// Auto-Sync MCP
+	// Auto-Sync MCP (SSE / Docker-based)
 	app.post("/api/mcp/sync", async (req, res) => {
 		const { target } = req.body;
 		try {
-			const ollamaUrl = process.env.OLLAMA_API_URL || "http://127.0.0.1:11434";
 			const brainPort = process.env.BRAIN_PORT || "3015";
-			const scriptPath = path.resolve(process.cwd(), "src/index.ts").replace(/\\/g, "/");
+			const hostIp = process.env.HOST_IP || "localhost";
+			const sseUrl = `http://${hostIp}:${brainPort}/sse`;
 
-			const mcpConfigBlock = {
-				command: "npx",
-				args: ["tsx", scriptPath],
-				env: {
-					OLLAMA_API_URL: ollamaUrl,
-					BRAIN_PORT: brainPort,
-				},
+			// --- Config SSE para cada herramienta ---
+
+			// OpenCode AI usa schema propio con "type": "remote"
+			const openCodeSseConfig = {
+				type: "remote",
+				url: sseUrl,
+			};
+
+			// Claude Desktop / RooCode / Antigravity usan schema estandar con "type": "url"
+			const claudeCompatSseConfig = {
+				type: "url",
+				url: sseUrl,
 			};
 
 			const updateMcpFile = (filePath: string, serverKey: string, configObj: Record<string, unknown>) => {
@@ -46,20 +53,35 @@ export function startApiServer(dbService: DatabaseService) {
 				fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 			};
 
+			// Antigravity usa Docker stdio para evitar problemas de certificados/HTTPS
+			const hostProjectPath = process.env.HOST_PROJECT_PATH || "C:/path/to/project";
+			const antigravityConfig = {
+				command: "docker",
+				args: [
+					"run",
+					"-i",
+					"--rm",
+					"-e",
+					"OLLAMA_API_URL=http://host.docker.internal:11434",
+					"--add-host=host.docker.internal:host-gateway",
+					"-v",
+					`${hostProjectPath}/data:/app/data`,
+					"lallamastation-mcp-brain",
+					"node",
+					"dist/index.js",
+				],
+			};
+
 			if (target === "opencode") {
 				const openCodePath = path.resolve(process.cwd(), "../opencode.json");
 				if (fs.existsSync(openCodePath)) {
 					const configData = JSON.parse(fs.readFileSync(openCodePath, "utf8"));
 					configData.mcp = configData.mcp || {};
-					configData.mcp["lallamastation-brain"] = {
-						type: "local",
-						...mcpConfigBlock,
-						enabled: true,
-					};
+					configData.mcp["lallamastation-brain"] = openCodeSseConfig;
 					fs.writeFileSync(openCodePath, JSON.stringify(configData, null, 2), "utf8");
 					return res.json({
 						success: true,
-						message: "¡Configuración de OpenCode AI sincronizada con éxito!",
+						message: "¡Configuración de OpenCode AI sincronizada con éxito! (SSE remoto)",
 					});
 				} else {
 					return res
@@ -68,27 +90,39 @@ export function startApiServer(dbService: DatabaseService) {
 				}
 			} else if (target === "antigravity") {
 				const agPath = path.join(os.homedir(), ".gemini/antigravity/mcp_config.json");
-				updateMcpFile(agPath, "lallamastation-brain", mcpConfigBlock);
+				updateMcpFile(agPath, "lallamastation-brain", antigravityConfig);
 				return res.json({
 					success: true,
-					message: "¡Motor Antigravity AI supercargado y sincronizado con éxito!",
+					message: `¡Motor Antigravity AI sincronizado con éxito! (Docker MCP en ${hostProjectPath})`,
 				});
 			} else if (target === "claudedesktop") {
 				const cdPath = path.join(os.homedir(), "AppData/Roaming/Claude/claude_desktop_config.json");
-				updateMcpFile(cdPath, "lallamastation-brain", mcpConfigBlock);
-				return res.json({ success: true, message: "¡Claude Desktop sincronizado con éxito!" });
+				updateMcpFile(cdPath, "lallamastation-brain", claudeCompatSseConfig);
+				return res.json({
+					success: true,
+					message: "¡Claude Desktop sincronizado con éxito! (SSE remoto)",
+				});
 			} else if (target === "roocode") {
 				const rooPath = path.join(
 					os.homedir(),
 					"AppData/Roaming/Code/User/globalStorage/saoudrizwan.claude-dev/settings/claude_desktop_config.json"
 				);
-				updateMcpFile(rooPath, "lallamastation-brain", mcpConfigBlock);
-				return res.json({ success: true, message: "¡RooCode / Cline sincronizado con éxito en VS Code!" });
-			} else if (target === "cursor" || target === "claudecode" || target === "windsurf") {
+				updateMcpFile(rooPath, "lallamastation-brain", claudeCompatSseConfig);
+				return res.json({
+					success: true,
+					message: "¡RooCode / Cline sincronizado con éxito en VS Code! (SSE remoto)",
+				});
+			} else if (target === "cursor" || target === "claudecode") {
 				return res.json({
 					success: true,
 					message: `¡Copia y pega este bloque en los ajustes de ${target.toUpperCase()}:`,
-					config: { "lallamastation-brain": mcpConfigBlock },
+					config: { "lallamastation-brain": claudeCompatSseConfig },
+				});
+			} else if (target === "windsurf") {
+				return res.json({
+					success: true,
+					message: "¡Copia y pega este bloque en los ajustes de WINDSURF:",
+					config: { "lallamastation-brain": claudeCompatSseConfig },
 				});
 			} else {
 				return res.status(400).json({ error: "Destino no soportado." });
@@ -203,8 +237,37 @@ export function startApiServer(dbService: DatabaseService) {
 		}
 	});
 
+	// Endpoint para acceso remoto vía HTTP/SSE
+	app.get("/mcp", (_req, res) => {
+		res.json({ status: "ok", message: "LaLlamaStation Brain MCP Server", timestamp: new Date().toISOString() });
+	});
+
+	// --- MCP SSE Transport ---
+
+	const sseServer = createMcpServer(dbService);
+	const sseTransports = new Map<string, SSEServerTransport>();
+
+	app.get("/sse", async (req, res) => {
+		const transport = new SSEServerTransport("/messages", res);
+		sseTransports.set(transport.sessionId, transport);
+		res.on("close", () => sseTransports.delete(transport.sessionId));
+		await sseServer.connect(transport);
+	});
+
+	app.post("/messages", async (req, res) => {
+		const sessionId = req.query.sessionId as string;
+		const transport = sessionId ? sseTransports.get(sessionId) : null;
+		if (transport) {
+			await transport.handlePostMessage(req, res, req.body);
+		} else {
+			res.status(400).send("No active SSE session");
+		}
+	});
+
 	const serverInstance = app.listen(PORT, () => {
 		console.error(`[Brain UI API] Dashboard API listening on port ${PORT}`);
+		console.error(`[Brain MCP] Accessible remotely at: http://localhost:${PORT}/mcp`);
+		console.error(`[Brain MCP SSE] SSE endpoint: http://localhost:${PORT}/sse`);
 	});
 
 	serverInstance.on("error", (err: NodeJS.ErrnoException) => {

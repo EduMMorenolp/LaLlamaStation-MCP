@@ -24,6 +24,26 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
   - Endpoint `POST /api/mcp/sync` en `api.ts` para localizar y actualizar configuraciones en **OpenCode AI**, **Antigravity AI**, **RooCode (VS Code)** y **Claude Desktop**.
   - Tarjetas UI en `BrainSettings.tsx` con tooltips de información (`ℹ️`) y botón de copia global al portapapeles (`📋`).
 
+### 🔄 Migración a SSE Remoto para mcp-brain y Sincronización Multi-IDE (2026-05-14)
+
+#### Añadido
+- **Transporte SSE en mcp-brain**: Nuevo endpoint `GET /sse` con `SSEServerTransport` del SDK MCP, y `POST /messages` para recibir mensajes del cliente vía HTTP.
+  - Refactorización de `mcp.ts`: `createMcpServer()` ahora exporta el servidor MCP como función reutilizable, permitiendo conectarlo tanto a `StdioServerTransport` como a `SSEServerTransport`.
+  - Soporte dual: stdio para procesos locales y SSE para acceso remoto desde otros agentes/IDEs.
+- **Endpoint `/mcp` en Brain API**: Health-check para verificar accesibilidad remota del servidor MCP.
+- **Sincronización MCP Multi-IDE mejorada**:
+  - Soporte para **Windsurf** como nuevo target en `POST /api/mcp/sync`.
+  - Configuración diferenciada por IDE: `type: "remote"` para OpenCode AI, `type: "url"` para Claude Desktop / Antigravity / RooCode / Windsurf.
+  - Uso de `HOST_IP` como variable de entorno para la URL SSE, reemplazando el hardcodeo anterior.
+  - Mensajes de confirmación más descriptivos indicando el tipo de conexión (SSE remoto).
+
+#### Cambiado
+- **opencode.json**: Configuración MCP de `lallamastation-brain` migrada de `type: "local"` (stdio via npx tsx) a `type: "remote"` (SSE via URL `http://192.168.0.236:3015/sse`).
+- **docker-compose.yml**: Puerto por defecto de backend cambiado de `4066` a `3000` primero, y luego a `3016` para evitar conflictos con mcp-brain (puerto `3015`). URLs de frontend actualizadas consistentemente.
+
+#### Corregido
+- **`transport.handlePostMessage()`**: Ahora recibe `req.body` como tercer argumento, permitiendo que los mensajes MCP entrantes incluyan correctamente el cuerpo de la solicitud HTTP.
+
 ### 🧹 Corrección masiva Biome — 0 errores, 0 warnings (2026-05-14)
 
 #### Corregido
