@@ -10,7 +10,7 @@ let currentProject: string | null = null;
 export function createMcpServer(dbService: DatabaseService): Server {
 	const mcpServer = new Server(
 		{
-			name: "lallamastation-brain",
+			name: "lallamallama-brain",
 			version: "1.0.0",
 		},
 		{

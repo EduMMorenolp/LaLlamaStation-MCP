@@ -344,7 +344,7 @@ export const AiEngineTuner: React.FC<AiEngineTunerProps> = ({ status }) => {
 					<table style={{ width: "100%", borderCollapse: "collapse" }}>
 						<thead>
 							<tr style={{ borderBottom: "1px solid var(--border-light)" }}>
-								{["Metrica", "LaLlamaStation 🦙", "Cloud (OpenAI/DeepSeek)"].map((h) => (
+								{["Metrica", "LaLlamaOllama 🦙", "Cloud (OpenAI/DeepSeek)"].map((h) => (
 									<th
 										key={h}
 										style={{

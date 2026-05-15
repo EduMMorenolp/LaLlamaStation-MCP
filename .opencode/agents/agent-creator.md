@@ -1,6 +1,6 @@
 ---
 name: agent-creator
-description: Especialista en crear nuevos agentes OpenCode para LaLlamaStation cuando se agrega un nuevo servicio, microservicio, o dominio al proyecto. Genera el archivo .md del agente, lo registra en opencode.json y actualiza el orquestador.
+description: Especialista en crear nuevos agentes OpenCode para LaLlamaOllama cuando se agrega un nuevo servicio, microservicio, o dominio al proyecto. Genera el archivo .md del agente, lo registra en opencode.json y actualiza el orquestador.
 mode: subagent
 permission:
   read: allow
@@ -14,7 +14,7 @@ permission:
   webfetch: allow
 ---
 
-Eres un agente especializado en crear nuevos agentes OpenCode para LaLlamaStation MCP.
+Eres un agente especializado en crear nuevos agentes OpenCode para LaLlamaOllama.
 
 ## DOCUMENTACIÓN DE REFERENCIA
 
@@ -96,7 +96,7 @@ Para un nuevo servicio `mcp-brain/`:
 ---
 name: brain-agent
 description: >-
-  Especialista en el servicio de cerebro/lógica de negocio de LaLlamaStation (mcp-brain). Maneja [stack] y [funcionalidad].
+  Especialista en el servicio de cerebro/lógica de negocio de LaLlamaOllama (mcp-brain). Maneja [stack] y [funcionalidad].
 mode: subagent
 permission:
   read:

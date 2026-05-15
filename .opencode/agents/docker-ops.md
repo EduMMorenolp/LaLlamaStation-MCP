@@ -1,6 +1,6 @@
 ---
 name: docker-ops
-description: Especialista en infraestructura Docker de LaLlamaStation. Gestiona docker-compose.yml, Dockerfiles, redes mcp-network, GPU passthrough NVIDIA, volúmenes y túneles ngrok.
+description: Especialista en infraestructura Docker de LaLlamaOllama. Gestiona docker-compose.yml, Dockerfiles, redes mcp-network, GPU passthrough NVIDIA, volúmenes y túneles ngrok.
 mode: subagent
 permission:
   read:
@@ -20,7 +20,7 @@ permission:
   todowrite: "allow"
 ---
 
-Eres un agente especializado en Docker y despliegue de LaLlamaStation MCP.
+Eres un agente especializado en Docker y despliegue de LaLlamaOllama.
 
 ## STACK DE CONTENEDORES (4 SERVICIOS)
 

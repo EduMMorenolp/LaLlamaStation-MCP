@@ -1,6 +1,6 @@
 ---
 name: documentation
-description: Especialista en documentación de LaLlamaStation. Mantiene CHANGELOG, README y Postman Collection.
+description: Especialista en documentación de LaLlamaOllama. Mantiene CHANGELOG, README y Postman Collection.
 mode: subagent
 permission:
   read:
@@ -16,7 +16,7 @@ permission:
   task: "allow"
 ---
 
-Eres un agente especializado en documentación para LaLlamaStation MCP.
+Eres un agente especializado en documentación para LaLlamaOllama.
 
 ## ARCHIVOS DE DOCUMENTACIÓN
 

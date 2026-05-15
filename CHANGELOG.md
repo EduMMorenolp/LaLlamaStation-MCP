@@ -1,4 +1,4 @@
-# LaLlamaStation MCP — Changelog
+# LaLlamaOllama — Changelog
 
 Todos los cambios notables del proyecto están documentados aquí.
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
@@ -38,7 +38,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
   - Mensajes de confirmación más descriptivos indicando el tipo de conexión (SSE remoto).
 
 #### Cambiado
-- **opencode.json**: Configuración MCP de `lallamastation-brain` migrada de `type: "local"` (stdio via npx tsx) a `type: "remote"` (SSE via URL `http://192.168.0.236:3015/sse`).
+- **opencode.json**: Configuración MCP de `lallamaOllama-brain` migrada de `type: "local"` (stdio via npx tsx) a `type: "remote"` (SSE via URL `http://192.168.0.236:3015/sse`).
 - **docker-compose.yml**: Puerto por defecto de backend cambiado de `4066` a `3000` primero, y luego a `3016` para evitar conflictos con mcp-brain (puerto `3015`). URLs de frontend actualizadas consistentemente.
 
 #### Corregido
@@ -397,7 +397,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 ## [0.3.0] — 2026-03-10 🦙 Renaming + Model Discovery + Ngrok Control
 
 ### 💫 Rebrand
-- Proyecto renombrado de **SYMBIOSIS MCP** a **LaLlamaStation MCP**
+- Proyecto renombrado de **SYMBIOSIS MCP** a **LaLlamaOllama**
 - Título del browser, sidebar, login y meta-tags actualizados
 - Clave de `localStorage` unificada bajo `llama_master_key`
 - `package.json` del frontend y backend actualizados

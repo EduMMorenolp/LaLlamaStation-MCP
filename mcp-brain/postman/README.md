@@ -1,4 +1,4 @@
-# 🧠 Postman Collection — LaLlamaStation Brain MCP
+# 🧠 Postman Collection — LaLlamaOllama Brain MCP
 
 Esta carpeta contiene herramientas para debuggear y testear el **Shared Brain MCP Server**.
 
@@ -6,7 +6,7 @@ Esta carpeta contiene herramientas para debuggear y testear el **Shared Brain MC
 
 | Archivo | Propósito |
 |---|---|
-| `LaLlamaStation Brain MCP.postman_collection.json` | Colección Postman completa (29 requests) |
+| `LaLlamaOllama Brain MCP.postman_collection.json` | Colección Postman completa (29 requests) |
 | `get-session-id.js` | Helper para extraer sessionId de la conexión SSE |
 | `README.md` | Esta guía |
 
@@ -16,7 +16,7 @@ Esta carpeta contiene herramientas para debuggear y testear el **Shared Brain MC
 
 1. Abre Postman
 2. `File → Import` (o `Ctrl+O`)
-3. Selecciona `LaLlamaStation Brain MCP.postman_collection.json`
+3. Selecciona `LaLlamaOllama Brain MCP.postman_collection.json`
 4. Ve a la pestaña **Variables** y verifica:
    - `brain_url` → `http://localhost:3015` (o tu URL)
    - `my_agent_identity` → `Postman Debug Client` (o tu nombre)

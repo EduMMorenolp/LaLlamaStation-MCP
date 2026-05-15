@@ -1,7 +1,7 @@
 {
 	"name": "lallama-station-mcp-brain",
 	"version": "1.0.0",
-	"description": "Standalone Brain MCP Server for LaLlamaStation",
+	"description": "Standalone Brain MCP Server for LaLlamaOllama",
 	"type": "module",
 	"main": "dist/index.js",
 	"scripts": {

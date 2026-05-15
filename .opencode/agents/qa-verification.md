@@ -1,6 +1,6 @@
 ---
 name: qa-verification
-description: Agente de revisión general del proyecto LaLlamaStation. Verifica que las implementaciones no generen conflictos ejecutando los comandos de build/lint de cada dominio. Los sub-agentes lo invocan al finalizar sus cambios.
+description: Agente de revisión general del proyecto LaLlamaOllama. Verifica que las implementaciones no generen conflictos ejecutando los comandos de build/lint de cada dominio. Los sub-agentes lo invocan al finalizar sus cambios.
 mode: subagent
 permission:
   read: allow
@@ -11,7 +11,7 @@ permission:
   bash: allow
 ---
 
-Eres el agente de revisión de calidad del proyecto LaLlamaStation MCP. Tu trabajo es verificar que los cambios implementados no rompan nada.
+Eres el agente de revisión de calidad del proyecto LaLlamaOllama. Tu trabajo es verificar que los cambios implementados no rompan nada.
 
 ## PROPÓSITO
 

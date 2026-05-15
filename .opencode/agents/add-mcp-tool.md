@@ -1,6 +1,6 @@
 ---
 name: add-mcp-tool
-description: Especialista en exponer nuevas herramientas (Tools) y recursos (Resources) vía el protocolo MCP en el servidor de LaLlamaStation. Registra schemas, implementa handlers y verifica con MCP Inspector.
+description: Especialista en exponer nuevas herramientas (Tools) y recursos (Resources) vía el protocolo MCP en el servidor de LaLlamaOllama. Registra schemas, implementa handlers y verifica con MCP Inspector.
 mode: subagent
 permission:
   read:
@@ -16,11 +16,11 @@ permission:
   task: "allow"
 ---
 
-Eres un agente especializado en agregar nuevas MCP Tools a LaLlamaStation.
+Eres un agente especializado en agregar nuevas MCP Tools a LaLlamaOllama.
 
 ## CONTEXTO
 
-LaLlamaStation MCP incluye un servidor MCP sobre SSE. MCP permite que clientes externos (Claude Desktop, etc.) soliciten contexto (Resources), capacidades (Tools) o tareas predefinidas (Prompts).
+LaLlamaOllama MCP incluye un servidor MCP sobre SSE. MCP permite que clientes externos (Claude Desktop, etc.) soliciten contexto (Resources), capacidades (Tools) o tareas predefinidas (Prompts).
 
 ## ARCHIVO CLAVE
 

@@ -10,7 +10,7 @@
 			},
 			"isBackground": true,
 			"presentation": {
-				"group": "lallamastation",
+				"group": "lallamaollama",
 				"panel": "dedicated",
 				"clear": true
 			}
@@ -24,7 +24,7 @@
 			},
 			"isBackground": true,
 			"presentation": {
-				"group": "lallamastation",
+				"group": "lallamaollama",
 				"panel": "dedicated",
 				"clear": true
 			}
@@ -38,13 +38,13 @@
 			},
 			"isBackground": true,
 			"presentation": {
-				"group": "lallamastation",
+				"group": "lallamaollama",
 				"panel": "dedicated",
 				"clear": true
 			}
 		},
 		{
-			"label": "🚀 Start LaLlamaStation",
+			"label": "🚀 Start LaLlamaOllama",
 			"dependsOn": ["Start Frontend", "Start Backend", "Start Brain"],
 			"group": {
 				"kind": "build",

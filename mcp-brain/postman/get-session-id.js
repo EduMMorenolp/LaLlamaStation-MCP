@@ -63,13 +63,13 @@ const req = http.get(
 				// mem_save
 				console.log("📋 4. mem_save (guardar memoria de prueba):");
 				console.log(
-					`curl -X POST "${BRAIN_URL}/messages?sessionId=${sessionId}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"mem_save","arguments":{"agent":"Debug-CLI","project":"lallamastation","type":"test","title":"🧪 Prueba desde CLI","content":"**What**: Prueba de conexión MCP desde terminal\\n**Why**: Debugging","tags":"test,debug","topic_key":"test/cli-test"}}}'\n`
+					`curl -X POST "${BRAIN_URL}/messages?sessionId=${sessionId}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"mem_save","arguments":{"agent":"Debug-CLI","project":"lallamaollama","type":"test","title":"🧪 Prueba desde CLI","content":"**What**: Prueba de conexión MCP desde terminal\\n**Why**: Debugging","tags":"test,debug","topic_key":"test/cli-test"}}}'\n`
 				);
 
 				// mem_search
 				console.log("📋 5. mem_search (buscar):");
 				console.log(
-					`curl -X POST "${BRAIN_URL}/messages?sessionId=${sessionId}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"mem_search","arguments":{"agent":"Debug-CLI","query":"test","project":"lallamastation","mode":"hybrid","limit":5}}}'\n`
+					`curl -X POST "${BRAIN_URL}/messages?sessionId=${sessionId}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"mem_search","arguments":{"agent":"Debug-CLI","query":"test","project":"lallamaollama","mode":"hybrid","limit":5}}}'\n`
 				);
 
 				console.log("=".repeat(60));

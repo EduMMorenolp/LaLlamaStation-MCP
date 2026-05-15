@@ -1,6 +1,6 @@
 {
 	"info": {
-		"name": "🧠 LaLlamaStation Brain MCP",
+		"name": "🧠 LaLlamaOllama Brain MCP",
 		"description": "## Colección de Testing para el Shared Brain MCP Server\n\nEsta colección contiene TODOS los endpoints y herramientas MCP que los **modelos IA** (OpenCode, Claude, Cursor, etc.) llaman cuando se conectan al brain.\n\n### 🔥 Para Debuggear: ¿Qué están llamando los agentes?\n\nCuando un agente IA se conecta al brain vía SSE, hace esto:\n\n```\n1. GET  /sse                  → Establece conexión SSE\n2. POST /messages?sessionId=X → JSON-RPC: initialize\n3. POST /messages?sessionId=X → JSON-RPC: tools/list\n4. POST /messages?sessionId=X → JSON-RPC: tools/call  (una por cada tool)\n```\n\nEsta colección te permite **simular exactamente** esas llamadas sin necesidad de un agente IA.\n\n### 📋 Setup\n\n1. Abre Postman → Import → selecciona este archivo\n2. Haz clic en \"**Variables**\" (arriba a la derecha)\n3. Ajusta `brain_url` si tu servidor corre en otro puerto/host\n4. Conéctate a `GET /sse` para obtener un `sessionId`\n5. Usa ese `sessionId` en las llamadas a `POST /messages`\n\n### 🔍 Pro Tip\n\nUsa el **Monitor** de Postman (Colección → Run) para ejecutar toda la batería de tests automatizados.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"lastUpdated": "2026-05-14T12:00:00.000Z"
@@ -18,7 +18,7 @@
 		},
 		{
 			"key": "project",
-			"value": "lallamastation",
+			"value": "lallamaollama",
 			"type": "string"
 		},
 		{
@@ -126,7 +126,7 @@
 									"pm.test('Response has jsonrpc and result', () => {",
 									"    pm.expect(json.jsonrpc).to.eql('2.0');",
 									"    pm.expect(json.result).to.exist;",
-									"    pm.expect(json.result.serverInfo.name).to.eql('lallamastation-brain');",
+									"    pm.expect(json.result.serverInfo.name).to.eql('lallamaollama-brain');",
 									"});"
 								]
 							}
@@ -767,7 +767,7 @@
 									"const json = pm.response.json();",
 									"pm.test('Returns array with project', () => {",
 									"    pm.expect(json).to.be.an('array');",
-									"    pm.expect(json).to.include('lallamastation');",
+									"    pm.expect(json).to.include('lallamaollama');",
 									"});"
 								]
 							}
@@ -815,7 +815,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"project\": \"{{project}}\",\n    \"content\": \"# Core Directives\\n\\nEste es el proyecto LaLlamaStation Brain MCP.\\n\\n## Reglas\\n- Todos los agentes DEBEN llamar mem_save después de cada cambio\\n- Usar mem_search antes de empezar a trabajar\"\n}"
+							"raw": "{\n    \"project\": \"{{project}}\",\n    \"content\": \"# Core Directives\\n\\nEste es el proyecto LaLlamaOllama Brain MCP.\\n\\n## Reglas\\n- Todos los agentes DEBEN llamar mem_save después de cada cambio\\n- Usar mem_search antes de empezar a trabajar\"\n}"
 						},
 						"url": {
 							"raw": "{{brain_url}}/api/directives",

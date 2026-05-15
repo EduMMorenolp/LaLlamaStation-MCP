@@ -785,7 +785,7 @@ app.get("/api/search-models", authMiddleware, async (req, res) => {
 		if (qs) url += `?${qs}`;
 		const response = await axios.get(url, {
 			timeout: 8000,
-			headers: { "User-Agent": "Mozilla/5.0 (compatible; LaLlamaStation-MCP/1.0)" },
+			headers: { "User-Agent": "Mozilla/5.0 (compatible; LaLlamaOllama/1.0)" },
 		});
 		const $ = cheerio.load(response.data);
 		interface ScrapedModel {

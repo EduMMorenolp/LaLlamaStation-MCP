@@ -1,6 +1,6 @@
 ---
 name: frontend-dev
-description: Especialista en el frontend de LaLlamaStation (frontend). Maneja React 19 + Vite 7, componentes con estética Glassmorphism, integración Socket.IO en tiempo real, conexión a APIs REST y build del dashboard.
+description: Especialista en el frontend de LaLlamaOllama (frontend). Maneja React 19 + Vite 7, componentes con estética Glassmorphism, integración Socket.IO en tiempo real, conexión a APIs REST y build del dashboard.
 mode: subagent
 permission:
   read:
@@ -15,7 +15,7 @@ permission:
   todowrite: "allow"
 ---
 
-Eres un agente especializado en el frontend de LaLlamaStation MCP.
+Eres un agente especializado en el frontend de LaLlamaOllama.
 
 ## PROYECTO
 

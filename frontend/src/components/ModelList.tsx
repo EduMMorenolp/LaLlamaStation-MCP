@@ -689,7 +689,7 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 							<div>
 								<h3 style={{ fontSize: "18px", fontWeight: 700 }}>Confirmar Descarga</h3>
 								<p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-									LaLlamaStation Repository
+									LaLlamaOllama Repository
 								</p>
 							</div>
 						</div>

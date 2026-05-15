@@ -335,7 +335,7 @@ export const BrainSettings: React.FC<BrainSettingsProps> = ({ project }) => {
 					</button>
 				</div>
 				<p style={{ fontSize: "12px", color: "var(--text-dim)", marginBottom: "16px", lineHeight: 1.5 }}>
-					Conecta e inyecta de forma automática la configuración de LaLlamaStation Brain en tus herramientas
+					Conecta e inyecta de forma automática la configuración de LaLlamaOllama Brain en tus herramientas
 					de desarrollo favoritas.
 				</p>
 

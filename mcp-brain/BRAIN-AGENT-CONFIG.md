@@ -1,6 +1,6 @@
 # 🧠 Shared Brain — Configuración para Agentes del Equipo
 
-Este archivo describe cómo conectar cualquier agente IA (OpenCode, Claude Desktop, Cursor, RooCode, Windsurf, Antigravity, etc.) al **cerebro compartido** de LaLlamaStation.
+Este archivo describe cómo conectar cualquier agente IA (OpenCode, Claude Desktop, Cursor, RooCode, Windsurf, Antigravity, etc.) al **cerebro compartido** de LaLlamaOllama.
 
 ---
 
@@ -12,7 +12,7 @@ Este archivo describe cómo conectar cualquier agente IA (OpenCode, Claude Deskt
 // opencode.json / claude_desktop_config.json / mcp_config.json
 {
   "mcpServers": {
-    "lallamastation-brain": {
+    "lallamaollama-brain": {
       "type": "url",              // "remote" para OpenCode AI
       "url": "http://<brain-host>:3015/sse"
     }
@@ -25,7 +25,7 @@ Este archivo describe cómo conectar cualquier agente IA (OpenCode, Claude Deskt
 ```jsonc
 {
   "mcpServers": {
-    "lallamastation-brain": {
+    "lallamaollama-brain": {
       "type": "stdio",
       "command": "node",
       "args": ["ruta/a/mcp-brain/dist/index.js"],
@@ -46,7 +46,7 @@ Este archivo describe cómo conectar cualquier agente IA (OpenCode, Claude Deskt
 ```markdown
 # Shared Brain Compliance Rules
 
-You are connected to a shared brain MCP server (`lallamastation-brain`).
+You are connected to a shared brain MCP server (`lallamaollama-brain`).
 This is a TEAM-WIDE memory system used by ALL members of the project.
 
 ## MANDATORY RULES

@@ -13,8 +13,8 @@ interface BrainStats {
 
 export const BrainConsole: React.FC = () => {
 	const [stats, setStats] = useState<BrainStats>({ total: 0, types: [] });
-	const [project, setProject] = useState("lallamastation");
-	const [projectsList, setProjectsList] = useState<string[]>(["lallamastation"]);
+	const [project, setProject] = useState("lallamaollama");
+	const [projectsList, setProjectsList] = useState<string[]>(["lallamaollama"]);
 	const [activeTab, setActiveTab] = useState<"auditor" | "directives" | "settings">("auditor");
 
 	const fetchStats = useCallback(async () => {

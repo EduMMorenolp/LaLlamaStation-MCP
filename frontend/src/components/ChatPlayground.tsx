@@ -819,7 +819,7 @@ export const ChatPlayground: React.FC<ChatPlaygroundProps> = ({ models, onSendMe
 									textTransform: "uppercase",
 								}}
 							>
-								LaLlamaStation Playground
+								LaLlamaOllama Playground
 							</p>
 							<p style={{ fontSize: "11px", marginTop: "4px", opacity: 0.7 }}>
 								Inferencia local con Ollama

@@ -1,6 +1,6 @@
-# LaLlamaStation: MCP Brain Server 🧠
+# LaLlamaOllama: MCP Brain Server 🧠
 
-El **MCP Brain Server** es el módulo central de memoria a largo plazo (Long-Term Memory) de LaLlamaStation, diseñado bajo la especificación del Model Context Protocol (MCP). Proporciona a los agentes de IA persistencia avanzada, descubrimiento relacional y análisis de contexto.
+El **MCP Brain Server** es el módulo central de memoria a largo plazo (Long-Term Memory) de LaLlamaOllama, diseñado bajo la especificación del Model Context Protocol (MCP). Proporciona a los agentes de IA persistencia avanzada, descubrimiento relacional y análisis de contexto.
 
 ## 🌟 Características Principales
 
@@ -80,4 +80,4 @@ Los agentes conectados a este servidor tienen acceso a las siguientes herramient
 - `mem_session_summary`: Obliga al agente a sintetizar sus hallazgos al final del trabajo.
 
 ---
-*Desarrollado para el ecosistema modular de LaLlamaStation.*
+*Desarrollado para el ecosistema modular de LaLlamaOllama.*

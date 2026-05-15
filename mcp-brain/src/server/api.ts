@@ -66,7 +66,7 @@ export function startApiServer(dbService: DatabaseService) {
 					"--add-host=host.docker.internal:host-gateway",
 					"-v",
 					`${hostProjectPath}/data:/app/data`,
-					"lallamastation-mcp-brain",
+					"lallamaollama-mcp-brain",
 					"node",
 					"dist/index.js",
 				],
@@ -77,7 +77,7 @@ export function startApiServer(dbService: DatabaseService) {
 				if (fs.existsSync(openCodePath)) {
 					const configData = JSON.parse(fs.readFileSync(openCodePath, "utf8"));
 					configData.mcp = configData.mcp || {};
-					configData.mcp["lallamastation-brain"] = openCodeSseConfig;
+					configData.mcp["lallamaollama-brain"] = openCodeSseConfig;
 					fs.writeFileSync(openCodePath, JSON.stringify(configData, null, 2), "utf8");
 					return res.json({
 						success: true,
@@ -90,14 +90,14 @@ export function startApiServer(dbService: DatabaseService) {
 				}
 			} else if (target === "antigravity") {
 				const agPath = path.join(os.homedir(), ".gemini/antigravity/mcp_config.json");
-				updateMcpFile(agPath, "lallamastation-brain", antigravityConfig);
+				updateMcpFile(agPath, "lallamasollama-brain", antigravityConfig);
 				return res.json({
 					success: true,
 					message: `¡Motor Antigravity AI sincronizado con éxito! (Docker MCP en ${hostProjectPath})`,
 				});
 			} else if (target === "claudedesktop") {
 				const cdPath = path.join(os.homedir(), "AppData/Roaming/Claude/claude_desktop_config.json");
-				updateMcpFile(cdPath, "lallamastation-brain", claudeCompatSseConfig);
+				updateMcpFile(cdPath, "lallamasollama-brain", claudeCompatSseConfig);
 				return res.json({
 					success: true,
 					message: "¡Claude Desktop sincronizado con éxito! (SSE remoto)",
@@ -107,7 +107,7 @@ export function startApiServer(dbService: DatabaseService) {
 					os.homedir(),
 					"AppData/Roaming/Code/User/globalStorage/saoudrizwan.claude-dev/settings/claude_desktop_config.json"
 				);
-				updateMcpFile(rooPath, "lallamastation-brain", claudeCompatSseConfig);
+				updateMcpFile(rooPath, "lallamasollama-brain", claudeCompatSseConfig);
 				return res.json({
 					success: true,
 					message: "¡RooCode / Cline sincronizado con éxito en VS Code! (SSE remoto)",
@@ -116,13 +116,13 @@ export function startApiServer(dbService: DatabaseService) {
 				return res.json({
 					success: true,
 					message: `¡Copia y pega este bloque en los ajustes de ${target.toUpperCase()}:`,
-					config: { "lallamastation-brain": claudeCompatSseConfig },
+					config: { "lallamasollama-brain": claudeCompatSseConfig },
 				});
 			} else if (target === "windsurf") {
 				return res.json({
 					success: true,
 					message: "¡Copia y pega este bloque en los ajustes de WINDSURF:",
-					config: { "lallamastation-brain": claudeCompatSseConfig },
+					config: { "lallamasollama-brain": claudeCompatSseConfig },
 				});
 			} else {
 				return res.status(400).json({ error: "Destino no soportado." });
@@ -133,7 +133,7 @@ export function startApiServer(dbService: DatabaseService) {
 	});
 
 	app.get("/api/memory/stats", async (req, res) => {
-		const project = (req.query.project as string) || "lallamastation";
+		const project = (req.query.project as string) || "lallamasollama";
 		try {
 			const stats = await memories.getStats(dbService, project);
 			res.json(stats);
@@ -144,7 +144,7 @@ export function startApiServer(dbService: DatabaseService) {
 
 	app.get("/api/memory/search", async (req, res) => {
 		const q = (req.query.q as string) || "";
-		const project = (req.query.project as string) || "lallamastation";
+		const project = (req.query.project as string) || "lallamasollama";
 		const mode = (req.query.mode as "lexical" | "semantic" | "hybrid") || "hybrid";
 		try {
 			const results =
@@ -177,7 +177,7 @@ export function startApiServer(dbService: DatabaseService) {
 				SELECT DISTINCT project FROM core_directives
 			`);
 			const projects = Array.from(
-				new Set(["lallamastation", ...rows.map((r: { project: string }) => r.project)])
+				new Set(["lallamasollama", ...rows.map((r: { project: string }) => r.project)])
 			);
 			res.json(projects);
 		} catch (e: unknown) {
@@ -187,7 +187,7 @@ export function startApiServer(dbService: DatabaseService) {
 
 	// Directives
 	app.get("/api/directives", async (req, res) => {
-		const project = (req.query.project as string) || "lallamastation";
+		const project = (req.query.project as string) || "lallamasollama";
 		try {
 			const content = await settings.getCoreDirectives(dbService, project);
 			res.json({ project, content });
@@ -197,7 +197,7 @@ export function startApiServer(dbService: DatabaseService) {
 	});
 
 	app.post("/api/directives", async (req, res) => {
-		const { project = "lallamastation", content } = req.body;
+		const { project = "lallamasollama", content } = req.body;
 		try {
 			await settings.updateCoreDirectives(dbService, project, content || "");
 			res.json({ success: true });
@@ -228,7 +228,7 @@ export function startApiServer(dbService: DatabaseService) {
 
 	// Consolidation
 	app.post("/api/memory/consolidate", async (req, res) => {
-		const project = (req.body.project as string) || "lallamastation";
+		const project = (req.body.project as string) || "lallamasollama";
 		try {
 			const result = await analysis.consolidateMemories(dbService, project);
 			res.json(result);
@@ -239,7 +239,7 @@ export function startApiServer(dbService: DatabaseService) {
 
 	// Endpoint para acceso remoto vía HTTP/SSE
 	app.get("/mcp", (_req, res) => {
-		res.json({ status: "ok", message: "LaLlamaStation Brain MCP Server", timestamp: new Date().toISOString() });
+		res.json({ status: "ok", message: "LaLlamaOllama Brain MCP Server", timestamp: new Date().toISOString() });
 	});
 
 	// --- MCP SSE Transport ---

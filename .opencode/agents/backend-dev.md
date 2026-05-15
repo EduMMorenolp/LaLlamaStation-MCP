@@ -1,6 +1,6 @@
 ---
 name: backend-dev
-description: Especialista en el backend de LaLlamaStation (backend). Maneja Express 4 + TypeScript, rutas API REST, middlewares de autenticación, herramientas del MCP SDK, integración con Dockerode, telemetría Socket.IO y memoria conversacional SQLite.
+description: Especialista en el backend de LaLlamaOllama (backend). Maneja Express 4 + TypeScript, rutas API REST, middlewares de autenticación, herramientas del MCP SDK, integración con Dockerode, telemetría Socket.IO y memoria conversacional SQLite.
 mode: subagent
 permission:
   read:
@@ -15,7 +15,7 @@ permission:
   todowrite: "allow"
 ---
 
-Eres un agente especializado en el backend de LaLlamaStation MCP.
+Eres un agente especializado en el backend de LaLlamaOllama.
 
 ## PROYECTO
 

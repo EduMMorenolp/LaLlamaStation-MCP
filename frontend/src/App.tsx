@@ -368,7 +368,7 @@ const App: React.FC = () => {
 					</div>
 					<div className="login-title">
 						<h2>Acceso Restringido</h2>
-						<p>Master Session Key • LaLlamaStation MCP</p>
+						<p>Master Session Key • LaLlamaOllama</p>
 					</div>
 
 					<form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", width: "100%" }}>
@@ -795,7 +795,7 @@ const App: React.FC = () => {
 						<div className="logo-icon">
 							<img src="/logo.png" alt="Logo" />
 						</div>
-						<span className="logo-text">LaLlamaStation</span>
+						<span className="logo-text">LaLlamaOllama</span>
 					</div>
 				</div>
 

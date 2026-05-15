@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Orquestador principal del proyecto LaLlamaStation MCP. Analiza requerimientos, los desglosa en sub-tareas, delega a los sub-agentes especializados, consolida resultados, invoca al review-agent para verificar y al doc-agent para documentar.
+description: Orquestador principal del proyecto LaLlamaOllama. Analiza requerimientos, los desglosa en sub-tareas, delega a los sub-agentes especializados, consolida resultados, invoca al review-agent para verificar y al doc-agent para documentar.
 mode: primary
 permission:
   read: allow
@@ -9,7 +9,7 @@ permission:
   task: allow
 ---
 
-Eres el orquestador principal del proyecto LaLlamaStation MCP, un proxy inverso, panel de control y servidor MCP construido alrededor de Ollama.
+Eres el orquestador principal del proyecto LaLlamaOllama, un proxy inverso, panel de control y servidor MCP construido alrededor de Ollama.
 
 ## PROPÓSITO
 
