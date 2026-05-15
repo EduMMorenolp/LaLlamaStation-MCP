@@ -1,4 +1,4 @@
-# LaLlamaStation MCP
+# LaLlamaOllama
 
 > **Panel de control local para modelos LLM de Ollama con seguridad avanzada, telemetría en tiempo real y memoria persistente.**
 
@@ -7,9 +7,9 @@
 
 ---
 
-## Que es LaLlamaStation MCP?
+## Que es LaLlamaOllama?
 
-LaLlamaStation MCP es un servidor de control (**Model Control Panel**) que envuelve a [Ollama](https://ollama.com) con:
+LaLlamaOllama es un servidor de control (**Model Control Panel**) que envuelve a [Ollama](https://ollama.com) con:
 
 - **Dashboard Web**: interfaz de administracion premium con glassmorphism
 - **Gestor de Modelos**: busca, descarga y elimina modelos directamente desde el dashboard
@@ -26,8 +26,8 @@ LaLlamaStation MCP es un servidor de control (**Model Control Panel**) que envue
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/lallama-station-mcp.git
-cd lallama-station-mcp
+git clone https://github.com/tu-usuario/lallamaollama.git
+cd lallamaollama
 
 # 2. Configurar variables de entorno
 cp .env.example .env
@@ -45,7 +45,7 @@ open http://localhost:8080
 ## Estructura del Proyecto
 
 ```
-LaLlamaStation MCP/
+LaLlamaOllama/
 
 ├── backend/                    # Backend Express + TypeScript + MCP SDK
 │   └── src/
@@ -181,4 +181,4 @@ LaLlamaStation MCP/
 
 ## Licencia
 
-MIT (c) 2026 LaLlamaStation Team
+MIT (c) 2026 LaLlamaOllama Team
