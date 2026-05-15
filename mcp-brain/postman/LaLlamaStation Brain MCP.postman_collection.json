@@ -1,0 +1,1042 @@
+{
+	"info": {
+		"name": "🧠 LaLlamaStation Brain MCP",
+		"description": "## Colección de Testing para el Shared Brain MCP Server\n\nEsta colección contiene TODOS los endpoints y herramientas MCP que los **modelos IA** (OpenCode, Claude, Cursor, etc.) llaman cuando se conectan al brain.\n\n### 🔥 Para Debuggear: ¿Qué están llamando los agentes?\n\nCuando un agente IA se conecta al brain vía SSE, hace esto:\n\n```\n1. GET  /sse                  → Establece conexión SSE\n2. POST /messages?sessionId=X → JSON-RPC: initialize\n3. POST /messages?sessionId=X → JSON-RPC: tools/list\n4. POST /messages?sessionId=X → JSON-RPC: tools/call  (una por cada tool)\n```\n\nEsta colección te permite **simular exactamente** esas llamadas sin necesidad de un agente IA.\n\n### 📋 Setup\n\n1. Abre Postman → Import → selecciona este archivo\n2. Haz clic en \"**Variables**\" (arriba a la derecha)\n3. Ajusta `brain_url` si tu servidor corre en otro puerto/host\n4. Conéctate a `GET /sse` para obtener un `sessionId`\n5. Usa ese `sessionId` en las llamadas a `POST /messages`\n\n### 🔍 Pro Tip\n\nUsa el **Monitor** de Postman (Colección → Run) para ejecutar toda la batería de tests automatizados.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"lastUpdated": "2026-05-14T12:00:00.000Z"
+	},
+	"variable": [
+		{
+			"key": "brain_url",
+			"value": "http://localhost:3015",
+			"type": "string"
+		},
+		{
+			"key": "session_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "project",
+			"value": "lallamastation",
+			"type": "string"
+		},
+		{
+			"key": "test_memory_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "my_agent_identity",
+			"value": "Postman Debug Client / Manual Test",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "🔌 1. Setup & Health Check",
+			"description": "Verificaciones básicas de conectividad con el brain server.",
+			"item": [
+				{
+					"name": "🟢 Health Check — GET /mcp",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Body has status ok', () => {",
+									"    const json = pm.response.json();",
+									"    pm.expect(json.status).to.eql('ok');",
+									"});",
+									"pm.test('Response time < 500ms', () => pm.expect(pm.response.responseTime).to.be.below(500));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{brain_url}}/mcp",
+							"host": ["{{brain_url}}"],
+							"path": ["mcp"]
+						},
+						"description": "Endpoint de health-check. Confirma que el servidor MCP está vivo.\n\n**Los agentes IA lo usan para verificar conectividad inicial.**"
+					}
+				},
+				{
+					"name": "🔗 SSE Connection — GET /sse",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200 — SSE endpoint reachable', () => pm.response.to.have.status(200));",
+									"",
+									"// Nota: Postman no maneja SSE streams completos.",
+									"// Esta llamada establece la conexión y permite obtener un sessionId",
+									"// del Set-Cookie o del primer evento SSE.",
+									"//",
+									"// Para debugging real, recomendamos:",
+									"//   curl -N http://localhost:3015/sse",
+									"//",
+									"// O usar la extensión SSE de Postman (si está disponible).",
+									"",
+									"const contentType = pm.response.headers.get('content-type');",
+									"pm.test('Response is SSE stream', () => {",
+									"    pm.expect(contentType).to.include('text/event-stream');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "text/event-stream"
+							}
+						],
+						"url": {
+							"raw": "{{brain_url}}/sse",
+							"host": ["{{brain_url}}"],
+							"path": ["sse"]
+						},
+						"description": "### ⚠️ IMPORTANTE\n\nEste es el endpoint SSE (Server-Sent Events). Postman tiene soporte limitado para SSE.\n\n**Qué hace un agente IA aquí:**\n1. Abre una conexión SSE duradera a `GET /sse`\n2. Recibe eventos con `sessionId` y notificaciones de herramientas\n3. Usa ese `sessionId` para todas las llamadas posteriores a `POST /messages?sessionId=...`\n\n**Para debuggear con curl:**\n```bash\ncurl -N http://localhost:3015/sse\n```\nEsto mostrará los eventos SSE en tiempo real. La salida incluirá algo como:\n```\nevent: endpoint\ndata: /messages?sessionId=abc123\n```\nCopia ese `sessionId` y úsalo en las variables de Postman."
+					}
+				}
+			]
+		},
+		{
+			"name": "📡 2. MCP Protocol — JSON-RPC via POST /messages",
+			"description": "Simula las llamadas JSON-RPC que hacen los **modelos IA** cuando ejecutan herramientas MCP.\n\n**Flujo típico de un agente:**\n1. `initialize` — Negociar protocolo\n2. `tools/list` — Obtener catálogo de herramientas\n3. `tools/call` — Ejecutar herramienta específica\n\n> ⚠️ Necesitas un `sessionId` válido de una conexión SSE activa.\n> Haz GET /sse primero y copia el sessionId en la variable.",
+			"item": [
+				{
+					"name": "📋 Initialize",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"pm.test('Response has jsonrpc and result', () => {",
+									"    pm.expect(json.jsonrpc).to.eql('2.0');",
+									"    pm.expect(json.result).to.exist;",
+									"    pm.expect(json.result.serverInfo.name).to.eql('lallamastation-brain');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 1,\n    \"method\": \"initialize\",\n    \"params\": {\n        \"protocolVersion\": \"2024-11-05\",\n        \"capabilities\": {},\n        \"clientInfo\": {\n            \"name\": \"Postman Debug Client\",\n            \"version\": \"1.0.0\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Primera llamada JSON-RPC que hace un agente IA al conectar.\nNegocia la versión del protocolo MCP y se presenta con su nombre."
+					}
+				},
+				{
+					"name": "📋 ListTools — Ver catálogo completo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"pm.test('Has tools array', () => {",
+									"    pm.expect(json.result.tools).to.be.an('array');",
+									"});",
+									"",
+									"const tools = json.result.tools;",
+									"const toolNames = tools.map(t => t.name);",
+									"",
+									"pm.test('Has mem_save', () => pm.expect(toolNames).to.include('mem_save'));",
+									"pm.test('Has mem_my_compliance', () => pm.expect(toolNames).to.include('mem_my_compliance'));",
+									"pm.test('All tools have agent field', () => {",
+									"    const allHaveAgent = tools.every(t => t.inputSchema.properties.agent);",
+									"    pm.expect(allHaveAgent).to.be.true;",
+									"});",
+									"",
+									"pm.test(`Found ${tools.length} tools`, () => {",
+									"    pm.expect(tools.length).to.be.at.least(16);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 2,\n    \"method\": \"tools/list\",\n    \"params\": {}\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "**Los agentes IA llaman esto al conectarse** para descubrir qué herramientas tiene el brain.\n\nVerifica que:\n- ✅ `mem_my_compliance` esté en la lista (Capa 5)\n- ✅ Cada tool tenga el campo `agent` en su schema (Capa 4)"
+					}
+				},
+				{
+					"name": "💾 mem_save — Guardar memoria",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"pm.test('Has result content', () => {",
+									"    pm.expect(json.result.content[0].text).to.exist;",
+									"});",
+									"",
+									"// Extraer el memory ID para usarlo en otras pruebas",
+									"try {",
+									"    const result = JSON.parse(json.result.content[0].text);",
+									"    if (result.memory && result.memory.id) {",
+									"        pm.collectionVariables.set('test_memory_id', result.memory.id);",
+									"        console.log('Saved memory ID:', result.memory.id);",
+									"    }",
+									"} catch(e) {}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 3,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_save\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"project\": \"{{project}}\",\n            \"type\": \"test\",\n            \"title\": \"🧪 Prueba desde Postman Collection\",\n            \"content\": \"**What**: Prueba de conexión MCP\\n**Why**: Debugging del brain server\\n**Where**: Postman Collection\\n**Learned**: La colección funciona correctamente\",\n            \"tags\": \"test,debug,postman\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "**Simula la llamada que los agentes IA deben hacer para registrar cambios.**\n\nEsta es la herramienta MÁS IMPORTANTE del brain. Todos los agentes del equipo DEBEN llamarla después de cada modificación.\n\n**Verifica que:**\n- ✅ El campo `agent` se pasa correctamente\n- ✅ La herramienta devuelve `memory.id`\n- ✅ Si hay conflictos, `judgment_required` es true/false\n\nLa auditoría (Capa 1) registrará automáticamente esta llamada."
+					}
+				},
+				{
+					"name": "🔍 mem_search — Buscar memorias",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"pm.test('Has results', () => {",
+									"    const text = json.result.content[0].text;",
+									"    pm.expect(text).to.exist;",
+									"});",
+									"",
+									"// Verificar que NO haya compliance reminder (acabamos de hacer mem_save)",
+									"const text = json.result.content[0].text;",
+									"pm.test('No compliance reminder (we just saved)', () => {",
+									"    pm.expect(text).to.not.include('COMPLIANCE REMINDER');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 4,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_search\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"query\": \"Postman\",\n            \"project\": \"{{project}}\",\n            \"mode\": \"hybrid\",\n            \"limit\": 5\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "**Búsqueda híbrida (léxica + semántica).**\n\nLos agentes IA llaman esto ANTES de empezar a trabajar para ver qué se hizo antes.\n\n⚠️ Si NO has llamado mem_save recientemente, la respuesta incluirá un **COMPLIANCE REMINDER** (Capa 3)."
+					}
+				},
+				{
+					"name": "📋 mem_context — Contexto reciente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"const text = json.result.content[0].text;",
+									"pm.test('Has content', () => pm.expect(text).to.exist);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 5,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_context\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"project\": \"{{project}}\",\n            \"limit\": 10\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Obtiene las últimas memorias registradas en el proyecto.\nÚtil para que un agente se ponga al día rápidamente."
+					}
+				},
+				{
+					"name": "📊 mem_my_compliance — Auto-auditoría",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"const compliance = JSON.parse(json.result.content[0].text);",
+									"",
+									"pm.test('Has compliance score', () => {",
+									"    pm.expect(compliance.complianceScore).to.be.a('number');",
+									"    pm.expect(compliance.totalCalls).to.be.at.least(1);",
+									"    pm.expect(compliance.agentIdentity).to.eql(pm.collectionVariables.get('my_agent_identity'));",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 6,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_my_compliance\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "### 🆕 NUEVA HERRAMIENTA (Capa 5)\n\nLos agentes IA pueden auto-auditarse llamando a esta herramienta.\n\n**Devuelve:**\n- `complianceScore` — % de llamadas que fueron `mem_save`\n- `lastSaveTimestamp` — Cuándo fue el último `mem_save`\n- `totalSaves` vs `totalCalls`\n- `needsReminder` — Si debe registrar cambios\n\n> PRUEBA ESTO: Ejecútalo varias veces, primero sin hacer mem_save, y después de hacer mem_save, para ver cómo cambia el score."
+					}
+				},
+				{
+					"name": "📈 mem_stats — Estadísticas del brain",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"const stats = JSON.parse(json.result.content[0].text);",
+									"pm.test('Has total count', () => {",
+									"    pm.expect(stats.total).to.be.a('number');",
+									"    pm.expect(stats.types).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 7,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_stats\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"project\": \"{{project}}\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Estadísticas generales del brain: total de memorias y desglose por tipo."
+					}
+				},
+				{
+					"name": "🏷️ mem_suggest_topic_key — Sugerir topic_key",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 8,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_suggest_topic_key\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"title\": \"Shared Brain Audit System Implementation\",\n            \"type\": \"architecture\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Genera un `topic_key` estable para usar en `mem_save`. Útil para memorias evolutivas."
+					}
+				},
+				{
+					"name": "📜 mem_timeline — Línea de tiempo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 9,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_timeline\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"project\": \"{{project}}\",\n            \"limit\": 10\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Línea de tiempo cronológica de todas las memorias del proyecto."
+					}
+				},
+				{
+					"name": "🆔 mem_get_observation — Obtener por ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"const text = json.result.content[0].text;",
+									"pm.test('Has content or Not found', () => {",
+									"    pm.expect(text).to.exist;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 10,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_get_observation\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"id\": \"{{test_memory_id}}\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Recupera una memoria específica por su ID.\n\nEl ID se obtiene automáticamente de la respuesta de `mem_save` (variable `test_memory_id`)."
+					}
+				},
+				{
+					"name": "🚀 mem_session_start — Iniciar sesión",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 11,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_session_start\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"project\": \"{{project}}\",\n            \"name\": \"Debug Session — Postman\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Inicia una sesión de trabajo lógica. Los agentes disciplinados llaman esto al empezar."
+					}
+				},
+				{
+					"name": "✅ mem_session_summary — Resumen de sesión",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 12,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_session_summary\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"sessionId\": \"session-id-from-start\",\n            \"summary\": \"## Goal\\nProbar la Postman Collection\\n\\n## Discoveries\\n- La colección funciona correctamente\\n\\n## Accomplished\\n- ✅ Verificados todos los endpoints\\n\\n## Next Steps\\n- Compartir con el equipo\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Guarda un resumen estructurado de la sesión de trabajo. Los agentes DEBERÍAN llamar esto antes de terminar."
+					}
+				},
+				{
+					"name": "⚖️ mem_judge — Juzgar conflicto",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 13,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_judge\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"judgment_id\": \"judgment-id-from-mem-save\",\n            \"relation\": \"related\",\n            \"reason\": \"Ambas memorias tratan sobre el sistema de auditoría\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Registra un veredicto sobre un conflicto de memoria detectado automáticamente por `mem_save`."
+					}
+				},
+				{
+					"name": "📁 mem_current_project — Proyecto activo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 14,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_current_project\",\n        \"arguments\": {\n            \"agent\": \"{{my_agent_identity}}\",\n            \"project\": \"{{project}}\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "Establece o consulta el proyecto activo. Los agentes lo llaman al inicio."
+					}
+				}
+			]
+		},
+		{
+			"name": "🌐 3. REST API",
+			"description": "Endpoints REST del brain server. Útiles para administración y debugging desde el navegador o dashboard.",
+			"item": [
+				{
+					"name": "📈 GET /api/memory/stats",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"pm.test('Has total and types', () => {",
+									"    pm.expect(json.total).to.be.a('number');",
+									"    pm.expect(json.types).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{brain_url}}/api/memory/stats?project={{project}}",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "memory", "stats"],
+							"query": [
+								{
+									"key": "project",
+									"value": "{{project}}"
+								}
+							]
+						},
+						"description": "Estadísticas de memoria del proyecto."
+					}
+				},
+				{
+					"name": "🔍 GET /api/memory/search",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Returns array', () => pm.expect(json).to.be.an('array'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{brain_url}}/api/memory/search?q=test&project={{project}}&mode=hybrid",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "memory", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "test"
+								},
+								{
+									"key": "project",
+									"value": "{{project}}"
+								},
+								{
+									"key": "mode",
+									"value": "hybrid"
+								}
+							]
+						},
+						"description": "Busca memorias vía REST. Útil para debugging rápido desde el navegador."
+					}
+				},
+				{
+					"name": "🗑️ DELETE /api/memory/:id",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{brain_url}}/api/memory/{{test_memory_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "memory", "{{test_memory_id}}"]
+						},
+						"description": "Elimina una memoria por ID."
+					}
+				},
+				{
+					"name": "📋 GET /api/projects",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Returns array with project', () => {",
+									"    pm.expect(json).to.be.an('array');",
+									"    pm.expect(json).to.include('lallamastation');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{brain_url}}/api/projects",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "projects"]
+						},
+						"description": "Lista todos los proyectos que tienen memorias registradas."
+					}
+				},
+				{
+					"name": "📜 GET /api/directives",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{brain_url}}/api/directives?project={{project}}",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "directives"],
+							"query": [
+								{
+									"key": "project",
+									"value": "{{project}}"
+								}
+							]
+						},
+						"description": "Obtiene las directrices del core configuradas para el proyecto."
+					}
+				},
+				{
+					"name": "✏️ POST /api/directives",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"project\": \"{{project}}\",\n    \"content\": \"# Core Directives\\n\\nEste es el proyecto LaLlamaStation Brain MCP.\\n\\n## Reglas\\n- Todos los agentes DEBEN llamar mem_save después de cada cambio\\n- Usar mem_search antes de empezar a trabajar\"\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/api/directives",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "directives"]
+						},
+						"description": "Actualiza las directrices del core del proyecto."
+					}
+				},
+				{
+					"name": "⚙️ GET /api/settings/:key",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{brain_url}}/api/settings/consolidation_cron",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "settings", "consolidation_cron"]
+						},
+						"description": "Obtiene el valor de una configuración global."
+					}
+				},
+				{
+					"name": "⚙️ POST /api/settings",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"key\": \"delegation_threshold\",\n    \"value\": \"5\"\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/api/settings",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "settings"]
+						},
+						"description": "Actualiza una configuración global."
+					}
+				},
+				{
+					"name": "🔄 POST /api/memory/consolidate",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"project\": \"{{project}}\"\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/api/memory/consolidate",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "memory", "consolidate"]
+						},
+						"description": "Ejecuta la consolidación de memorias manualmente."
+					}
+				},
+				{
+					"name": "🔄 POST /api/mcp/sync",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"target\": \"opencode\"\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/api/mcp/sync",
+							"host": ["{{brain_url}}"],
+							"path": ["api", "mcp", "sync"]
+						},
+						"description": "Sincroniza la configuración MCP con el IDE/agente especificado.\n\nTargets disponibles: opencode, antigravity, claudedesktop, roocode, cursor, claudecode, windsurf"
+					}
+				}
+			]
+		},
+		{
+			"name": "🐛 4. Debug Scenarios",
+			"description": "Escenarios de debugging para verificar el comportamiento completo del sistema de auditoría.",
+			"item": [
+				{
+					"name": "📋 Compliance Flow completo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Compliance flow: step 1 — initial stats', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 101,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_my_compliance\",\n        \"arguments\": {\n            \"agent\": \"Debug-Agent-Test\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "### 🔬 Escenario: Verificar Compliance\n\n1. Ejecuta esta petición → Sin mem_save previo, `needsReminder: true`\n2. Luego ejecuta `mem_save`\n3. Vuelve a ejecutar esta petición → `needsReminder: false`, score sube"
+					}
+				},
+				{
+					"name": "🔍 Search + Compliance Reminder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Search executes', () => pm.response.to.have.status(200));",
+									"",
+									"const json = pm.response.json();",
+									"const text = json.result.content[0].text;",
+									"",
+									"// Check if compliance reminder appears",
+									"if (text.includes('COMPLIANCE REMINDER')) {",
+									"    console.log('⚠️  Compliance Reminder triggered — agent has not saved recently');",
+									"} else {",
+									"    console.log('✅ No compliance reminder — agent is in good standing');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 102,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_search\",\n        \"arguments\": {\n            \"agent\": \"Debug-Agent-Test\",\n            \"query\": \"audit\",\n            \"project\": \"{{project}}\",\n            \"mode\": \"lexical\",\n            \"limit\": 3\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "### 🔬 Escenario: Verificar Compliance Reminder (Capa 3)\n\n1. Si este agente NO ha llamado `mem_save` en las últimas 24h → **la respuesta incluirá un Compliance Reminder**\n2. Si SÍ ha llamado `mem_save` recientemente → respuesta normal sin reminder\n\nEsto simula exactamente lo que ve un agente IA cuando busca información sin haber registrado sus cambios."
+					}
+				},
+				{
+					"name": "🔄 MCP Full Cycle",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Full cycle: mem_save → mem_search → mem_my_compliance', () => {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 103,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"mem_save\",\n        \"arguments\": {\n            \"agent\": \"Debug-Agent-Test\",\n            \"project\": \"{{project}}\",\n            \"type\": \"debug\",\n            \"title\": \"🔄 Full Cycle Test desde Postman\",\n            \"content\": \"**What**: Prueba de ciclo completo MCP\\n**Why**: Verificar que auditoría, compliance y herramientas funcionan\\n**Where**: Postman Collection\\n**Learned**: El sistema de auditoría registra todo automáticamente\",\n            \"tags\": \"test,debug,full-cycle\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{brain_url}}/messages?sessionId={{session_id}}",
+							"host": ["{{brain_url}}"],
+							"path": ["messages"],
+							"query": [
+								{
+									"key": "sessionId",
+									"value": "{{session_id}}"
+								}
+							]
+						},
+						"description": "### 🔬 Escenario: Ciclo Completo\n\nEsta llamada a `mem_save` simula el flujo ideal:\n1. Agente hace cambios\n2. ✅ Llama a `mem_save` (Capa 4: el campo `agent` es requerido)\n3. ✅ El servidor audita automáticamente (Capa 1)\n4. ✅ Si hay conflictos, `judgment_required` avisa\n\nDespués de esto, prueba `mem_search` → NO debería mostrar Compliance Reminder porque acabas de hacer save."
+					}
+				}
+			]
+		}
+	]
+}

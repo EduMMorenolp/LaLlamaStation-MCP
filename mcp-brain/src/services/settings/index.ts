@@ -5,9 +5,8 @@ export async function getCoreDirectives(dbService: DatabaseService, project: str
 	const row = await db.get(`SELECT content FROM core_directives WHERE project = ?`, [project]);
 
 	const criticalRule = `
-
-> [!IMPORTANT]
-> **OBLIGACIÓN COGNITIVA CRÍTICA (MEMORIA AUTÓNOMA):** Cada vez que utilices tus herramientas para modificar, crear o refactorizar código en este proyecto, TIENES LA OBLIGACIÓN ESTRICTA Y OBLIGATORIA de ejecutar en ese mismo turno la herramienta \`mem_save\`, documentando el resumen exacto de las decisiones técnicas y cambios realizados antes de emitir tu respuesta final al usuario. SIEMPRE debes incluir tu identidad en el parámetro \`agent\` (ej. 'Cursor / Claude 3.5 Sonnet', 'Antigravity / Gemini 2.5 Flash', 'OpenCode AI', 'RooCode / Cline'). Omitir este guardado es inaceptable.`;
+	# [!IMPORTANT]
+	**OBLIGACIÓN COGNITIVA CRÍTICA (MEMORIA AUTÓNOMA):** Cada vez que utilices tus herramientas para modificar, crear o refactorizar código en este proyecto, TIENES LA OBLIGACIÓN ESTRICTA Y OBLIGATORIA de ejecutar en ese mismo turno la herramienta \`mem_save\`, documentando el resumen exacto de las decisiones técnicas y cambios realizados antes de emitir tu respuesta final al usuario. SIEMPRE debes incluir tu identidad en el parámetro \`agent\` (ej. 'Cursor / Claude 3.5 Sonnet', 'Antigravity / Gemini 2.5 Flash', 'OpenCode AI', 'RooCode / Cline'). Omitir este guardado es inaceptable.`;
 
 	if (row?.content) {
 		if (!row.content.includes("OBLIGACIÓN COGNITIVA CRÍTICA")) {
@@ -16,11 +15,7 @@ export async function getCoreDirectives(dbService: DatabaseService, project: str
 		return row.content;
 	}
 
-	return `# Directivas Centrales: ${project}
-
-1. **Arquitectura Limpia:** Mantén el código modular y desacoplado.
-2. **Spec-Driven Development (SDD):** Evalúa e indica siempre la fase activa (exploración, diseño, implementación, revisión).
-3. **Transparencia:** Registra los aprendizajes clave en la memoria pasiva para evitar redundancia.${criticalRule}`;
+	return `# Directivas Centrales: ${project}\n1. **Arquitectura Limpia:** Mantén el código modular y desacoplado.\n2. **Spec-Driven Development (SDD):** Evalúa e indica siempre la fase activa (exploración, diseño, implementación, revisión).\n3. **Transparencia:** Registra los aprendizajes clave en la memoria pasiva para evitar redundancia.\n${criticalRule}`;
 }
 
 export async function updateCoreDirectives(
