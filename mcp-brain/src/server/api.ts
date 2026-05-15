@@ -53,6 +53,25 @@ export function startApiServer(dbService: DatabaseService) {
 				fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 			};
 
+			// Antigravity usa Docker stdio para evitar problemas de certificados/HTTPS
+			const hostProjectPath = process.env.HOST_PROJECT_PATH || "C:/path/to/project";
+			const antigravityConfig = {
+				command: "docker",
+				args: [
+					"run",
+					"-i",
+					"--rm",
+					"-e",
+					"OLLAMA_API_URL=http://host.docker.internal:11434",
+					"--add-host=host.docker.internal:host-gateway",
+					"-v",
+					`${hostProjectPath}/data:/app/data`,
+					"lallamastation-mcp-brain",
+					"node",
+					"dist/index.js",
+				],
+			};
+
 			if (target === "opencode") {
 				const openCodePath = path.resolve(process.cwd(), "../opencode.json");
 				if (fs.existsSync(openCodePath)) {
@@ -71,10 +90,10 @@ export function startApiServer(dbService: DatabaseService) {
 				}
 			} else if (target === "antigravity") {
 				const agPath = path.join(os.homedir(), ".gemini/antigravity/mcp_config.json");
-				updateMcpFile(agPath, "lallamastation-brain", claudeCompatSseConfig);
+				updateMcpFile(agPath, "lallamastation-brain", antigravityConfig);
 				return res.json({
 					success: true,
-					message: "¡Motor Antigravity AI sincronizado con éxito! (SSE remoto)",
+					message: `¡Motor Antigravity AI sincronizado con éxito! (Docker MCP en ${hostProjectPath})`,
 				});
 			} else if (target === "claudedesktop") {
 				const cdPath = path.join(os.homedir(), "AppData/Roaming/Claude/claude_desktop_config.json");
