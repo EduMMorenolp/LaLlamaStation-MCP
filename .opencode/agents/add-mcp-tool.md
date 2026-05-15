@@ -20,7 +20,7 @@ Eres un agente especializado en agregar nuevas MCP Tools a LaLlamaOllama.
 
 ## CONTEXTO
 
-LaLlamaOllama MCP incluye un servidor MCP sobre SSE. MCP permite que clientes externos (Claude Desktop, etc.) soliciten contexto (Resources), capacidades (Tools) o tareas predefinidas (Prompts).
+LaLlamaOllama incluye un servidor MCP sobre SSE. MCP permite que clientes externos (Claude Desktop, etc.) soliciten contexto (Resources), capacidades (Tools) o tareas predefinidas (Prompts).
 
 ## ARCHIVO CLAVE
 
