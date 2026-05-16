@@ -5,6 +5,7 @@ import { createMemoriesTable } from "./memories.js";
 import { createRelationsTable } from "./relations.js";
 import { createSessionsTable } from "./sessions.js";
 import { createSettingsTable } from "./settings.js";
+import { createTemplatesTable } from "./templates.js";
 
 export async function applySchemas(db: Database<sqlite3.Database, sqlite3.Statement>) {
 	await createSessionsTable(db);
@@ -12,4 +13,6 @@ export async function applySchemas(db: Database<sqlite3.Database, sqlite3.Statem
 	await createRelationsTable(db);
 	await createSettingsTable(db);
 	await createAuditTable(db);
+	await createTemplatesTable(db);
 }
+

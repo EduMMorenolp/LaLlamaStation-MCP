@@ -2,7 +2,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { DatabaseService } from "../database/connection.js";
-import { analysis, audit, memories, sessions } from "../services/index.js";
+import { analysis, audit, memories, sessions, templates } from "../services/index.js";
 import type { AgentCompliance } from "../services/audit/getAgentCompliance.js";
 
 let currentProject: string | null = null;
@@ -295,6 +295,40 @@ PARAMS:
 						required: ["judgment_id", "relation"],
 					},
 				},
+			{
+				name: "scaffold_list_templates",
+				description: "Lista los templates de scaffolding disponibles para generar archivos de agentes, rules o workflows. Filtrar por tool (antigravity, opencode, universal) y/o type (rule, workflow, agent).",
+				inputSchema: {
+					type: "object",
+					properties: {
+						tool: { type: "string", description: "Filtrar por tool: antigravity | opencode | universal" },
+						type: { type: "string", description: "Filtrar por type: rule | workflow | agent" },
+					},
+				},
+			},
+			{
+				name: "scaffold_file",
+				description: `Genera un archivo de agente, rule o workflow a partir de un template almacenado en el cerebro.
+
+Retorna el contenido Markdown renderizado con las variables provistas + el path de salida sugerido.
+
+FLUJO RECOMENDADO:
+1. scaffold_list_templates → ver templates disponibles y sus variables requeridas
+2. scaffold_file → obtener contenido renderizado
+3. Preguntar al usuario: "¿Guardo el archivo en <output_path>?"
+4. Si sí → usar write_to_file / herramienta de escritura del agente con el contenido retornado
+
+NOTA: mcp-brain corre en Docker y NO puede escribir al disco del host.
+El agente que llama a esta tool es quien debe escribir el archivo si el usuario lo solicita.`,
+				inputSchema: {
+					type: "object",
+					properties: {
+						template_id: { type: "string", description: "ID del template (usar scaffold_list_templates para ver IDs disponibles)" },
+						variables: { type: "object", description: "Variables para rellenar el template (clave: valor)" },
+					},
+					required: ["template_id", "variables"],
+				},
+			},
 		];
 
 		// --- CAPA 4: Inject agent identity field to all tools for audit compliance ---
@@ -572,6 +606,55 @@ Use this before read-only operations to verify you're in good standing.`,
 					response = { content: [{ type: "text", text: JSON.stringify(compliance, null, 2) }] };
 					break;
 				}
+				case "scaffold_list_templates": {
+					const list = await templates.listTemplates(
+						dbService,
+						args?.tool as string | undefined,
+						args?.type as string | undefined,
+					);
+					const summary = list.map((t) => ({
+						id: t.id,
+						tool: t.tool,
+						type: t.type,
+						name: t.name,
+						description: t.description,
+						output_path: t.output_path,
+						variables: t.variables.map((v) => ({
+							name: v.name,
+							description: v.description,
+							required: v.required,
+							default: v.default,
+						})),
+						is_seed: t.is_seed,
+					}));
+					response = { content: [{ type: "text", text: JSON.stringify(summary, null, 2) }] };
+					break;
+				}
+				case "scaffold_file": {
+					const tpl = await templates.getTemplate(dbService, args?.template_id as string);
+					if (!tpl) {
+						response = {
+							content: [{ type: "text", text: `Template "${args?.template_id}" not found. Use scaffold_list_templates to see available templates.` }],
+							isError: true,
+						};
+						break;
+					}
+					const vars = (args?.variables as Record<string, string>) || {};
+					const result = templates.renderTemplate(tpl, vars);
+					const payload = {
+						content: result.content,
+						output_path: result.output_path,
+						missing: result.missing,
+						template: { id: tpl.id, name: tpl.name, tool: tpl.tool, type: tpl.type },
+						hint: result.missing.length > 0
+							? `Faltan variables requeridas: ${result.missing.join(", ")}. Provéelas y vuelve a llamar scaffold_file.`
+							: result.output_path
+							? `Contenido listo. Pregunta al usuario: "¿Guardo el archivo en ${result.output_path}?" y si acepta, usa tu herramienta de escritura de archivos.`
+							: "Contenido generado correctamente.",
+					};
+					response = { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
+					break;
+				}
 				default:
 					response = { content: [{ type: "text", text: `Tool ${name} implemented but handler missing.` }] };
 			}
@@ -634,6 +717,7 @@ const READ_ONLY_TOOLS = new Set([
 	"mem_suggest_tags",
 	"mem_suggest_topic_key",
 	"mem_compare",
+	"scaffold_list_templates",
 ]);
 
 function isReadOnlyTool(name: string): boolean {

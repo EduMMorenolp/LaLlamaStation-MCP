@@ -1,9 +1,10 @@
-import { Activity, BookOpen, Brain, Database, Settings, Trash2 } from "lucide-react";
+import { Activity, BookOpen, Brain, Database, Layers, Settings, Trash2 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { brainApi } from "../services/api.service";
 import { BrainAuditor } from "./BrainAuditor";
 import { BrainDirectives } from "./BrainDirectives";
+import { BrainScaffold } from "./BrainScaffold";
 import { BrainSettings } from "./BrainSettings";
 
 interface BrainStats {
@@ -24,7 +25,7 @@ export const BrainConsole: React.FC = () => {
 	const [stats, setStats] = useState<BrainStats>({ total: 0, types: [] });
 	const [project, setProject] = useState("lallamaollama");
 	const [projectsList, setProjectsList] = useState<string[]>(["lallamaollama"]);
-	const [activeTab, setActiveTab] = useState<"auditor" | "directives" | "settings">("auditor");
+	const [activeTab, setActiveTab] = useState<"auditor" | "directives" | "settings" | "scaffold">("auditor");
 	const [toasts, setToasts] = useState<Toast[]>([]);
 	const [deletingProject, setDeletingProject] = useState(false);
 
@@ -261,6 +262,26 @@ export const BrainConsole: React.FC = () => {
 				>
 					<Settings size={16} /> Ajustes Cognitivos
 				</button>
+				<button
+					onClick={() => setActiveTab("scaffold")}
+					type="button"
+					style={{
+						display: "flex",
+						alignItems: "center",
+						gap: "8px",
+						padding: "10px 20px",
+						borderRadius: "8px",
+						fontSize: "13px",
+						fontWeight: 600,
+						border: "none",
+						background: activeTab === "scaffold" ? "rgba(79, 140, 255, 0.15)" : "transparent",
+						color: activeTab === "scaffold" ? "var(--accent)" : "var(--text-dim)",
+						cursor: "pointer",
+						transition: "var(--transition)",
+					}}
+				>
+					<Layers size={16} /> Scaffold
+				</button>
 			</div>
 
 			<div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "24px", alignItems: "start" }}>
@@ -269,6 +290,7 @@ export const BrainConsole: React.FC = () => {
 					{activeTab === "auditor" && <BrainAuditor project={project} />}
 					{activeTab === "directives" && <BrainDirectives project={project} />}
 					{activeTab === "settings" && <BrainSettings project={project} />}
+					{activeTab === "scaffold" && <BrainScaffold />}
 				</div>
 
 				{/* Panel Lateral: KPIs y Estadísticas */}

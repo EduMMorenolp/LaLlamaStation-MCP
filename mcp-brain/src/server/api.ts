@@ -5,7 +5,7 @@ import cors from "cors";
 import express from "express";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import type { DatabaseService } from "../database/connection.js";
-import { analysis, memories, settings } from "../services/index.js";
+import { analysis, memories, settings, templates } from "../services/index.js";
 import { createMcpServer } from "./mcp.js";
 
 const PORT = process.env.BRAIN_PORT || 3015;
@@ -249,6 +249,76 @@ export function startApiServer(dbService: DatabaseService) {
 		const project = (req.body.project as string) || "lallamasollama";
 		try {
 			const result = await analysis.consolidateMemories(dbService, project);
+			res.json(result);
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+		}
+	});
+
+	// ─── Templates ────────────────────────────────────────────────────────────
+
+	app.get("/api/templates", async (req, res) => {
+		const tool = req.query.tool as string | undefined;
+		const type = req.query.type as string | undefined;
+		try {
+			const list = await templates.listTemplates(dbService, tool, type);
+			res.json(list);
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+		}
+	});
+
+	app.get("/api/templates/:id", async (req, res) => {
+		try {
+			const tpl = await templates.getTemplate(dbService, req.params.id);
+			if (!tpl) return res.status(404).json({ error: "Template not found" });
+			res.json(tpl);
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+		}
+	});
+
+	app.post("/api/templates", async (req, res) => {
+		const { tool, type, name, description, content, variables, output_path } = req.body;
+		if (!tool || !type || !name || !content) {
+			return res.status(400).json({ error: "tool, type, name y content son obligatorios" });
+		}
+		try {
+			const tpl = await templates.saveTemplate(dbService, {
+				tool, type, name, description, content, variables, output_path,
+			});
+			res.status(201).json(tpl);
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+		}
+	});
+
+	app.put("/api/templates/:id", async (req, res) => {
+		try {
+			const tpl = await templates.updateTemplate(dbService, req.params.id, req.body);
+			if (!tpl) return res.status(404).json({ error: "Template not found" });
+			res.json(tpl);
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+		}
+	});
+
+	app.delete("/api/templates/:id", async (req, res) => {
+		try {
+			const result = await templates.deleteTemplate(dbService, req.params.id);
+			if (result.protected) return res.status(403).json({ error: "Los templates del sistema no pueden eliminarse." });
+			if (!result.deleted) return res.status(404).json({ error: "Template not found" });
+			res.json({ success: true });
+		} catch (e: unknown) {
+			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+		}
+	});
+
+	app.post("/api/templates/:id/render", async (req, res) => {
+		try {
+			const tpl = await templates.getTemplate(dbService, req.params.id);
+			if (!tpl) return res.status(404).json({ error: "Template not found" });
+			const result = templates.renderTemplate(tpl, req.body.variables || {});
 			res.json(result);
 		} catch (e: unknown) {
 			res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
