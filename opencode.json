@@ -6,7 +6,7 @@
 			"npm": "@ai-sdk/openai-compatible",
 			"name": "LaLlamaOllama Proxy",
 			"options": {
-				"baseURL": "http://localhost:3000/v1"
+				"baseURL": "http://localhost:3016/v1"
 			},
 			"models": {
 				"llama3.2:3b": {

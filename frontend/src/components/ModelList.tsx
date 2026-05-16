@@ -18,7 +18,7 @@ import type { OllamaModel, PullProgressData } from "../types/api";
 
 interface ModelListProps {
 	models: OllamaModel[];
-	pullProgress: PullProgressData | null;
+	pullProgress: Record<string, PullProgressData>;
 	onPull: (name: string) => void;
 	onDelete: (name: string) => void;
 }
@@ -143,96 +143,100 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 					</span>
 				</h2>
 
-				{pullProgress && (
-					<div
-						className="card-glass"
-						style={{
-							padding: "24px",
-							background: "rgba(79,140,255,0.05)",
-							border: "1px solid var(--accent)",
-							marginBottom: "32px",
-							boxShadow: "0 0 40px rgba(79, 140, 255, 0.1)",
-							position: "relative",
-							overflow: "hidden",
-						}}
-					>
-						<div className="flex-between" style={{ marginBottom: "16px" }}>
-							<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-								<RefreshCw size={18} className="animate-spin" style={{ color: "var(--accent)" }} />
-								<div>
-									<span
-										style={{
-											fontSize: "14px",
-											fontWeight: 800,
-											display: "block",
-											color: "var(--accent)",
-										}}
-									>
-										DESCARGANDO MOTOR DIGITAL
-									</span>
-									<span
-										style={{
-											fontSize: "11px",
-											color: "var(--text-muted)",
-											textTransform: "uppercase",
-											letterSpacing: "1px",
-										}}
-									>
-										{pullProgress.model}
-									</span>
+				{Object.values(pullProgress).length > 0 && (
+					<div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "32px" }}>
+						{Object.values(pullProgress).map((progress) => (
+							<div
+								key={progress.model}
+								className="card-glass"
+								style={{
+									padding: "20px",
+									background: "rgba(79,140,255,0.05)",
+									border: "1px solid var(--accent)",
+									boxShadow: "0 0 20px rgba(79, 140, 255, 0.05)",
+									position: "relative",
+									overflow: "hidden",
+								}}
+							>
+								<div className="flex-between" style={{ marginBottom: "12px" }}>
+									<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+										<RefreshCw size={16} className="animate-spin" style={{ color: "var(--accent)" }} />
+										<div>
+											<span
+												style={{
+													fontSize: "12px",
+													fontWeight: 800,
+													display: "block",
+													color: "var(--accent)",
+													letterSpacing: "0.5px",
+												}}
+											>
+												DESCARGANDO MOTOR DIGITAL
+											</span>
+											<span
+												style={{
+													fontSize: "11px",
+													color: "var(--text-main)",
+													fontWeight: 700,
+												}}
+											>
+												{progress.model}
+											</span>
+										</div>
+									</div>
+									<div style={{ textAlign: "right" }}>
+										<span
+											style={{
+												fontSize: "20px",
+												fontWeight: 900,
+												color:
+													progress.status === "completed" ? "var(--success)" : "var(--text-main)",
+												letterSpacing: "-0.5px",
+											}}
+										>
+											{progress.percent}%
+										</span>
+									</div>
 								</div>
-							</div>
-							<div style={{ textAlign: "right" }}>
-								<span
+
+								<div
 									style={{
-										fontSize: "24px",
-										fontWeight: 900,
-										color:
-											pullProgress.status === "completed" ? "var(--success)" : "var(--text-main)",
-										letterSpacing: "-1px",
+										width: "100%",
+										height: "6px",
+										background: "rgba(0,0,0,0.4)",
+										borderRadius: "10px",
+										overflow: "hidden",
+										border: "1px solid rgba(255,255,255,0.05)",
+										position: "relative",
 									}}
 								>
-									{pullProgress.percent}%
-								</span>
+									<div
+										className="progress-active"
+										style={{
+											width: `${progress.percent}%`,
+											height: "100%",
+											background:
+												progress.status === "completed"
+													? "var(--success)"
+													: "linear-gradient(90deg, #4f8cff, #a5b4fc, #4f8cff)",
+											backgroundSize: "200% 100%",
+											transition: "width 0.4s cubic-bezier(0.1, 0.7, 0.1, 1)",
+										}}
+									/>
+								</div>
+
+								<div className="flex-between" style={{ marginTop: "10px" }}>
+									<span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: 600 }}>
+										{progress.status === "completed" ? "FINALIZADO" : "SINCRONIZANDO PESOS..."}
+									</span>
+									{progress.status === "completed" && (
+										<span style={{ fontSize: "10px", color: "var(--success)", fontWeight: 800 }}>
+											✓ LISTO PARA OPERAR
+										</span>
+									)}
+								</div>
 							</div>
-						</div>
-
-						<div
-							style={{
-								width: "100%",
-								height: "10px",
-								background: "rgba(0,0,0,0.4)",
-								borderRadius: "20px",
-								overflow: "hidden",
-								border: "1px solid rgba(255,255,255,0.05)",
-								position: "relative",
-							}}
-						>
-							<div
-								className="progress-active"
-								style={{
-									width: `${pullProgress.percent}%`,
-									height: "100%",
-									background:
-										pullProgress.status === "completed"
-											? "var(--success)"
-											: "linear-gradient(90deg, #4f8cff, #a5b4fc, #4f8cff)",
-									backgroundSize: "200% 100%",
-									transition: "width 0.4s cubic-bezier(0.1, 0.7, 0.1, 1)",
-								}}
-							/>
-						</div>
-
-						<div className="flex-between" style={{ marginTop: "12px" }}>
-							<span style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: 600 }}>
-								{pullProgress.status === "completed" ? "FINALIZADO" : "SINCRONIZANDO PESOS..."}
-							</span>
-							{pullProgress.status === "completed" && (
-								<span style={{ fontSize: "10px", color: "var(--success)", fontWeight: 800 }}>
-									✓ LISTO PARA OPERAR
-								</span>
-							)}
-						</div>
+						))}
 					</div>
 				)}
 

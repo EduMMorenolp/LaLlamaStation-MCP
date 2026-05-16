@@ -27,7 +27,7 @@ const App: React.FC = () => {
 	const [isAuthorized, setIsAuthorized] = useState(false);
 	const [status, setStatus] = useState<StatusResponse | undefined>(undefined);
 	const [models, setModels] = useState<OllamaModel[]>([]);
-	const [pullProgress, setPullProgress] = useState<PullProgressData | null>(null);
+	const [pullProgress, setPullProgress] = useState<Record<string, PullProgressData>>({});
 	const [loading, setLoading] = useState(false);
 	const [authError, setAuthError] = useState("");
 	const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -68,10 +68,17 @@ const App: React.FC = () => {
 		const cleanupPull = subscribeToPullProgress((data) => {
 			if (data.status === "done") {
 				// Descarga completada — limpiar progreso y refrescar lista de modelos
-				setPullProgress(null);
+				setPullProgress((prev) => {
+					const next = { ...prev };
+					delete next[data.model];
+					return next;
+				});
 				fetchData();
 			} else {
-				setPullProgress(data);
+				setPullProgress((prev) => ({
+					...prev,
+					[data.model]: data,
+				}));
 			}
 		});
 		const cleanupAlerts = subscribeToSecurityAlerts((data) => {
@@ -246,10 +253,17 @@ const App: React.FC = () => {
 
 	const handlePull = async (model: string) => {
 		try {
-			setPullProgress({ model, percent: 0, status: "pulling" });
+			setPullProgress((prev) => ({
+				...prev,
+				[model]: { model, percent: 0, status: "pulling" },
+			}));
 			await api.post("/api/pull", { model });
 		} catch (e: unknown) {
-			setPullProgress(null);
+			setPullProgress((prev) => {
+				const next = { ...prev };
+				delete next[model];
+				return next;
+			});
 			const errorMsg =
 				e instanceof Error
 					? e.message
