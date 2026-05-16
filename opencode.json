@@ -56,7 +56,7 @@
 	"mcp": {
     "lallamaollama-brain": {
       "type": "remote",
-      "url": "http://192.168.0.236:3015/sse"
+      "url": "http://localhost:3015/sse"
     }
   }
 }

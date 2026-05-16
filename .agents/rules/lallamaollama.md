@@ -1,16 +1,16 @@
 ---
 trigger: always_on
 glob:
-description: Reglas específicas del proyecto LaLlamaOllama para el agente Antigravity. Complementan las reglas globales de GEMINI.md.
+description: Reglas globales del proyecto LaLlamaOllama. Siempre activas. Cubren estructura, servicios, convenciones y brain MCP.
 ---
 
 # Reglas del Proyecto — LaLlamaOllama
 
-## CEREBRO MCP DE ESTE PROYECTO
+## CEREBRO MCP
 
-- **Nombre del servidor**: `lallamaollama-brain`
+- **Servidor**: `lallamaollama-brain`
 - **Proyecto activo**: `lallamaollama`
-- **API local (SSE)**: `http://192.168.0.236:3015/sse`
+- **URL SSE**: `http://192.168.0.236:3015/sse`
 - **Docker stdio**: imagen `lallamaollama-mcp-brain`, datos en `./data/`
 
 Siempre pasar `project: "lallamaollama"` en toda llamada al cerebro.
@@ -21,44 +21,91 @@ Siempre pasar `project: "lallamaollama"` en toda llamada al cerebro.
 
 ```
 LaLlamaOllama/
-├── backend/          → Express 4 + TypeScript, puerto 3016
+├── backend/          → Express 4 + TypeScript NodeNext, puerto 3016
+│   └── src/
+│       ├── main.ts           → Punto de entrada, rutas Express, Socket.IO
+│       ├── app.module.ts     → Módulo raíz (estilo NestJS)
+│       ├── auth/             → AuthService (API Key enforcement)
+│       ├── ollama/           → OllamaService + MCP_TOOL_CATALOG
+│       └── session/          → SessionManager
 ├── frontend/         → React 19 + Vite 7, puerto 8080
-├── mcp-brain/        → Cerebro MCP, puerto 3015
-├── .opencode/agents/ → Agentes de OpenCode AI
-├── .agents/          → Reglas y workflows de Antigravity (este directorio)
+│   └── src/
+│       ├── App.tsx           → Router principal
+│       ├── components/       → 13 componentes de UI
+│       ├── services/         → api.service.ts + socket.service.ts
+│       └── index.css         → Design system (variables CSS, glassmorphism)
+├── mcp-brain/        → Servidor MCP + API REST, puerto 3015
+│   └── src/
+│       ├── database/         → SQLite + schemas + write queue
+│       ├── services/         → Use cases (memories, sessions, llm, analysis, audit, settings, templates)
+│       └── server/           → api.ts (REST) + mcp.ts (MCP tools)
+├── postman-collection/ → LaLlamaOllama-Postman-Collection.json
+├── .agents/          → Reglas y workflows de Antigravity
+├── .opencode/        → Agentes de OpenCode AI
+├── biome.json        → Linter + formatter global (raíz)
 └── docker-compose.yml
 ```
 
 ## SERVICIOS DOCKER
 
-| Servicio | Container | Puerto |
-|----------|-----------|--------|
-| `ollama` | `mcp-ollama-motor` | 11434 |
-| `backend` | `backend` | 3016 |
-| `mcp-brain` | `brain` | 3015 |
-| `frontend` | `frontend` | 8080 |
-| `ngrok` | `mcp-ngrok-tunnel` | — |
+| Container | Puerto | Stack |
+|-----------|--------|-------|
+| `mcp-ollama-motor` | 11434 | Ollama LLM |
+| `backend` | 3016 | Express + TS |
+| `brain` | 3015 | mcp-brain |
+| `frontend` | 8080 | React + Vite |
+| `mcp-ngrok-tunnel` | — | Ngrok |
 
 ---
 
-## REGLAS DE CÓDIGO
+## LINTING — BIOME (OBLIGATORIO)
 
-1. **Backend**: Express 4 + TypeScript NodeNext. Toda ruta `/api/*` requiere `authMiddleware`. Usar `Dockerode` (nunca comandos shell).
-2. **Frontend**: React 19 + Vite 7. Estética Glassmorphism. Sin Redux — usar hooks + Context API.
-3. **mcp-brain**: Arquitectura Use Case — cada función en su propio archivo bajo `services/`. Pasar `dbService` como parámetro (dependency injection).
-4. **Linting**: Biome (`npx biome check .`) en la raíz. ESLint en frontend.
-5. **Proyecto protegido**: El proyecto `"lallamasollama"` del cerebro NO puede eliminarse (403).
+**Configuración en `biome.json` (raíz):**
+- Indent: **tabs**, width 4
+- Line width: **120**
+- Quotes: **double**
+- Semicolons: **always**
+- Trailing commas: **es5** (JS), **none** (JSON)
+- Linter: **recommended rules**
+- VCS: respeta `.gitignore`
+
+**Comandos:**
+```bash
+# Raíz — verifica backend + mcp-brain
+npx biome check .
+
+# Aplicar formato automático
+npx biome check --write .
+
+# Frontend (usa ESLint + Vite)
+cd frontend && npm run lint
+```
+
+**REGLA**: Antes de dar un task por terminado, el código DEBE pasar `npx biome check .` sin errores.
+
+---
+
+## REGLAS GENERALES DE CÓDIGO
+
+1. **TypeScript estricto** — no usar `any`, preferir tipos explícitos
+2. **No comandos shell** — usar `Dockerode` para operaciones Docker
+3. **Error handling** — siempre `try/catch` con `error instanceof Error ? error.message : String(error)`
+4. **Imports con extensión `.js`** — NodeNext module resolution (backend y mcp-brain)
+5. **Async/await** — no callbacks, no `.then()` encadenados
+6. **Variables de entorno** — leer desde `process.env`, validar al arranque
 
 ---
 
 ## TIPOS DE MEMORIA POR TAREA
 
-| Tarea en este proyecto | `type` |
-|------------------------|--------|
+| Tarea | `type` |
+|-------|--------|
 | Nueva ruta API en backend | `feature` |
+| Nueva MCP Tool en backend o mcp-brain | `feature` |
 | Nuevo componente React | `feature` |
+| Nuevo use case en mcp-brain | `feature` |
 | Fix en Docker/compose | `bug-fix` o `configuration` |
-| Cambio en mcp-brain | `feature` o `architecture` |
-| Entrada en CHANGELOG.md | `changelog` |
-| Convención establecida | `convention` |
 | Decisión de diseño UI | `architecture` |
+| Convención de código | `convention` |
+| Cambio en schema SQLite | `architecture` |
+| Entrada en CHANGELOG.md | `changelog` |
