@@ -78,6 +78,7 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 	const [searchError, setSearchError] = useState("");
 	const [hasSearched, setHasSearched] = useState(false);
 	const [verificationModel, setVerificationModel] = useState<Record<string, any> | null>(null);
+	const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
 	const installedNames = models?.filter((m) => !!m?.name).map((m) => m.name as string) || [];
 
@@ -122,8 +123,14 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 
 	const confirmPull = () => {
 		if (verificationModel) {
-			onPull(verificationModel.name);
+			let modelToPull = verificationModel.name;
+			// Si hay un tag seleccionado y el nombre no incluye ya un tag (indicado por ':'), lo agregamos
+			if (selectedTag && !modelToPull.includes(":")) {
+				modelToPull = `${modelToPull}:${selectedTag.toLowerCase()}`;
+			}
+			onPull(modelToPull);
 			setVerificationModel(null);
+			setSelectedTag(null);
 			setSearchTerm("");
 			setDirectPullTerm("");
 		}
@@ -603,7 +610,14 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 									type="button"
 									key={s.name as string}
 									className="suggested-card"
-									onClick={() => !isInstalled && setVerificationModel(s)}
+									onClick={() => {
+										setVerificationModel(s);
+										// Buscar el primer tag que NO esté instalado para ponerlo por defecto
+										const defaultTag = s.tags?.find(
+											(t) => !installedNames.some(n => n.startsWith(s.name) && n.endsWith(`:${t.toLowerCase()}`))
+										) || s.tags?.[0] || null;
+										setSelectedTag(defaultTag);
+									}}
 								>
 									<div className="flex-between">
 										<span className={`model-tag ${isInstalled ? "" : "prime"}`}>
@@ -716,21 +730,43 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 								{verificationModel.desc}
 							</p>
 							{verificationModel.tags && (
-								<div style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
-									{verificationModel.tags.map((t: string) => (
-										<span
-											key={t}
-											style={{
-												fontSize: "10px",
-												background: "rgba(255,255,255,0.05)",
-												padding: "2px 8px",
-												borderRadius: "4px",
-												color: "var(--text-muted)",
-											}}
-										>
-											{t}
-										</span>
-									))}
+								<div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
+									{verificationModel.tags.map((t: string) => {
+										const isTagInstalled = installedNames.some(n => 
+											n.startsWith(verificationModel.name) && n.endsWith(`:${t.toLowerCase()}`)
+										);
+										const isSelected = selectedTag === t;
+										
+										return (
+											<button
+												type="button"
+												key={t}
+												onClick={() => !isTagInstalled && setSelectedTag(t)}
+												style={{
+													fontSize: "11px",
+													fontWeight: 700,
+													background: isTagInstalled 
+														? "rgba(16,185,129,0.15)" // Verde si ya está instalado
+														: isSelected ? "var(--accent)" : "rgba(255,255,255,0.05)",
+													color: isTagInstalled
+														? "var(--success)"
+														: isSelected ? "var(--bg-main)" : "var(--text-muted)",
+													padding: "4px 10px",
+													borderRadius: "4px",
+													border: "1px solid",
+													borderColor: isTagInstalled
+														? "var(--success)"
+														: isSelected ? "var(--accent)" : "transparent",
+													cursor: isTagInstalled ? "default" : "pointer",
+													transition: "all 0.2s ease",
+													opacity: isTagInstalled ? 0.8 : 1,
+												}}
+												title={isTagInstalled ? "Ya instalado" : `Seleccionar versión ${t}`}
+											>
+												{t} {isTagInstalled && "✓"}
+											</button>
+										);
+									})}
 								</div>
 							)}
 						</div>

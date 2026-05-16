@@ -319,6 +319,12 @@ export class OllamaService {
 
 	setIo(io: SocketServer) {
 		this.io = io;
+		io.on("connection", (socket) => {
+			// Enviar estados actuales de descarga al nuevo cliente
+			this.pullStates.forEach((value, key) => {
+				socket.emit("pull-progress", { model: key, percent: value.percent, status: value.status });
+			});
+		});
 	}
 
 	async listModels(): Promise<OllamaModel[]> {
@@ -480,16 +486,21 @@ export class OllamaService {
 				{ responseType: "stream" }
 			);
 
+			let buffer = "";
 			response.data.on("data", (chunk: Buffer) => {
-				try {
-					const lines = chunk.toString().split("\n");
-					for (const line of lines) {
-						if (!line) continue;
+				buffer += chunk.toString();
+				const lines = buffer.split("\n");
+				buffer = lines.pop() || ""; // Mantener la última línea incompleta en el buffer
+
+				for (const line of lines) {
+					if (!line) continue;
+					try {
 						const update = JSON.parse(line);
 						if (update.status === "downloading" && update.total) {
 							const percent = Math.round((update.completed / update.total) * 100);
 							const prevState = this.pullStates.get(model);
 							const now = Date.now();
+							// Emitir si el porcentaje avanzó o pasaron más de 2 segundos
 							if (!prevState || percent >= prevState.percent + 1 || now - prevState.lastUpdate > 2000) {
 								this.pullStates.set(model, { percent, status: update.status, lastUpdate: now });
 								if (this.io) this.io.emit("pull-progress", { model, percent, status: update.status });
@@ -503,8 +514,10 @@ export class OllamaService {
 								}, 1500);
 							}
 						}
+					} catch (_e) {
+						// Ignorar errores de parseo
 					}
-				} catch (_e) {}
+				}
 			});
 		} catch (e: unknown) {
 			const message = e instanceof Error ? e.message : String(e);
