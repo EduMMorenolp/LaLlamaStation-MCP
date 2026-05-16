@@ -614,7 +614,7 @@ export const ModelList: React.FC<ModelListProps> = ({ models, pullProgress, onPu
 										setVerificationModel(s);
 										// Buscar el primer tag que NO esté instalado para ponerlo por defecto
 										const defaultTag = s.tags?.find(
-											(t) => !installedNames.some(n => n.startsWith(s.name) && n.endsWith(`:${t.toLowerCase()}`))
+											(t: string) => !installedNames.some((n: string) => n.startsWith(s.name) && n.endsWith(`:${t.toLowerCase()}`))
 										) || s.tags?.[0] || null;
 										setSelectedTag(defaultTag);
 									}}
