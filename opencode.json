@@ -12,17 +12,17 @@
 				"llama3.2": {
 					"name": "llama3.2",
 					"reasoning": false,
-					"tools": true
+					"tool_call": true
 				},
 				"deepseek-r1": {
 					"name": "deepseek-r1",
 					"reasoning": true,
-					"tools": true
+					"tool_call": true
 				},
 				"qwen2.5-coder:7b": {
 					"name": "qwen2.5-coder:7b",
 					"reasoning": true,
-					"tools": true
+					"tool_call": true
 				}
 			}
 		}
