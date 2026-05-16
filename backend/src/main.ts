@@ -83,6 +83,43 @@ const appModule = new AppModule();
 await appModule.bootstrap(server, io);
 await appModule.ollamaService.checkConnection();
 
+// --- Auto-Pull de modelos al arranque ---
+// Configura en .env o docker-compose: OLLAMA_AUTO_PULL=llama3.2,qwen2.5-coder:7b
+(async () => {
+	const autoPullEnv = process.env.OLLAMA_AUTO_PULL?.trim();
+	if (!autoPullEnv) return;
+
+	const requested = autoPullEnv
+		.split(",")
+		.map((m) => m.trim())
+		.filter(Boolean);
+
+	if (requested.length === 0) return;
+
+	const cyan = "\x1b[36m";
+	const yellow = "\x1b[33m";
+	const reset = "\x1b[0m";
+	console.log(`\n${cyan}[auto-pull]${reset} Modelos configurados: ${yellow}${requested.join(", ")}${reset}`);
+
+	// Esperar 3 segundos para que Ollama esté listo antes de empezar
+	await new Promise<void>((resolve) => setTimeout(resolve, 3000));
+
+	const existing = await appModule.ollamaService.listModels();
+	const existingNames = new Set(existing.map((m) => m.name));
+
+	for (const model of requested) {
+		if (existingNames.has(model)) {
+			console.log(`${cyan}[auto-pull]${reset} ${model} — ya disponible, omitiendo.`);
+			continue;
+		}
+		console.log(`${cyan}[auto-pull]${reset} Descargando ${yellow}${model}${reset}...`);
+		appModule.ollamaService.pullModel(model).catch((err: unknown) => {
+			const message = err instanceof Error ? err.message : String(err);
+			console.error(`${cyan}[auto-pull]${reset} Error al descargar ${model}: ${message}`);
+		});
+	}
+})();
+
 // --- Middleware de Seguridad Avanzada (Fase 2) ---
 const securityMiddleware = (req: Request, res: Response, next: (err?: unknown) => void) => {
 	const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
