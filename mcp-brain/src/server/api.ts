@@ -242,10 +242,14 @@ export function startApiServer(dbService: DatabaseService) {
 		res.json({ status: "ok", message: "LaLlamaStation Brain MCP Server", timestamp: new Date().toISOString() });
 	});
 
-	// --- MCP SSE Transport ---
+	// --- MCP SSE Transport (Multi-Sesión) ---
+	// Cada conexión SSE crea su propio Server+Transport para soportar múltiples clientes simultáneos
 
-	const sseServer = createMcpServer(dbService);
-	const sseTransports = new Map<string, SSEServerTransport>();
+	interface SseSession {
+		server: ReturnType<typeof createMcpServer>;
+		transport: SSEServerTransport;
+	}
+	const sseSessions = new Map<string, SseSession>();
 
 	// Health check endpoint
 	app.get("/health", async (_req, res) => {
@@ -256,7 +260,7 @@ export function startApiServer(dbService: DatabaseService) {
 				timestamp: new Date().toISOString(),
 				uptime: process.uptime(),
 				memoryUsage: process.memoryUsage(),
-				activeSessions: sseTransports.size
+				activeSessions: sseSessions.size
 			});
 		} catch (err: unknown) {
 			res.status(500).json({ status: "unhealthy", error: err instanceof Error ? err.message : String(err) });
@@ -264,28 +268,43 @@ export function startApiServer(dbService: DatabaseService) {
 	});
 
 	app.get("/sse", async (req, res) => {
+		let transport: SSEServerTransport | undefined;
+		let server: ReturnType<typeof createMcpServer> | undefined;
 		try {
 			console.error(`[Brain MCP SSE] ✅ GET /sse - Nueva conexión recibida`);
 			
-			const transport = new SSEServerTransport("/messages", res);
+			transport = new SSEServerTransport("/messages", res);
 			console.error(`[Brain MCP SSE] ✅ Transport creado: sessionId=${transport.sessionId}`);
 			
-			sseTransports.set(transport.sessionId, transport);
-			console.error(`[Brain MCP SSE] ✅ Transport almacenado en map`);
+			server = createMcpServer(dbService);
+			sseSessions.set(transport.sessionId, { server, transport });
+			console.error(`[Brain MCP SSE] ✅ Sesión registrada: sessionId=${transport.sessionId}`);
 			
 			res.on("close", () => {
-				console.error(`[Brain MCP SSE] ⚠️  Conexión cerrada: ${transport.sessionId}`);
-				sseTransports.delete(transport.sessionId);
+				console.error(`[Brain MCP SSE] ⚠️  Conexión cerrada: ${transport?.sessionId}`);
+				if (transport?.sessionId) {
+					sseSessions.delete(transport.sessionId);
+				}
+				server?.close().catch((err: unknown) => 
+					console.error(`[Brain MCP SSE] Error al cerrar servidor:`, err)
+				);
 			});
 			
 			console.error(`[Brain MCP SSE] ✅ Iniciando conexión del servidor MCP...`);
-			await sseServer.connect(transport);
-			console.error(`[Brain MCP SSE] ✅ Servidor MCP conectado exitosamente`);
+			await server.connect(transport);
+			console.error(`[Brain MCP SSE] ✅ Servidor MCP conectado exitosamente (sessionId=${transport.sessionId})`);
 		} catch (err: unknown) {
 			const error = err instanceof Error ? err.message : String(err);
 			const stack = err instanceof Error ? err.stack : "";
 			console.error(`[Brain MCP SSE] ❌ ERROR EN /sse:`, error);
 			console.error(`[Brain MCP SSE] Stack trace:`, stack);
+			
+			if (transport?.sessionId) {
+				sseSessions.delete(transport.sessionId);
+			}
+			if (server) {
+				server.close().catch(() => {});
+			}
 			
 			if (!res.headersSent) {
 				res.status(500).json({ 
@@ -302,13 +321,13 @@ export function startApiServer(dbService: DatabaseService) {
 			const sessionId = req.query.sessionId as string;
 			console.error(`[Brain MCP SSE] POST /messages - sessionId: ${sessionId}`);
 			
-			const transport = sessionId ? sseTransports.get(sessionId) : null;
-			if (transport) {
-				console.error(`[Brain MCP SSE] ✅ Transport encontrado, procesando mensaje...`);
-				await transport.handlePostMessage(req, res, req.body);
+			const session = sessionId ? sseSessions.get(sessionId) : undefined;
+			if (session) {
+				console.error(`[Brain MCP SSE] ✅ Sesión encontrada, procesando mensaje...`);
+				await session.transport.handlePostMessage(req, res, req.body);
 			} else {
 				console.error(`[Brain MCP SSE] ❌ No hay sesión SSE activa para: ${sessionId}`);
-				res.status(400).json({ error: "No active SSE session", sessionId, availableSessions: Array.from(sseTransports.keys()) });
+				res.status(400).json({ error: "No active SSE session", sessionId, availableSessions: Array.from(sseSessions.keys()) });
 			}
 		} catch (err: unknown) {
 			const error = err instanceof Error ? err.message : String(err);
