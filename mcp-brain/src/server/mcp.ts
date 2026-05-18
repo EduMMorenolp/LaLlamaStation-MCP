@@ -764,8 +764,21 @@ function buildComplianceReminder(compliance: AgentCompliance): string {
 }
 
 export async function startMcpServer(dbService: DatabaseService) {
-	const mcpServer = createMcpServer(dbService);
-	const transport = new StdioServerTransport();
-	await mcpServer.connect(transport);
-	console.error(`[Brain MCP] MCP Server running on Stdio`);
+	try {
+		console.error(`[MCP Stdio] 🔧 Creando servidor MCP...`);
+		const mcpServer = createMcpServer(dbService);
+		console.error(`[MCP Stdio] ✅ Servidor MCP creado`);
+		
+		console.error(`[MCP Stdio] 🔌 Inicializando Stdio Transport...`);
+		const transport = new StdioServerTransport();
+		console.error(`[MCP Stdio] ✅ Stdio Transport inicializado`);
+		
+		console.error(`[MCP Stdio] 🤝 Conectando servidor a transporte...`);
+		await mcpServer.connect(transport);
+		console.error(`[MCP Stdio] ✅ Servidor conectado - Escuchando en STDIN/STDOUT`);
+	} catch (err: unknown) {
+		const error = err instanceof Error ? err.message : String(err);
+		console.error(`[MCP Stdio] ❌ ERROR:`, error);
+		throw err;
+	}
 }
