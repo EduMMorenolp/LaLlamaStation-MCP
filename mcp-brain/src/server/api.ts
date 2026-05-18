@@ -247,34 +247,100 @@ export function startApiServer(dbService: DatabaseService) {
 	const sseServer = createMcpServer(dbService);
 	const sseTransports = new Map<string, SSEServerTransport>();
 
+	// Health check endpoint
+	app.get("/health", async (_req, res) => {
+		try {
+			res.json({ 
+				status: "healthy", 
+				server: "LaLlamaStation Brain MCP",
+				timestamp: new Date().toISOString(),
+				uptime: process.uptime(),
+				memoryUsage: process.memoryUsage(),
+				activeSessions: sseTransports.size
+			});
+		} catch (err: unknown) {
+			res.status(500).json({ status: "unhealthy", error: err instanceof Error ? err.message : String(err) });
+		}
+	});
+
 	app.get("/sse", async (req, res) => {
-		const transport = new SSEServerTransport("/messages", res);
-		sseTransports.set(transport.sessionId, transport);
-		res.on("close", () => sseTransports.delete(transport.sessionId));
-		await sseServer.connect(transport);
+		try {
+			console.error(`[Brain MCP SSE] ✅ GET /sse - Nueva conexión recibida`);
+			
+			const transport = new SSEServerTransport("/messages", res);
+			console.error(`[Brain MCP SSE] ✅ Transport creado: sessionId=${transport.sessionId}`);
+			
+			sseTransports.set(transport.sessionId, transport);
+			console.error(`[Brain MCP SSE] ✅ Transport almacenado en map`);
+			
+			res.on("close", () => {
+				console.error(`[Brain MCP SSE] ⚠️  Conexión cerrada: ${transport.sessionId}`);
+				sseTransports.delete(transport.sessionId);
+			});
+			
+			console.error(`[Brain MCP SSE] ✅ Iniciando conexión del servidor MCP...`);
+			await sseServer.connect(transport);
+			console.error(`[Brain MCP SSE] ✅ Servidor MCP conectado exitosamente`);
+		} catch (err: unknown) {
+			const error = err instanceof Error ? err.message : String(err);
+			const stack = err instanceof Error ? err.stack : "";
+			console.error(`[Brain MCP SSE] ❌ ERROR EN /sse:`, error);
+			console.error(`[Brain MCP SSE] Stack trace:`, stack);
+			
+			if (!res.headersSent) {
+				res.status(500).json({ 
+					error: "SSE Connection Failed", 
+					details: error,
+					timestamp: new Date().toISOString()
+				});
+			}
+		}
 	});
 
 	app.post("/messages", async (req, res) => {
-		const sessionId = req.query.sessionId as string;
-		const transport = sessionId ? sseTransports.get(sessionId) : null;
-		if (transport) {
-			await transport.handlePostMessage(req, res, req.body);
-		} else {
-			res.status(400).send("No active SSE session");
+		try {
+			const sessionId = req.query.sessionId as string;
+			console.error(`[Brain MCP SSE] POST /messages - sessionId: ${sessionId}`);
+			
+			const transport = sessionId ? sseTransports.get(sessionId) : null;
+			if (transport) {
+				console.error(`[Brain MCP SSE] ✅ Transport encontrado, procesando mensaje...`);
+				await transport.handlePostMessage(req, res, req.body);
+			} else {
+				console.error(`[Brain MCP SSE] ❌ No hay sesión SSE activa para: ${sessionId}`);
+				res.status(400).json({ error: "No active SSE session", sessionId, availableSessions: Array.from(sseTransports.keys()) });
+			}
+		} catch (err: unknown) {
+			const error = err instanceof Error ? err.message : String(err);
+			console.error(`[Brain MCP SSE] ❌ ERROR EN /messages:`, error);
+			if (!res.headersSent) {
+				res.status(500).json({ error: "Message processing failed", details: error });
+			}
 		}
 	});
 
 	const serverInstance = app.listen(PORT, () => {
-		console.error(`[Brain UI API] Dashboard API listening on port ${PORT}`);
-		console.error(`[Brain MCP] Accessible remotely at: http://localhost:${PORT}/mcp`);
-		console.error(`[Brain MCP SSE] SSE endpoint: http://localhost:${PORT}/sse`);
+		console.error(`\n╔════════════════════════════════════════════════════════════╗`);
+		console.error(`║     LaLlamaStation Brain MCP Server - Iniciado            ║`);
+		console.error(`╚════════════════════════════════════════════════════════════╝`);
+		console.error(`📊 Dashboard API listening on port ${PORT}`);
+		console.error(`✅ MCP Health Check: http://localhost:${PORT}/health`);
+		console.error(`✅ MCP Status: http://localhost:${PORT}/mcp`);
+		console.error(`🌊 SSE Endpoint (Clients): http://localhost:${PORT}/sse`);
+		console.error(`💬 Messages Endpoint: http://localhost:${PORT}/messages`);
+		console.error(`📈 Memory Stats: http://localhost:${PORT}/api/memory/stats`);
+		console.error(`🔍 Memory Search: http://localhost:${PORT}/api/memory/search?q=query`);
+		console.error(`\n`);
 	});
 
 	serverInstance.on("error", (err: NodeJS.ErrnoException) => {
 		if (err.code === "EADDRINUSE") {
-			console.error(`[Brain UI API] Warning: Port ${PORT} already in use. Running in Stdio-only mode.`);
+			console.error(`\n❌ [ERROR] Puerto ${PORT} ya está en uso.`);
+			console.error(`   Asegúrate de que no hay otro proceso usando ese puerto.`);
+			console.error(`   O cambia BRAIN_PORT en tu .env file.\n`);
 		} else {
-			console.error(`[Brain UI API] Server error:`, err);
+			console.error(`\n❌ [ERROR] Error del servidor:`, err);
+			console.error(`\n`);
 		}
 	});
 }
